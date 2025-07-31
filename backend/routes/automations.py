@@ -900,3 +900,90 @@ def analyze_titles():
             'success': False,
             'error': str(e)
         }), 500
+
+@automations_bp.route('/generate-titles-custom', methods=['POST'])
+def generate_titles_custom():
+    """Gerar títulos usando prompt personalizado baseado em títulos extraídos"""
+    try:
+        data = request.get_json()
+
+        # Validar dados de entrada
+        source_titles = data.get('source_titles', [])
+        custom_prompt = data.get('custom_prompt', '')
+        count = data.get('count', 10)
+        ai_provider = data.get('ai_provider', 'auto')  # 'openai', 'gemini', 'auto'
+
+        if not source_titles:
+            return jsonify({
+                'success': False,
+                'error': 'Títulos de origem são obrigatórios'
+            }), 400
+
+        if not custom_prompt.strip():
+            return jsonify({
+                'success': False,
+                'error': 'Prompt personalizado é obrigatório'
+            }), 400
+
+        # Carregar chaves de API
+        config_path = os.path.join(os.path.dirname(__file__), '..', 'config', 'api_keys.json')
+        api_keys = {}
+
+        if os.path.exists(config_path):
+            with open(config_path, 'r') as f:
+                api_keys = json.load(f)
+
+        # Inicializar gerador de títulos
+        title_generator = TitleGenerator()
+
+        # Configurar IAs disponíveis
+        openai_configured = False
+        gemini_configured = False
+
+        if api_keys.get('openai'):
+            openai_configured = title_generator.configure_openai(api_keys['openai'])
+
+        if api_keys.get('gemini'):
+            gemini_configured = title_generator.configure_gemini(api_keys['gemini'])
+
+        if not openai_configured and not gemini_configured:
+            return jsonify({
+                'success': False,
+                'error': 'Nenhuma IA configurada. Configure OpenAI ou Gemini nas configurações.'
+            }), 400
+
+        print(f"🎨 Gerando títulos com prompt personalizado baseado em {len(source_titles)} títulos")
+        print(f"📝 Prompt: {custom_prompt[:100]}...")
+
+        # Gerar títulos com prompt personalizado
+        results = title_generator.generate_titles_with_custom_prompt(
+            source_titles,
+            custom_prompt,
+            count,
+            ai_provider
+        )
+
+        if results.get('success', False):
+            return jsonify({
+                'success': True,
+                'data': {
+                    'generated_titles': results['generated_titles'],
+                    'total_generated': len(results['generated_titles']),
+                    'ai_provider_used': results['ai_provider_used'],
+                    'patterns_analysis': results['patterns_analysis'],
+                    'source_titles_count': len(source_titles),
+                    'custom_prompt_used': results['custom_prompt_used']
+                }
+            })
+        else:
+            return jsonify({
+                'success': False,
+                'error': results.get('error', 'Falha na geração de títulos com prompt personalizado')
+            }), 500
+
+    except Exception as e:
+        print(f"❌ Erro na geração com prompt personalizado: {e}")
+        return jsonify({
+            'success': False,
+            'error': str(e)
+        }), 500

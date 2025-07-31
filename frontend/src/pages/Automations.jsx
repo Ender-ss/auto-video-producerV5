@@ -50,6 +50,8 @@ const Automations = () => {
     style: 'viral',
     ai_provider: 'auto'
   })
+  const [useCustomPrompt, setUseCustomPrompt] = useState(false)
+  const [customPrompt, setCustomPrompt] = useState('')
 
   // Estado para o formulário de extração do YouTube
   const [formData, setFormData] = useState({
@@ -226,9 +228,17 @@ const Automations = () => {
   }
 
   const handleGenerateTitles = async () => {
-    if (!titleGenerationConfig.topic.trim()) {
-      alert('Por favor, insira o tópico para geração de títulos')
-      return
+    // Validações
+    if (useCustomPrompt) {
+      if (!customPrompt.trim()) {
+        alert('Por favor, insira o prompt personalizado')
+        return
+      }
+    } else {
+      if (!titleGenerationConfig.topic.trim()) {
+        alert('Por favor, insira o tópico para geração de títulos')
+        return
+      }
     }
 
     if (!results || !results.videos || results.videos.length === 0) {
@@ -243,18 +253,33 @@ const Automations = () => {
       // Extrair títulos dos resultados para usar como base
       const sourceTitles = results.videos.map(video => video.title)
 
-      const response = await fetch('http://localhost:5000/api/automations/generate-titles', {
+      // Escolher endpoint baseado no tipo de geração
+      const endpoint = useCustomPrompt
+        ? 'http://localhost:5000/api/automations/generate-titles-custom'
+        : 'http://localhost:5000/api/automations/generate-titles'
+
+      // Preparar payload baseado no tipo
+      const payload = useCustomPrompt
+        ? {
+            source_titles: sourceTitles,
+            custom_prompt: customPrompt,
+            count: parseInt(titleGenerationConfig.count),
+            ai_provider: titleGenerationConfig.ai_provider
+          }
+        : {
+            source_titles: sourceTitles,
+            topic: titleGenerationConfig.topic,
+            count: parseInt(titleGenerationConfig.count),
+            style: titleGenerationConfig.style,
+            ai_provider: titleGenerationConfig.ai_provider
+          }
+
+      const response = await fetch(endpoint, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify({
-          source_titles: sourceTitles,
-          topic: titleGenerationConfig.topic,
-          count: parseInt(titleGenerationConfig.count),
-          style: titleGenerationConfig.style,
-          ai_provider: titleGenerationConfig.ai_provider
-        })
+        body: JSON.stringify(payload)
       })
 
       const data = await response.json()
@@ -594,18 +619,87 @@ const Automations = () => {
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
           {/* Configuração */}
           <div className="space-y-4">
-            <div>
-              <label className="block text-sm font-medium text-gray-300 mb-2">
-                Tópico do Vídeo
-              </label>
+            {/* Toggle para prompt personalizado */}
+            <div className="flex items-center space-x-3 p-3 bg-gray-700 rounded-lg border border-gray-600">
               <input
-                type="text"
-                value={titleGenerationConfig.topic}
-                onChange={(e) => handleTitleConfigChange('topic', e.target.value)}
-                placeholder="Ex: Como ganhar dinheiro online, Receitas fitness, etc."
-                className="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                type="checkbox"
+                id="useCustomPrompt"
+                checked={useCustomPrompt}
+                onChange={(e) => setUseCustomPrompt(e.target.checked)}
+                className="w-4 h-4 text-blue-600 bg-gray-600 border-gray-500 rounded focus:ring-blue-500"
               />
+              <label htmlFor="useCustomPrompt" className="text-sm font-medium text-gray-300">
+                🎨 Usar Prompt Personalizado (Remodelagem Avançada)
+              </label>
             </div>
+
+            {useCustomPrompt ? (
+              /* Prompt Personalizado */
+              <div>
+                <label className="block text-sm font-medium text-gray-300 mb-2">
+                  Prompt Personalizado para Remodelagem
+                </label>
+                <textarea
+                  value={customPrompt}
+                  onChange={(e) => setCustomPrompt(e.target.value)}
+                  placeholder="Ex: Transforme esses títulos em títulos mais chamativos para o nicho fitness, usando números específicos e palavras de urgência..."
+                  rows={4}
+                  className="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent resize-none"
+                />
+                <p className="text-xs text-gray-400 mt-1">
+                  💡 Descreva como você quer que os títulos sejam remodelados baseado nos títulos extraídos
+                </p>
+
+                {/* Exemplos de prompts */}
+                <div className="mt-2">
+                  <p className="text-xs text-gray-500 mb-1">Exemplos de prompts:</p>
+                  <div className="space-y-1">
+                    <button
+                      type="button"
+                      onClick={() => setCustomPrompt("Transforme esses títulos em títulos mais chamativos para o nicho fitness, usando números específicos e palavras de urgência como 'RÁPIDO', 'SEGREDO', 'INCRÍVEL'")}
+                      className="text-xs text-blue-400 hover:text-blue-300 block text-left"
+                    >
+                      • Fitness com urgência e números
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setCustomPrompt("Reescreva esses títulos para o nicho de negócios online, focando em resultados financeiros específicos e usando palavras como 'LUCRO', 'FATURAMENTO', 'GANHAR'")}
+                      className="text-xs text-blue-400 hover:text-blue-300 block text-left"
+                    >
+                      • Negócios online com foco financeiro
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setCustomPrompt("Adapte esses títulos para o público jovem, usando gírias atuais, emojis e linguagem descontraída, mantendo o apelo viral")}
+                      className="text-xs text-blue-400 hover:text-blue-300 block text-left"
+                    >
+                      • Linguagem jovem e descontraída
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setCustomPrompt("Transforme em títulos educacionais sérios, removendo sensacionalismo e focando no valor educativo e aprendizado")}
+                      className="text-xs text-blue-400 hover:text-blue-300 block text-left"
+                    >
+                      • Estilo educacional sério
+                    </button>
+                  </div>
+                </div>
+              </div>
+            ) : (
+              /* Configuração Padrão */
+              <div>
+                <label className="block text-sm font-medium text-gray-300 mb-2">
+                  Tópico do Vídeo
+                </label>
+                <input
+                  type="text"
+                  value={titleGenerationConfig.topic}
+                  onChange={(e) => handleTitleConfigChange('topic', e.target.value)}
+                  placeholder="Ex: Como ganhar dinheiro online, Receitas fitness, etc."
+                  className="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                />
+              </div>
+            )}
 
             <div className="grid grid-cols-2 gap-4">
               <div>
@@ -622,21 +716,23 @@ const Automations = () => {
                 />
               </div>
 
-              <div>
-                <label className="block text-sm font-medium text-gray-300 mb-2">
-                  Estilo
-                </label>
-                <select
-                  value={titleGenerationConfig.style}
-                  onChange={(e) => handleTitleConfigChange('style', e.target.value)}
-                  className="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                >
-                  <option value="viral">Viral</option>
-                  <option value="educational">Educacional</option>
-                  <option value="entertainment">Entretenimento</option>
-                  <option value="news">Notícias</option>
-                </select>
-              </div>
+              {!useCustomPrompt && (
+                <div>
+                  <label className="block text-sm font-medium text-gray-300 mb-2">
+                    Estilo
+                  </label>
+                  <select
+                    value={titleGenerationConfig.style}
+                    onChange={(e) => handleTitleConfigChange('style', e.target.value)}
+                    className="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  >
+                    <option value="viral">Viral</option>
+                    <option value="educational">Educacional</option>
+                    <option value="entertainment">Entretenimento</option>
+                    <option value="news">Notícias</option>
+                  </select>
+                </div>
+              )}
             </div>
 
             <div>
@@ -657,7 +753,15 @@ const Automations = () => {
             {!results && (
               <div className="p-4 bg-yellow-900/30 border border-yellow-700 rounded-lg">
                 <p className="text-yellow-300 text-sm">
-                  💡 <strong>Dica:</strong> Primeiro extraia títulos do YouTube para usar como base de análise.
+                  💡 <strong>Dica:</strong> Primeiro extraia títulos do YouTube para usar como base de {useCustomPrompt ? 'remodelagem' : 'análise'}.
+                </p>
+              </div>
+            )}
+
+            {useCustomPrompt && (
+              <div className="p-4 bg-blue-900/30 border border-blue-700 rounded-lg">
+                <p className="text-blue-300 text-sm">
+                  🎨 <strong>Modo Personalizado:</strong> A IA vai remodelar os títulos extraídos seguindo suas instruções específicas.
                 </p>
               </div>
             )}
@@ -670,12 +774,12 @@ const Automations = () => {
               {isGeneratingTitles ? (
                 <>
                   <RefreshCw size={18} className="animate-spin" />
-                  <span>Gerando títulos...</span>
+                  <span>{useCustomPrompt ? 'Remodelando títulos...' : 'Gerando títulos...'}</span>
                 </>
               ) : (
                 <>
                   <Wand2 size={18} />
-                  <span>Gerar Títulos</span>
+                  <span>{useCustomPrompt ? 'Remodelar Títulos' : 'Gerar Títulos'}</span>
                 </>
               )}
             </button>
@@ -711,11 +815,23 @@ const Automations = () => {
 
                 {generatedTitles.patterns_analysis && (
                   <div className="mt-4 p-3 bg-blue-900/30 border border-blue-700 rounded-lg">
-                    <p className="text-blue-300 text-sm font-medium mb-2">📊 Análise dos Padrões:</p>
+                    <p className="text-blue-300 text-sm font-medium mb-2">
+                      {generatedTitles.custom_prompt_used ? '🎨 Remodelagem Personalizada:' : '📊 Análise dos Padrões:'}
+                    </p>
                     <div className="text-blue-200 text-xs space-y-1">
-                      <p><strong>Gatilhos emocionais:</strong> {generatedTitles.patterns_analysis.emotional_triggers?.slice(0, 5).join(', ')}</p>
-                      <p><strong>IA usada:</strong> {generatedTitles.ai_provider_used}</p>
-                      <p><strong>Baseado em:</strong> {generatedTitles.source_titles_count} títulos de referência</p>
+                      {generatedTitles.custom_prompt_used ? (
+                        <>
+                          <p><strong>Prompt usado:</strong> {generatedTitles.custom_prompt_used.substring(0, 100)}...</p>
+                          <p><strong>IA usada:</strong> {generatedTitles.ai_provider_used}</p>
+                          <p><strong>Baseado em:</strong> {generatedTitles.source_titles_count} títulos extraídos</p>
+                        </>
+                      ) : (
+                        <>
+                          <p><strong>Gatilhos emocionais:</strong> {generatedTitles.patterns_analysis.emotional_triggers?.slice(0, 5).join(', ')}</p>
+                          <p><strong>IA usada:</strong> {generatedTitles.ai_provider_used}</p>
+                          <p><strong>Baseado em:</strong> {generatedTitles.source_titles_count} títulos de referência</p>
+                        </>
+                      )}
                     </div>
                   </div>
                 )}
