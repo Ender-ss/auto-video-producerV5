@@ -18,6 +18,7 @@ import io
 # Import AI libraries
 try:
     import google.generativeai as genai
+    from ..services.title_generator import TitleGenerator
     GEMINI_AVAILABLE = True
 except ImportError:
     GEMINI_AVAILABLE = False
@@ -760,3 +761,142 @@ def parse_count(count_str):
         pass
 
     return 0
+
+@automations_bp.route('/generate-titles', methods=['POST'])
+def generate_titles():
+    """Gerar títulos virais baseados em títulos extraídos"""
+    try:
+        data = request.get_json()
+
+        # Validar dados de entrada
+        source_titles = data.get('source_titles', [])
+        topic = data.get('topic', '')
+        count = data.get('count', 10)
+        style = data.get('style', 'viral')
+        ai_provider = data.get('ai_provider', 'auto')  # 'openai', 'gemini', 'auto'
+
+        if not source_titles:
+            return jsonify({
+                'success': False,
+                'error': 'Títulos de origem são obrigatórios'
+            }), 400
+
+        if not topic:
+            return jsonify({
+                'success': False,
+                'error': 'Tópico é obrigatório'
+            }), 400
+
+        # Carregar chaves de API
+        config_path = os.path.join(os.path.dirname(__file__), '..', 'config', 'api_keys.json')
+        api_keys = {}
+
+        if os.path.exists(config_path):
+            with open(config_path, 'r') as f:
+                api_keys = json.load(f)
+
+        # Inicializar gerador de títulos
+        title_generator = TitleGenerator()
+
+        # Configurar IAs disponíveis
+        openai_configured = False
+        gemini_configured = False
+
+        if api_keys.get('openai'):
+            openai_configured = title_generator.configure_openai(api_keys['openai'])
+
+        if api_keys.get('gemini'):
+            gemini_configured = title_generator.configure_gemini(api_keys['gemini'])
+
+        if not openai_configured and not gemini_configured:
+            return jsonify({
+                'success': False,
+                'error': 'Nenhuma IA configurada. Configure OpenAI ou Gemini nas configurações.'
+            }), 400
+
+        print(f"🤖 Gerando títulos sobre '{topic}' baseado em {len(source_titles)} títulos de referência")
+
+        # Gerar títulos baseado no provider escolhido
+        if ai_provider == 'openai' and openai_configured:
+            generated_titles = title_generator.generate_titles_openai(source_titles, topic, count, style)
+            results = {
+                'generated_titles': generated_titles,
+                'ai_provider_used': 'openai',
+                'patterns_analysis': title_generator.analyze_viral_patterns(source_titles)
+            }
+        elif ai_provider == 'gemini' and gemini_configured:
+            generated_titles = title_generator.generate_titles_gemini(source_titles, topic, count, style)
+            results = {
+                'generated_titles': generated_titles,
+                'ai_provider_used': 'gemini',
+                'patterns_analysis': title_generator.analyze_viral_patterns(source_titles)
+            }
+        else:
+            # Modo automático - usar híbrido ou o que estiver disponível
+            results = title_generator.generate_titles_hybrid(source_titles, topic, count, style)
+
+        if results.get('success', True) and (results.get('generated_titles') or results.get('combined_titles')):
+            final_titles = results.get('combined_titles') or results.get('generated_titles', [])
+
+            return jsonify({
+                'success': True,
+                'data': {
+                    'generated_titles': final_titles,
+                    'total_generated': len(final_titles),
+                    'ai_provider_used': results.get('ai_provider_used', 'hybrid'),
+                    'patterns_analysis': results.get('patterns_analysis', {}),
+                    'source_titles_count': len(source_titles),
+                    'topic': topic,
+                    'style': style
+                }
+            })
+        else:
+            return jsonify({
+                'success': False,
+                'error': results.get('error', 'Falha na geração de títulos')
+            }), 500
+
+    except Exception as e:
+        print(f"❌ Erro na geração de títulos: {e}")
+        return jsonify({
+            'success': False,
+            'error': str(e)
+        }), 500
+
+@automations_bp.route('/analyze-titles', methods=['POST'])
+def analyze_titles():
+    """Analisar padrões virais em uma lista de títulos"""
+    try:
+        data = request.get_json()
+        titles = data.get('titles', [])
+
+        if not titles:
+            return jsonify({
+                'success': False,
+                'error': 'Lista de títulos é obrigatória'
+            }), 400
+
+        # Inicializar gerador para usar a análise
+        title_generator = TitleGenerator()
+        patterns = title_generator.analyze_viral_patterns(titles)
+
+        return jsonify({
+            'success': True,
+            'data': {
+                'patterns': patterns,
+                'total_titles_analyzed': len(titles),
+                'analysis_summary': {
+                    'most_common_triggers': patterns['emotional_triggers'][:5],
+                    'popular_numbers': patterns['numbers'][:3],
+                    'effective_structures': patterns['structures'],
+                    'optimal_length': f"{patterns['length_stats']['min']}-{patterns['length_stats']['max']} chars"
+                }
+            }
+        })
+
+    except Exception as e:
+        print(f"❌ Erro na análise de títulos: {e}")
+        return jsonify({
+            'success': False,
+            'error': str(e)
+        }), 500

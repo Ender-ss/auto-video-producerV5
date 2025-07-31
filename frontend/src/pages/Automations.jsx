@@ -41,6 +41,16 @@ const Automations = () => {
   const [isProcessing, setIsProcessing] = useState(false)
   const [results, setResults] = useState(null)
 
+  // Estados para geração de títulos
+  const [isGeneratingTitles, setIsGeneratingTitles] = useState(false)
+  const [generatedTitles, setGeneratedTitles] = useState(null)
+  const [titleGenerationConfig, setTitleGenerationConfig] = useState({
+    topic: '',
+    count: 10,
+    style: 'viral',
+    ai_provider: 'auto'
+  })
+
   // Estado para o formulário de extração do YouTube
   const [formData, setFormData] = useState({
     url: '',
@@ -213,6 +223,65 @@ const Automations = () => {
     } finally {
       setIsProcessing(false)
     }
+  }
+
+  const handleGenerateTitles = async () => {
+    if (!titleGenerationConfig.topic.trim()) {
+      alert('Por favor, insira o tópico para geração de títulos')
+      return
+    }
+
+    if (!results || !results.videos || results.videos.length === 0) {
+      alert('Primeiro extraia títulos do YouTube para usar como base')
+      return
+    }
+
+    setIsGeneratingTitles(true)
+    setGeneratedTitles(null)
+
+    try {
+      // Extrair títulos dos resultados para usar como base
+      const sourceTitles = results.videos.map(video => video.title)
+
+      const response = await fetch('http://localhost:5000/api/automations/generate-titles', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          source_titles: sourceTitles,
+          topic: titleGenerationConfig.topic,
+          count: parseInt(titleGenerationConfig.count),
+          style: titleGenerationConfig.style,
+          ai_provider: titleGenerationConfig.ai_provider
+        })
+      })
+
+      const data = await response.json()
+
+      if (data.success) {
+        setGeneratedTitles(data.data)
+        alert(`✅ ${data.data.total_generated} títulos gerados com sucesso!`)
+      } else {
+        alert(`❌ Erro: ${data.error}`)
+      }
+    } catch (error) {
+      alert(`❌ Erro de conexão: ${error.message}`)
+    } finally {
+      setIsGeneratingTitles(false)
+    }
+  }
+
+  const handleTitleConfigChange = (field, value) => {
+    setTitleGenerationConfig(prev => ({
+      ...prev,
+      [field]: value
+    }))
+  }
+
+  const copyTitleToClipboard = (title) => {
+    navigator.clipboard.writeText(title)
+    alert('Título copiado para a área de transferência!')
   }
 
   // Mock data para demonstração
@@ -514,6 +583,158 @@ const Automations = () => {
     </div>
   )
 
+  const renderTitleGeneration = () => (
+    <div className="space-y-6">
+      <div className="bg-gray-800 rounded-lg border border-gray-700 p-6">
+        <h3 className="text-xl font-semibold text-white mb-4 flex items-center space-x-2">
+          <Wand2 size={24} className="text-blue-400" />
+          <span>Geração de Títulos com IA</span>
+        </h3>
+
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+          {/* Configuração */}
+          <div className="space-y-4">
+            <div>
+              <label className="block text-sm font-medium text-gray-300 mb-2">
+                Tópico do Vídeo
+              </label>
+              <input
+                type="text"
+                value={titleGenerationConfig.topic}
+                onChange={(e) => handleTitleConfigChange('topic', e.target.value)}
+                placeholder="Ex: Como ganhar dinheiro online, Receitas fitness, etc."
+                className="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+              />
+            </div>
+
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <label className="block text-sm font-medium text-gray-300 mb-2">
+                  Quantidade
+                </label>
+                <input
+                  type="number"
+                  value={titleGenerationConfig.count}
+                  onChange={(e) => handleTitleConfigChange('count', e.target.value)}
+                  min="1"
+                  max="20"
+                  className="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                />
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-300 mb-2">
+                  Estilo
+                </label>
+                <select
+                  value={titleGenerationConfig.style}
+                  onChange={(e) => handleTitleConfigChange('style', e.target.value)}
+                  className="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                >
+                  <option value="viral">Viral</option>
+                  <option value="educational">Educacional</option>
+                  <option value="entertainment">Entretenimento</option>
+                  <option value="news">Notícias</option>
+                </select>
+              </div>
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium text-gray-300 mb-2">
+                IA Provider
+              </label>
+              <select
+                value={titleGenerationConfig.ai_provider}
+                onChange={(e) => handleTitleConfigChange('ai_provider', e.target.value)}
+                className="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+              >
+                <option value="auto">Automático (Híbrido)</option>
+                <option value="openai">OpenAI GPT</option>
+                <option value="gemini">Google Gemini</option>
+              </select>
+            </div>
+
+            {!results && (
+              <div className="p-4 bg-yellow-900/30 border border-yellow-700 rounded-lg">
+                <p className="text-yellow-300 text-sm">
+                  💡 <strong>Dica:</strong> Primeiro extraia títulos do YouTube para usar como base de análise.
+                </p>
+              </div>
+            )}
+
+            <button
+              onClick={handleGenerateTitles}
+              disabled={isGeneratingTitles || !results}
+              className="w-full px-4 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors flex items-center justify-center space-x-2"
+            >
+              {isGeneratingTitles ? (
+                <>
+                  <RefreshCw size={18} className="animate-spin" />
+                  <span>Gerando títulos...</span>
+                </>
+              ) : (
+                <>
+                  <Wand2 size={18} />
+                  <span>Gerar Títulos</span>
+                </>
+              )}
+            </button>
+          </div>
+
+          {/* Resultados */}
+          <div>
+            {generatedTitles ? (
+              <div className="bg-gray-700 rounded-lg p-4 border border-gray-600">
+                <h4 className="text-lg font-semibold text-white mb-4 flex items-center space-x-2">
+                  <FileText size={20} />
+                  <span>Títulos Gerados ({generatedTitles.total_generated})</span>
+                </h4>
+
+                <div className="space-y-2 max-h-96 overflow-y-auto">
+                  {generatedTitles.generated_titles.map((title, index) => (
+                    <div key={index} className="bg-gray-600 rounded p-3 group hover:bg-gray-500 transition-colors">
+                      <div className="flex items-start justify-between">
+                        <p className="text-white text-sm font-medium flex-1 mr-2">
+                          {index + 1}. {title}
+                        </p>
+                        <button
+                          onClick={() => copyTitleToClipboard(title)}
+                          className="opacity-0 group-hover:opacity-100 transition-opacity p-1 hover:bg-gray-400 rounded"
+                          title="Copiar título"
+                        >
+                          <Copy size={14} className="text-gray-300" />
+                        </button>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+
+                {generatedTitles.patterns_analysis && (
+                  <div className="mt-4 p-3 bg-blue-900/30 border border-blue-700 rounded-lg">
+                    <p className="text-blue-300 text-sm font-medium mb-2">📊 Análise dos Padrões:</p>
+                    <div className="text-blue-200 text-xs space-y-1">
+                      <p><strong>Gatilhos emocionais:</strong> {generatedTitles.patterns_analysis.emotional_triggers?.slice(0, 5).join(', ')}</p>
+                      <p><strong>IA usada:</strong> {generatedTitles.ai_provider_used}</p>
+                      <p><strong>Baseado em:</strong> {generatedTitles.source_titles_count} títulos de referência</p>
+                    </div>
+                  </div>
+                )}
+              </div>
+            ) : (
+              <div className="text-center py-12">
+                <Wand2 size={48} className="mx-auto mb-4 text-gray-500 opacity-50" />
+                <h4 className="text-lg font-medium text-white mb-2">🤖 Gerar Títulos Virais</h4>
+                <p className="text-gray-400 text-sm">
+                  Configure o tópico e clique em "Gerar Títulos"
+                </p>
+              </div>
+            )}
+          </div>
+        </div>
+      </div>
+    </div>
+  )
+
   return (
     <div className="space-y-6">
       {/* Header */}
@@ -585,7 +806,8 @@ const Automations = () => {
 
         <div className="p-6">
           {activeTab === 'youtube' && renderYouTubeExtraction()}
-          {activeTab !== 'youtube' && (
+          {activeTab === 'titles' && renderTitleGeneration()}
+          {activeTab !== 'youtube' && activeTab !== 'titles' && (
             <div className="text-center py-12">
               <Target size={48} className="text-purple-400 mx-auto mb-4" />
               <h3 className="text-xl font-semibold text-white mb-2">Em desenvolvimento</h3>
