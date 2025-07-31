@@ -210,8 +210,14 @@ const Automations = () => {
 
       if (data.success) {
         setResults(data.data)
+
+        // Limpar geração anterior para preparar nova remodelagem
+        setGeneratedTitles(null)
+
         if (data.data.total_videos === 0) {
           alert('⚠️ Nenhum vídeo encontrado com os filtros aplicados. Tente diminuir o filtro de views mínimas.')
+        } else {
+          alert(`✅ Extração concluída! ${data.data.videos.length} vídeos encontrados.\n\n🎯 Títulos prontos para remodelagem na aba "Geração de Títulos"!`)
         }
       } else {
         alert(`❌ Erro: ${data.error}`)
@@ -520,17 +526,26 @@ const Automations = () => {
                   <div className="mt-4">
                     <div className="flex items-center justify-between mb-3">
                       <h5 className="text-white font-medium">📝 Títulos Extraídos ({results.videos.length}):</h5>
-                      <button
-                        onClick={() => {
-                          const titles = results.videos.map(v => v.title).join('\n')
-                          navigator.clipboard.writeText(titles)
-                          alert('✅ Todos os títulos copiados para a área de transferência!')
-                        }}
-                        className="px-3 py-1 bg-blue-600 text-white rounded text-xs hover:bg-blue-700 transition-colors flex items-center space-x-1"
-                      >
-                        <Copy size={12} />
-                        <span>Copiar Todos</span>
-                      </button>
+                      <div className="flex space-x-2">
+                        <button
+                          onClick={() => setActiveTab('titles')}
+                          className="px-3 py-1 bg-green-600 text-white rounded text-xs hover:bg-green-700 transition-colors flex items-center space-x-1"
+                        >
+                          <Wand2 size={12} />
+                          <span>Remodelar Títulos</span>
+                        </button>
+                        <button
+                          onClick={() => {
+                            const titles = results.videos.map(v => v.title).join('\n')
+                            navigator.clipboard.writeText(titles)
+                            alert('✅ Todos os títulos copiados para a área de transferência!')
+                          }}
+                          className="px-3 py-1 bg-blue-600 text-white rounded text-xs hover:bg-blue-700 transition-colors flex items-center space-x-1"
+                        >
+                          <Copy size={12} />
+                          <span>Copiar Todos</span>
+                        </button>
+                      </div>
                     </div>
                     <div className="max-h-80 overflow-y-auto space-y-2">
                       {results.videos.map((video, index) => (
@@ -750,11 +765,31 @@ const Automations = () => {
               </select>
             </div>
 
-            {!results && (
+            {!results ? (
               <div className="p-4 bg-yellow-900/30 border border-yellow-700 rounded-lg">
                 <p className="text-yellow-300 text-sm">
                   💡 <strong>Dica:</strong> Primeiro extraia títulos do YouTube para usar como base de {useCustomPrompt ? 'remodelagem' : 'análise'}.
                 </p>
+              </div>
+            ) : (
+              <div className="p-4 bg-green-900/30 border border-green-700 rounded-lg">
+                <p className="text-green-300 text-sm font-medium mb-2">
+                  ✅ <strong>Títulos Prontos:</strong> {results.videos.length} títulos extraídos do canal
+                </p>
+                <div className="text-green-200 text-xs">
+                  <p><strong>Canal:</strong> {results.channel_name}</p>
+                  <p><strong>Primeiros títulos:</strong></p>
+                  <div className="mt-1 space-y-1 max-h-20 overflow-y-auto">
+                    {results.videos.slice(0, 3).map((video, index) => (
+                      <p key={index} className="text-green-100 text-xs truncate">
+                        • {video.title}
+                      </p>
+                    ))}
+                    {results.videos.length > 3 && (
+                      <p className="text-green-300 text-xs">... e mais {results.videos.length - 3} títulos</p>
+                    )}
+                  </div>
+                </div>
               </div>
             )}
 

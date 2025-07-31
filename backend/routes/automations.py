@@ -18,10 +18,32 @@ import io
 # Import AI libraries
 try:
     import google.generativeai as genai
-    from ..services.title_generator import TitleGenerator
     GEMINI_AVAILABLE = True
 except ImportError:
     GEMINI_AVAILABLE = False
+
+# Import TitleGenerator
+try:
+    import sys
+    import os
+    sys.path.append(os.path.dirname(os.path.dirname(__file__)))
+    from services.title_generator import TitleGenerator
+    TITLE_GENERATOR_AVAILABLE = True
+    print("✅ TitleGenerator importado com sucesso")
+except ImportError as e:
+    TITLE_GENERATOR_AVAILABLE = False
+    print(f"⚠️ TitleGenerator não disponível: {e}")
+
+    # Fallback: criar classe mock
+    class TitleGenerator:
+        def __init__(self):
+            pass
+        def configure_openai(self, key):
+            return False
+        def configure_gemini(self, key):
+            return False
+        def generate_titles_with_custom_prompt(self, *args, **kwargs):
+            return {'success': False, 'error': 'TitleGenerator não disponível'}
 
 try:
     import anthropic
