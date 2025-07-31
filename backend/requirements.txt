@@ -1,0 +1,39 @@
+# 🎬 Auto Video Producer - Backend Dependencies
+
+# Core Flask
+Flask==2.3.3
+Flask-CORS==4.0.0
+Flask-SQLAlchemy==3.0.5
+Werkzeug==2.3.7
+
+# Database
+SQLAlchemy==1.4.53
+
+# AI APIs
+openai==1.51.0
+google-generativeai==0.8.3
+anthropic==0.40.0
+
+# HTTP Requests
+requests==2.31.0
+urllib3==2.2.0
+
+# Audio/Video Processing
+moviepy==1.0.3
+pydub==0.25.1
+Pillow==10.4.0
+
+# Utilities
+python-dotenv==1.0.0
+python-dateutil==2.8.2
+pytz==2024.1
+
+# Development
+pytest==8.3.3
+pytest-flask==1.3.0
+black==24.8.0
+flake8==7.1.1
+
+# Optional (install if needed)
+# elevenlabs==0.2.24
+# together==0.2.7
