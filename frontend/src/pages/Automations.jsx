@@ -2676,7 +2676,8 @@ Para cada título, forneça:
     kokoro: {
       voice: 'af_bella',
       kokoro_url: 'http://localhost:8880',
-      speed: 1.0
+      speed: 1.0,
+      language: 'en'  // 'en' para inglês, 'pt' para português
     }
   })
 
@@ -2891,7 +2892,8 @@ Para cada título, forneça:
         baseRequestData = {
           voice: ttsSettings.kokoro.voice,
           kokoro_url: ttsSettings.kokoro.kokoro_url,
-          speed: ttsSettings.kokoro.speed
+          speed: ttsSettings.kokoro.speed,
+          language: ttsSettings.kokoro.language
         }
       }
 
@@ -2958,19 +2960,20 @@ Para cada título, forneça:
         segments.push({
           index: i + 1,
           text: segment,
-          audio: result.data,
-          duration: result.data.duration || 0
+          audio: result.data || result,
+          duration: (result.data && result.data.duration) || (result.duration) || 0
         })
 
         // Adicionar áudio gerado à lista para exibição
-        if (result.data.audio_url) {
+        const audioData = result.data || result
+        if (audioData.audio_url) {
           const newAudio = {
             id: Date.now() + i,
-            filename: result.data.filename,
-            url: result.data.audio_url,
+            filename: audioData.filename || `audio_${Date.now()}.wav`,
+            url: audioData.audio_url,
             text: segment.substring(0, 100) + (segment.length > 100 ? '...' : ''),
-            voice: result.data.voice_used,
-            size: result.data.size,
+            voice: audioData.voice_used || audioData.voice || 'unknown',
+            size: audioData.size || 'N/A',
             timestamp: new Date().toLocaleTimeString()
           }
 
@@ -3478,6 +3481,35 @@ Para cada título, forneça:
                     </div>
 
                     <div>
+                      <label className="block text-sm font-medium text-gray-300 mb-2">Idioma</label>
+                      <select
+                        value={ttsSettings.kokoro.language}
+                        onChange={(e) => {
+                          const newLanguage = e.target.value
+                          let defaultVoice = 'af_bella' // Inglês padrão
+                          if (newLanguage === 'pt') defaultVoice = 'pf_dora'
+                          else if (newLanguage === 'zh') defaultVoice = 'zf_xiaobei'
+                          else if (newLanguage === 'ja') defaultVoice = 'jf_alpha'
+
+                          setTtsSettings(prev => ({
+                            ...prev,
+                            kokoro: {
+                              ...prev.kokoro,
+                              language: newLanguage,
+                              voice: defaultVoice
+                            }
+                          }))
+                        }}
+                        className="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-green-500"
+                      >
+                        <option value="en">🇺🇸 Inglês (English)</option>
+                        <option value="pt">🇵🇹 Português (Portuguese)</option>
+                        <option value="zh">🇨🇳 Chinês (Chinese)</option>
+                        <option value="ja">🇯🇵 Japonês (Japanese)</option>
+                      </select>
+                    </div>
+
+                    <div>
                       <label className="block text-sm font-medium text-gray-300 mb-2">Voz</label>
                       <select
                         value={ttsSettings.kokoro.voice}
@@ -3487,17 +3519,46 @@ Para cada título, forneça:
                         }))}
                         className="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-green-500"
                       >
-                        <option value="af_bella">af_bella - Feminina Americana</option>
-                        <option value="af_sarah">af_sarah - Feminina Americana</option>
-                        <option value="af_nicole">af_nicole - Feminina Americana</option>
-                        <option value="af_sky">af_sky - Feminina Americana</option>
-                        <option value="af_heart">af_heart - Feminina Americana</option>
-                        <option value="am_adam">am_adam - Masculina Americana</option>
-                        <option value="am_michael">am_michael - Masculina Americana</option>
-                        <option value="bf_emma">bf_emma - Feminina Britânica</option>
-                        <option value="bf_isabella">bf_isabella - Feminina Britânica</option>
-                        <option value="bm_george">bm_george - Masculina Britânica</option>
-                        <option value="bm_lewis">bm_lewis - Masculina Britânica</option>
+                        {ttsSettings.kokoro.language === 'pt' ? (
+                          // Vozes em Português (reais disponíveis no Kokoro)
+                          <>
+                            <option value="pf_dora">🇵🇹 pf_dora - Feminina Portuguesa</option>
+                            <option value="pm_alex">🇵🇹 pm_alex - Masculina Portuguesa</option>
+                            <option value="pm_santa">🇵🇹 pm_santa - Masculina Portuguesa (Santa)</option>
+                          </>
+                        ) : ttsSettings.kokoro.language === 'zh' ? (
+                          // Vozes em Chinês
+                          <>
+                            <option value="zf_xiaobei">🇨🇳 zf_xiaobei - Feminina Chinesa</option>
+                            <option value="zf_xiaoni">🇨🇳 zf_xiaoni - Feminina Chinesa</option>
+                            <option value="zf_xiaoxiao">🇨🇳 zf_xiaoxiao - Feminina Chinesa</option>
+                            <option value="zm_yunjian">🇨🇳 zm_yunjian - Masculina Chinesa</option>
+                            <option value="zm_yunxi">🇨🇳 zm_yunxi - Masculina Chinesa</option>
+                          </>
+                        ) : ttsSettings.kokoro.language === 'ja' ? (
+                          // Vozes em Japonês
+                          <>
+                            <option value="jf_alpha">🇯🇵 jf_alpha - Feminina Japonesa</option>
+                            <option value="jf_gongitsune">🇯🇵 jf_gongitsune - Feminina Japonesa</option>
+                            <option value="jf_nezumi">🇯🇵 jf_nezumi - Feminina Japonesa</option>
+                            <option value="jm_kumo">🇯🇵 jm_kumo - Masculina Japonesa</option>
+                          </>
+                        ) : (
+                          // Vozes em Inglês
+                          <>
+                            <option value="af_bella">af_bella - Feminina Americana</option>
+                            <option value="af_sarah">af_sarah - Feminina Americana</option>
+                            <option value="af_nicole">af_nicole - Feminina Americana</option>
+                            <option value="af_sky">af_sky - Feminina Americana</option>
+                            <option value="af_heart">af_heart - Feminina Americana</option>
+                            <option value="am_adam">am_adam - Masculina Americana</option>
+                            <option value="am_michael">am_michael - Masculina Americana</option>
+                            <option value="bf_emma">bf_emma - Feminina Britânica</option>
+                            <option value="bf_isabella">bf_isabella - Feminina Britânica</option>
+                            <option value="bm_george">bm_george - Masculina Britânica</option>
+                            <option value="bm_lewis">bm_lewis - Masculina Britânica</option>
+                          </>
+                        )}
                       </select>
                     </div>
 

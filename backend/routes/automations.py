@@ -588,6 +588,7 @@ def generate_tts_kokoro():
         voice_name = data.get('voice', 'af_bella')
         kokoro_url = data.get('kokoro_url', 'http://localhost:8880')
         speed = data.get('speed', 1.0)
+        language = data.get('language', 'en')
 
         if not text:
             return jsonify({
@@ -614,7 +615,7 @@ def generate_tts_kokoro():
             # Gerar áudio TTS usando Kokoro
             result = generate_tts_with_kokoro(
                 text, kokoro_url=kokoro_url, voice_name=voice_name,
-                speed=speed, job_id=job_id
+                speed=speed, language=language, job_id=job_id
             )
 
             # Verificar se foi bem-sucedido
@@ -1418,11 +1419,11 @@ def generate_titles_custom():
 # 🎵 FUNÇÕES DE TTS
 # ================================
 
-def generate_tts_with_kokoro(text, kokoro_url='http://localhost:8880', voice_name='af_bella', job_id=None, **kwargs):
+def generate_tts_with_kokoro(text, kokoro_url='http://localhost:8880', voice_name='af_bella', language='en', job_id=None, **kwargs):
     """Gerar áudio TTS usando API Kokoro FastAPI"""
     try:
-        print(f"🎵 Iniciando TTS com Kokoro - Texto: {len(text)} chars, Voz: {voice_name}")
-        add_real_time_log(f"🎵 Iniciando TTS com Kokoro - Texto: {len(text)} chars, Voz: {voice_name}", "info", "tts-kokoro")
+        print(f"🎵 Iniciando TTS com Kokoro - Texto: {len(text)} chars, Voz: {voice_name}, Idioma: {language}")
+        add_real_time_log(f"🎵 Iniciando TTS com Kokoro - Texto: {len(text)} chars, Voz: {voice_name}, Idioma: {language}", "info", "tts-kokoro")
 
         # Verificar se job foi cancelado
         if job_id and TTS_JOBS.get(job_id, {}).get('cancelled', False):
@@ -1438,7 +1439,8 @@ def generate_tts_with_kokoro(text, kokoro_url='http://localhost:8880', voice_nam
             "input": text,
             "voice": voice_name,
             "response_format": "wav",
-            "speed": kwargs.get('speed', 1.0)
+            "speed": kwargs.get('speed', 1.0),
+            "language": language
         }
 
         headers = {
@@ -1495,8 +1497,16 @@ def generate_tts_with_kokoro(text, kokoro_url='http://localhost:8880', voice_nam
 
         return {
             'success': True,
-            'audio_url': f'/api/automations/audio/{filename}',
-            'filename': filename,
+            'data': {
+                'audio_url': f'/api/automations/audio/{filename}',
+                'filename': filename,
+                'voice_used': voice_name,
+                'language_used': language,
+                'text_length': len(text),
+                'kokoro_url': kokoro_url,
+                'size': len(audio_bytes),
+                'duration': 0  # Kokoro não fornece duração, mas adicionamos para compatibilidade
+            },
             'message': 'Áudio gerado com sucesso usando Kokoro TTS'
         }
 

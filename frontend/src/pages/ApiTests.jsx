@@ -29,6 +29,14 @@ const ApiTests = () => {
   const [testing, setTesting] = useState(false)
   const [apiKeys, setApiKeys] = useState({})
 
+  // Estados para teste Kokoro TTS
+  const [kokoroUrl, setKokoroUrl] = useState('http://localhost:8880')
+  const [kokoroVoice, setKokoroVoice] = useState('af_bella')
+  const [kokoroLanguage, setKokoroLanguage] = useState('en')
+  const [kokoroText, setKokoroText] = useState('Olá! Este é um teste do Kokoro TTS. A qualidade do áudio é excelente e funciona 100% local!')
+  const [kokoroResult, setKokoroResult] = useState(null)
+  const [kokoroLoading, setKokoroLoading] = useState(false)
+
   const apiTests = [
     {
       id: 'rapidapi',
@@ -141,6 +149,74 @@ const ApiTests = () => {
           }
         }
       ]
+    },
+    {
+      id: 'kokoro',
+      name: 'Kokoro TTS',
+      icon: Zap,
+      color: 'green',
+      description: 'Teste de síntese de voz local com Kokoro FastAPI',
+      tests: [
+        {
+          name: 'Teste de Conexão',
+          endpoint: '/api/automations/test-kokoro',
+          params: {
+            kokoro_url: 'http://localhost:8880'
+          }
+        },
+        {
+          name: 'Gerar Áudio Básico',
+          endpoint: '/api/automations/generate-tts-kokoro',
+          params: {
+            text: 'Olá! Este é um teste do Kokoro TTS. A qualidade do áudio é excelente e funciona 100% local!',
+            voice: 'af_bella',
+            kokoro_url: 'http://localhost:8880',
+            speed: 1.0
+          }
+        },
+        {
+          name: 'Teste com Voz Masculina',
+          endpoint: '/api/automations/generate-tts-kokoro',
+          params: {
+            text: 'Este é um teste com voz masculina do Kokoro TTS. O sistema funciona completamente offline.',
+            voice: 'am_adam',
+            kokoro_url: 'http://localhost:8880',
+            speed: 1.0
+          }
+        },
+        {
+          name: 'Teste Velocidade Rápida',
+          endpoint: '/api/automations/generate-tts-kokoro',
+          params: {
+            text: 'Este teste verifica a síntese de voz em velocidade acelerada. Kokoro TTS é rápido e eficiente!',
+            voice: 'af_sarah',
+            kokoro_url: 'http://localhost:8880',
+            speed: 1.5
+          }
+        },
+        {
+          name: 'Teste Português Feminino',
+          endpoint: '/api/automations/generate-tts-kokoro',
+          params: {
+            text: 'Olá! Este é um teste em português. O Kokoro TTS suporta múltiplos idiomas com excelente qualidade.',
+            voice: 'pf_dora',
+            kokoro_url: 'http://localhost:8880',
+            speed: 1.0,
+            language: 'pt'
+          }
+        },
+        {
+          name: 'Teste Português Masculino',
+          endpoint: '/api/automations/generate-tts-kokoro',
+          params: {
+            text: 'Bem-vindos ao sistema de síntese de voz em português. Esta é uma demonstração da voz masculina portuguesa.',
+            voice: 'pm_alex',
+            kokoro_url: 'http://localhost:8880',
+            speed: 1.0,
+            language: 'pt'
+          }
+        }
+      ]
     }
   ]
 
@@ -159,7 +235,8 @@ const ApiTests = () => {
       apiKey = apiKeys.gemini_1 || apiKeys.gemini || apiKeys['gemini_1'] || apiKeys['gemini'] || 'AIzaSyBqUjzLHNPycDIzvwnI5JisOwmNubkfRRc'
     }
 
-    if (!apiKey) {
+    // Kokoro TTS não precisa de chave de API
+    if (apiId !== 'kokoro' && !apiKey) {
       alert(`Configure a chave da API ${apiId === 'gemini_tts' ? 'Gemini' : apiId} primeiro nas Configurações`)
       return
     }
@@ -170,8 +247,54 @@ const ApiTests = () => {
     try {
       let response, data
 
+      // Tratamento especial para Kokoro TTS
+      if (apiId === 'kokoro') {
+        console.log('🎵 Testando Kokoro TTS...')
+
+        // Usar configurações dinâmicas do usuário
+        let requestParams = { ...test.params }
+        if (test.name !== 'Teste de Conexão') {
+          requestParams = {
+            ...requestParams,
+            text: kokoroText,
+            voice: kokoroVoice,
+            kokoro_url: kokoroUrl,
+            language: kokoroLanguage
+          }
+        } else {
+          requestParams.kokoro_url = kokoroUrl
+        }
+
+        response = await fetch(test.endpoint, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify(requestParams)
+        })
+        data = await response.json()
+
+        // Adicionar informações extras para Kokoro TTS
+        if (data.success) {
+          if (test.name === 'Teste de Conexão') {
+            data.connection_info = {
+              url: data.url,
+              voices_count: data.voices_count,
+              status: 'Conectado com sucesso'
+            }
+          } else if (data.filename) {
+            data.audio_info = {
+              filename: data.filename,
+              voice_used: kokoroVoice,
+              text_length: kokoroText.length,
+              kokoro_url: kokoroUrl,
+              local_generation: true
+            }
+          }
+        }
+      }
       // Tratamento especial para Gemini TTS
-      if (apiId === 'gemini_tts') {
+      else if (apiId === 'gemini_tts') {
         console.log('🎵 Testando Gemini TTS...')
         response = await fetch(test.endpoint, {
           method: 'POST',
@@ -341,14 +464,128 @@ const ApiTests = () => {
                 <p className="text-gray-400">{currentApi.description}</p>
                 <div className="mt-3">
                   <span className={`inline-flex items-center px-2 py-1 rounded text-xs ${
-                    apiKeys[currentApi.id] 
-                      ? 'bg-green-600 text-white' 
-                      : 'bg-red-600 text-white'
+                    currentApi.id === 'kokoro'
+                      ? 'bg-blue-600 text-white'
+                      : apiKeys[currentApi.id]
+                        ? 'bg-green-600 text-white'
+                        : 'bg-red-600 text-white'
                   }`}>
-                    {apiKeys[currentApi.id] ? 'API Configurada' : 'API Não Configurada'}
+                    {currentApi.id === 'kokoro'
+                      ? 'Servidor Local (http://localhost:8880)'
+                      : apiKeys[currentApi.id]
+                        ? 'API Configurada'
+                        : 'API Não Configurada'
+                    }
                   </span>
                 </div>
               </div>
+
+              {/* Configuração especial para Kokoro TTS */}
+              {currentApi.id === 'kokoro' && (
+                <div className="bg-blue-900/20 border border-blue-600 rounded-lg p-4 mb-6">
+                  <div className="flex items-center gap-3 mb-4">
+                    <Zap className="w-5 h-5 text-blue-400" />
+                    <h3 className="text-lg font-semibold text-white">Configuração Kokoro TTS</h3>
+                  </div>
+
+                  <div className="space-y-4">
+                    <div>
+                      <label className="block text-sm font-medium text-gray-300 mb-2">
+                        URL do Servidor Kokoro
+                      </label>
+                      <input
+                        type="text"
+                        value={kokoroUrl}
+                        onChange={(e) => setKokoroUrl(e.target.value)}
+                        placeholder="http://localhost:8880"
+                        className="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
+                      />
+                    </div>
+
+                    <div className="grid grid-cols-3 gap-4">
+                      <div>
+                        <label className="block text-sm font-medium text-gray-300 mb-2">
+                          Idioma
+                        </label>
+                        <select
+                          value={kokoroLanguage}
+                          onChange={(e) => {
+                            const newLanguage = e.target.value
+                            const defaultVoice = newLanguage === 'pt' ? 'pf_dora' : 'af_bella'
+                            const defaultText = newLanguage === 'pt'
+                              ? 'Olá! Este é um teste do Kokoro TTS em português. A qualidade é excelente!'
+                              : 'Hello! This is a Kokoro TTS test in English. The quality is excellent!'
+                            setKokoroLanguage(newLanguage)
+                            setKokoroVoice(defaultVoice)
+                            setKokoroText(defaultText)
+                          }}
+                          className="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
+                        >
+                          <option value="en">🇺🇸 Inglês</option>
+                          <option value="pt">🇧🇷 Português</option>
+                        </select>
+                      </div>
+
+                      <div>
+                        <label className="block text-sm font-medium text-gray-300 mb-2">
+                          Voz para Teste
+                        </label>
+                        <select
+                          value={kokoroVoice}
+                          onChange={(e) => setKokoroVoice(e.target.value)}
+                          className="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
+                        >
+                          {kokoroLanguage === 'pt' ? (
+                            <>
+                              <option value="pf_dora">🇵🇹 pf_dora - Feminina Portuguesa</option>
+                              <option value="pm_alex">🇵🇹 pm_alex - Masculina Portuguesa</option>
+                              <option value="pm_santa">🇵🇹 pm_santa - Masculina Portuguesa (Santa)</option>
+                            </>
+                          ) : (
+                            <>
+                              <option value="af_bella">af_bella - Feminina Americana</option>
+                              <option value="af_sarah">af_sarah - Feminina Americana</option>
+                              <option value="af_nicole">af_nicole - Feminina Americana</option>
+                              <option value="af_sky">af_sky - Feminina Americana</option>
+                              <option value="am_adam">am_adam - Masculina Americana</option>
+                              <option value="am_michael">am_michael - Masculina Americana</option>
+                              <option value="bf_emma">bf_emma - Feminina Britânica</option>
+                              <option value="bm_george">bm_george - Masculina Britânica</option>
+                            </>
+                          )}
+                        </select>
+                      </div>
+
+                      <div>
+                        <label className="block text-sm font-medium text-gray-300 mb-2">
+                          Texto para Teste
+                        </label>
+                        <input
+                          type="text"
+                          value={kokoroText}
+                          onChange={(e) => setKokoroText(e.target.value)}
+                          placeholder="Texto para testar..."
+                          className="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
+                        />
+                      </div>
+                    </div>
+
+                    <div className="bg-gray-800 rounded-lg p-3">
+                      <h4 className="text-sm font-medium text-white mb-2">📋 Como instalar Kokoro TTS:</h4>
+                      <div className="text-xs text-gray-300 space-y-1">
+                        <p><strong>Opção 1 (Docker CPU):</strong></p>
+                        <code className="bg-gray-900 px-2 py-1 rounded text-green-400">
+                          docker run -p 8880:8880 ghcr.io/remsky/kokoro-fastapi-cpu:latest
+                        </code>
+                        <p><strong>Opção 2 (Docker GPU):</strong></p>
+                        <code className="bg-gray-900 px-2 py-1 rounded text-green-400">
+                          docker run --gpus all -p 8880:8880 ghcr.io/remsky/kokoro-fastapi-gpu:latest
+                        </code>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              )}
 
               {/* Tests */}
               <div className="space-y-4">
