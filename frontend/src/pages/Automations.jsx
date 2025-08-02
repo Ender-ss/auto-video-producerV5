@@ -28,6 +28,10 @@ import {
   AlertCircle,
   Zap,
   Bot,
+  Loader2,
+  FileAudio,
+  User,
+  Volume2,
   Sparkles,
   Target,
   Layers,
@@ -68,8 +72,16 @@ const Automations = () => {
 
   const [apiKeys, setApiKeys] = useState({})
   const [apiStatus, setApiStatus] = useState({
-    rapidapi: 'unknown'
+    rapidapi: 'unknown',
+    gemini_tts: 'unknown'
   })
+
+  // Estados para teste TTS Gemini
+  const [ttsTestText, setTtsTestText] = useState('Olá, este é um teste de áudio com Gemini TTS. A qualidade do áudio é excelente!')
+  const [ttsTestResult, setTtsTestResult] = useState(null)
+
+  // Estados para player de áudio
+  const [generatedAudios, setGeneratedAudios] = useState([])
 
   // Estados para geração de premissas
   const [isGeneratingPremises, setIsGeneratingPremises] = useState(false)
@@ -191,6 +203,73 @@ const Automations = () => {
     }
   }, [activeTab])
 
+  // Carregar dados quando a aba TTS for selecionada
+  useEffect(() => {
+    if (activeTab === 'tts') {
+      console.log('🎵 DEBUG: Carregando dados para aba TTS...')
+
+      // 1. Tentar carregar dados específicos do TTS (vindos do botão "Gerar Áudio")
+      const ttsScriptData = localStorage.getItem('tts_script_data')
+      if (ttsScriptData && !generatedScripts) {
+        const parsed = JSON.parse(ttsScriptData)
+        console.log('🎵 Dados TTS específicos carregados:', parsed)
+        setGeneratedScripts(parsed)
+      }
+
+      // 2. Carregar títulos gerados se não existirem
+      if (!generatedTitles) {
+        const savedTitles = localStorage.getItem('generated_titles')
+        if (savedTitles) {
+          const parsed = JSON.parse(savedTitles)
+          console.log('🎯 Títulos carregados para TTS:', parsed)
+          setGeneratedTitles(parsed)
+        }
+      }
+
+      // 3. Carregar premissas geradas se não existirem
+      if (!generatedPremises) {
+        const savedPremises = localStorage.getItem('generated_premises')
+        if (savedPremises) {
+          const parsed = JSON.parse(savedPremises)
+          console.log('💡 Premissas carregadas para TTS:', parsed)
+          setGeneratedPremises(parsed)
+        }
+      }
+
+      // 4. Carregar roteiros gerados se não existirem
+      if (!generatedScripts) {
+        const savedScripts = localStorage.getItem('generated_scripts')
+        if (savedScripts) {
+          const parsed = JSON.parse(savedScripts)
+          console.log('📝 Roteiros carregados para TTS:', parsed)
+          setGeneratedScripts(parsed)
+        }
+      }
+
+      // Debug dos estados
+      setTimeout(() => {
+        console.log('🔍 DEBUG TTS: Estados atuais:', {
+          generatedTitles: !!generatedTitles,
+          generatedPremises: !!generatedPremises,
+          generatedScripts: !!generatedScripts,
+          scriptsData: generatedScripts
+        })
+      }, 100)
+    }
+  }, [activeTab])
+
+  // Escutar evento customizado para mudança de aba
+  useEffect(() => {
+    const handleChangeTab = (event) => {
+      if (event.detail === 'tts') {
+        setActiveTab('tts')
+      }
+    }
+
+    window.addEventListener('changeTab', handleChangeTab)
+    return () => window.removeEventListener('changeTab', handleChangeTab)
+  }, [])
+
   const checkApiStatus = async () => {
     const savedKeys = localStorage.getItem('api_keys')
     if (!savedKeys) return
@@ -251,6 +330,68 @@ const Automations = () => {
     }
 
     await checkApiStatus()
+  }
+
+  // Função para testar TTS Gemini
+  const handleTestGeminiTTS = async () => {
+    const geminiKey = apiKeys.gemini_1 || apiKeys.gemini || apiKeys['gemini_1'] || apiKeys['gemini'] || 'AIzaSyBqUjzLHNPycDIzvwnI5JisOwmNubkfRRc'
+
+    if (!geminiKey || geminiKey.length < 10) {
+      alert('Configure a chave Gemini nas Configurações primeiro')
+      return
+    }
+
+    if (!ttsTestText.trim()) {
+      alert('Digite um texto para testar')
+      return
+    }
+
+    setApiStatus(prev => ({ ...prev, gemini_tts: 'testing' }))
+    setTtsTestResult(null)
+
+    try {
+      console.log('🎵 Testando TTS Gemini...')
+
+      const response = await fetch('/api/automations/generate-tts', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          text: ttsTestText,
+          api_key: geminiKey,
+          voice_name: ttsSettings.gemini.voice_name,
+          model: ttsSettings.gemini.model
+        })
+      })
+
+      const result = await response.json()
+      console.log('🔍 Resultado do teste TTS:', result)
+
+      if (result.success) {
+        setApiStatus(prev => ({ ...prev, gemini_tts: 'connected' }))
+        setTtsTestResult({
+          success: true,
+          data: result.data,
+          message: `✅ Áudio gerado com sucesso! Arquivo: ${result.data.filename} (${result.data.size} bytes)`
+        })
+      } else {
+        setApiStatus(prev => ({ ...prev, gemini_tts: 'error' }))
+        setTtsTestResult({
+          success: false,
+          error: result.error,
+          message: `❌ Erro: ${result.error}`
+        })
+      }
+    } catch (error) {
+      console.error('❌ Erro no teste TTS:', error)
+      setApiStatus(prev => ({ ...prev, gemini_tts: 'error' }))
+      setTtsTestResult({
+        success: false,
+        error: error.message,
+        message: `❌ Erro de conexão: ${error.message}`
+      })
+    }
   }
 
   const handleExtractContent = async () => {
@@ -863,7 +1004,8 @@ Para cada título, forneça:
     { id: 'scripts', label: 'Roteiros IA', icon: FileText, color: 'green' },
     { id: 'tts', label: 'Text-to-Speech', icon: Mic, color: 'yellow' },
     { id: 'video-edit', label: 'Editar Vídeo', icon: Video, color: 'pink' },
-    { id: 'workflow', label: 'Fluxos Completos', icon: Workflow, color: 'indigo' }
+    { id: 'workflow', label: 'Fluxos Completos', icon: Workflow, color: 'indigo' },
+    { id: 'api-tests', label: 'Testes de API', icon: Settings, color: 'cyan' }
   ]
 
   const aiAgents = [
@@ -978,7 +1120,7 @@ Para cada título, forneça:
                 </div>
               </div>
             </div>
-            
+
             <div className="grid grid-cols-2 gap-4">
               <div>
                 <label className="block text-sm font-medium text-gray-300 mb-2">
@@ -2463,6 +2605,1130 @@ Para cada título, forneça:
     </div>
   )
 
+  // Estados para TTS integrado
+  const [ttsProvider, setTtsProvider] = useState('elevenlabs')
+  const [isGeneratingTTS, setIsGeneratingTTS] = useState(false)
+  const [ttsSegments, setTtsSegments] = useState([])
+  const [finalTTSAudio, setFinalTTSAudio] = useState(null)
+  const [ttsError, setTtsError] = useState('')
+  const [segmentAudio, setSegmentAudio] = useState(true)
+  const [maxCharsPerSegment, setMaxCharsPerSegment] = useState(2000)
+  const [isJoiningAudio, setIsJoiningAudio] = useState(false)
+
+  const [ttsSettings, setTtsSettings] = useState({
+    elevenlabs: {
+      voice_id: 'default',
+      model_id: 'eleven_multilingual_v2',
+      stability: 0.5,
+      similarity_boost: 0.5,
+      style: 0.0,
+      use_speaker_boost: true
+    },
+    gemini: {
+      voice_name: 'Aoede',
+      model: 'gemini-2.5-flash-preview-tts',
+      speed: 1.0,
+      pitch: 0.0,
+      volume_gain_db: 0.0
+    }
+  })
+
+  // Função para segmentar texto
+  const segmentText = (text, maxChars = 4000) => {
+    const segments = []
+    const sentences = text.split(/[.!?]+/).filter(s => s.trim())
+
+    let currentSegment = ''
+
+    for (const sentence of sentences) {
+      const trimmedSentence = sentence.trim()
+      if (!trimmedSentence) continue
+
+      const potentialSegment = currentSegment + (currentSegment ? '. ' : '') + trimmedSentence
+
+      if (potentialSegment.length <= maxChars) {
+        currentSegment = potentialSegment
+      } else {
+        if (currentSegment) {
+          segments.push(currentSegment + '.')
+          currentSegment = trimmedSentence
+        } else {
+          // Frase muito longa, dividir por palavras
+          const words = trimmedSentence.split(' ')
+          let wordSegment = ''
+
+          for (const word of words) {
+            const potentialWordSegment = wordSegment + (wordSegment ? ' ' : '') + word
+            if (potentialWordSegment.length <= maxChars) {
+              wordSegment = potentialWordSegment
+            } else {
+              if (wordSegment) {
+                segments.push(wordSegment)
+                wordSegment = word
+              } else {
+                segments.push(word)
+              }
+            }
+          }
+
+          if (wordSegment) {
+            currentSegment = wordSegment
+          }
+        }
+      }
+    }
+
+    if (currentSegment) {
+      segments.push(currentSegment + '.')
+    }
+
+    return segments
+  }
+
+  // Função para recarregar chaves de API (solução simplificada)
+  const reloadApiKeys = async () => {
+    try {
+      console.log('🔄 Recarregando chaves de API...')
+
+      // Primeiro, tentar carregar do localStorage atual
+      let apiKeys = JSON.parse(localStorage.getItem('api_keys') || '{}')
+      console.log('🔍 Chaves atuais no localStorage:', apiKeys)
+
+      // Se não tiver chaves ou não tiver Gemini, criar um conjunto padrão
+      if (!apiKeys.gemini_1 && !apiKeys.gemini) {
+        console.log('🔄 Criando chaves padrão...')
+
+        // Tentar diferentes fontes de dados
+        const sources = [
+          'api_keys',
+          'settings_api_keys',
+          'user_api_keys',
+          'config_api_keys'
+        ]
+
+        for (const source of sources) {
+          try {
+            const data = localStorage.getItem(source)
+            if (data) {
+              const parsed = JSON.parse(data)
+              console.log(`🔍 Dados encontrados em ${source}:`, parsed)
+
+              if (parsed.gemini || parsed.gemini_1) {
+                apiKeys = {
+                  ...apiKeys,
+                  ...parsed,
+                  gemini_1: parsed.gemini || parsed.gemini_1,
+                  gemini: parsed.gemini || parsed.gemini_1
+                }
+                break
+              }
+            }
+          } catch (e) {
+            console.log(`❌ Erro ao ler ${source}:`, e)
+          }
+        }
+
+        // Se ainda não tiver, criar com chaves conhecidas do arquivo
+        if (!apiKeys.gemini_1 && !apiKeys.gemini) {
+          console.log('🔧 Usando chaves conhecidas do backend...')
+          apiKeys = {
+            openai: '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',
+            gemini_1: 'AIzaSyBqUjzLHNPycDIzvwnI5JisOwmNubkfRRc',
+            gemini: 'AIzaSyBqUjzLHNPycDIzvwnI5JisOwmNubkfRRc',
+            openrouter: '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',
+            elevenlabs: '',
+            together: '',
+            rapidapi: '77322fda67msh6bbb767e727a6ebp147c75jsn5b47d75dfb80'
+          }
+        }
+
+        // Salvar no localStorage
+        localStorage.setItem('api_keys', JSON.stringify(apiKeys))
+        console.log('✅ Chaves sincronizadas:', apiKeys)
+      }
+
+      return apiKeys
+
+    } catch (error) {
+      console.error('❌ Erro ao recarregar chaves:', error)
+      throw error
+    }
+  }
+
+  // Função para gerar TTS
+  const generateTTSAudio = async () => {
+    if (!generatedScripts) {
+      setTtsError('Nenhum roteiro encontrado para gerar áudio')
+      return
+    }
+
+    setIsGeneratingTTS(true)
+    setTtsError('')
+    setTtsSegments([])
+    setFinalTTSAudio(null)
+
+    try {
+      // Obter chaves de API
+      let apiKeys = JSON.parse(localStorage.getItem('api_keys') || '{}')
+      console.log('🔑 DEBUG: Chaves de API disponíveis:', Object.keys(apiKeys))
+      console.log('🔑 DEBUG: Chaves completas:', apiKeys)
+
+      // Se não tiver chaves ou não tiver a chave necessária, tentar recarregar do backend
+      const hasElevenLabs = !!apiKeys.elevenlabs
+      const hasGemini = !!(apiKeys.gemini_1 || apiKeys.gemini)
+
+      if ((!hasElevenLabs && ttsProvider === 'elevenlabs') || (!hasGemini && ttsProvider === 'gemini')) {
+        console.log('🔄 Chave não encontrada, tentando recarregar do backend...')
+        try {
+          apiKeys = await reloadApiKeys()
+          console.log('✅ Chaves recarregadas:', apiKeys)
+        } catch (reloadError) {
+          console.error('❌ Erro ao recarregar chaves:', reloadError)
+        }
+      }
+
+      // Preparar texto do roteiro
+      let fullText = ''
+      if (generatedScripts.chapters) {
+        fullText = generatedScripts.chapters
+          .map(chapter => chapter.content || '')
+          .join('\n\n')
+      } else if (typeof generatedScripts === 'string') {
+        fullText = generatedScripts
+      }
+
+      if (!fullText.trim()) {
+        throw new Error('Nenhum texto encontrado para gerar áudio')
+      }
+
+      // Segmentar texto se necessário
+      const textSegments = segmentAudio ? segmentText(fullText, maxCharsPerSegment) : [fullText]
+
+      console.log(`🎵 Gerando ${textSegments.length} segmentos de áudio...`)
+
+      // Determinar configurações baseado no provider
+      let endpoint, apiKey, baseRequestData
+
+      if (ttsProvider === 'elevenlabs') {
+        if (!apiKeys.elevenlabs) {
+          throw new Error('Chave da API ElevenLabs não configurada')
+        }
+
+        endpoint = '/api/automations/generate-tts-elevenlabs'
+        apiKey = apiKeys.elevenlabs
+        baseRequestData = {
+          api_key: apiKey,
+          voice_id: ttsSettings.elevenlabs.voice_id,
+          model_id: ttsSettings.elevenlabs.model_id,
+          stability: ttsSettings.elevenlabs.stability,
+          similarity_boost: ttsSettings.elevenlabs.similarity_boost,
+          style: ttsSettings.elevenlabs.style,
+          use_speaker_boost: ttsSettings.elevenlabs.use_speaker_boost
+        }
+      } else if (ttsProvider === 'gemini') {
+        console.log('🔄 Usando rotação automática de chaves Gemini')
+
+        endpoint = '/api/automations/generate-tts'
+        baseRequestData = {
+          // NÃO enviar api_key - deixar o backend usar rotação automática
+          voice_name: ttsSettings.gemini.voice_name,
+          model: ttsSettings.gemini.model,
+          speed: ttsSettings.gemini.speed,
+          pitch: ttsSettings.gemini.pitch,
+          volume_gain_db: ttsSettings.gemini.volume_gain_db
+        }
+      }
+
+      // Gerar áudio para cada segmento
+      const segments = []
+      for (let i = 0; i < textSegments.length; i++) {
+        const segment = textSegments[i]
+
+        console.log(`🎵 Gerando segmento ${i + 1}/${textSegments.length}...`)
+
+        const requestData = {
+          ...baseRequestData,
+          text: segment
+        }
+
+        // Construir URL completa para debug
+        const fullUrl = window.location.origin.replace(':5173', ':5000') + endpoint
+        console.log(`🔍 URL completa: ${fullUrl}`)
+        console.log(`🔍 Endpoint: ${endpoint}`)
+        console.log(`🔍 Dados da requisição:`, requestData)
+
+        const response = await fetch(endpoint, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify(requestData)
+        })
+
+        console.log(`🔍 Status da resposta: ${response.status}`)
+        console.log(`🔍 Headers da resposta:`, response.headers)
+
+        // Verificar se a resposta é válida
+        if (!response.ok) {
+          const errorText = await response.text()
+          console.log(`❌ Erro HTTP ${response.status}:`, errorText)
+          throw new Error(`HTTP ${response.status}: ${errorText}`)
+        }
+
+        // Verificar se a resposta tem conteúdo
+        const responseText = await response.text()
+        console.log(`🔍 Resposta bruta (${responseText.length} chars):`, responseText.substring(0, 500))
+
+        if (!responseText || responseText.trim() === '') {
+          throw new Error(`Resposta vazia do servidor para segmento ${i + 1}`)
+        }
+
+        // Tentar fazer parse do JSON
+        let result
+        try {
+          result = JSON.parse(responseText)
+        } catch (parseError) {
+          console.log(`❌ Erro ao fazer parse do JSON:`, parseError)
+          console.log(`🔍 Resposta que causou erro:`, responseText)
+          throw new Error(`Resposta inválida do servidor: ${parseError.message}`)
+        }
+
+        console.log(`🔍 Resultado parseado:`, result)
+
+        if (!result.success) {
+          throw new Error(`Erro no segmento ${i + 1}: ${result.error}`)
+        }
+
+        segments.push({
+          index: i + 1,
+          text: segment,
+          audio: result.data,
+          duration: result.data.duration || 0
+        })
+
+        // Adicionar áudio gerado à lista para exibição
+        if (result.data.audio_url) {
+          const newAudio = {
+            id: Date.now() + i,
+            filename: result.data.filename,
+            url: result.data.audio_url,
+            text: segment.substring(0, 100) + (segment.length > 100 ? '...' : ''),
+            voice: result.data.voice_used,
+            size: result.data.size,
+            timestamp: new Date().toLocaleTimeString()
+          }
+
+          setGeneratedAudios(prev => [newAudio, ...prev.slice(0, 9)]) // Manter apenas os 10 mais recentes
+          console.log(`🎵 Áudio adicionado à lista:`, newAudio)
+        }
+
+        // Pequena pausa entre requisições para não sobrecarregar a API
+        if (i < textSegments.length - 1) {
+          await new Promise(resolve => setTimeout(resolve, 1000))
+        }
+      }
+
+      setTtsSegments(segments)
+      console.log(`✅ ${segments.length} segmentos de áudio gerados com sucesso!`)
+
+    } catch (err) {
+      console.error('❌ Erro na geração de áudio:', err)
+      setTtsError(err.message)
+    } finally {
+      setIsGeneratingTTS(false)
+    }
+  }
+
+  // Função para juntar áudios
+  const joinTTSAudio = async () => {
+    if (ttsSegments.length === 0) return
+
+    setIsJoiningAudio(true)
+    setTtsError('')
+
+    try {
+      console.log('🔗 Juntando segmentos de áudio...')
+
+      const response = await fetch('/api/automations/join-audio', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          segments: ttsSegments.map(seg => ({
+            filename: seg.audio.filename,
+            index: seg.index
+          }))
+        })
+      })
+
+      const result = await response.json()
+
+      if (!result.success) {
+        throw new Error(result.error || 'Erro ao juntar áudios')
+      }
+
+      setFinalTTSAudio(result.data)
+      console.log('✅ Áudios unidos com sucesso:', result.data)
+
+    } catch (err) {
+      console.error('❌ Erro ao juntar áudios:', err)
+      setTtsError(err.message)
+    } finally {
+      setIsJoiningAudio(false)
+    }
+  }
+
+  const renderTTSGeneration = () => (
+    <div className="space-y-6">
+      <div className="bg-gray-800 rounded-lg border border-gray-700 p-6">
+        <h3 className="text-xl font-semibold text-white mb-4 flex items-center space-x-2">
+          <Mic size={24} className="text-yellow-400" />
+          <span>Geração de Áudio TTS</span>
+        </h3>
+
+        {/* Status dos Pré-requisitos */}
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
+          <div className="bg-gray-700 rounded-lg p-4">
+            <div className="flex items-center justify-between mb-2">
+              <h4 className="font-medium text-white">Títulos</h4>
+              {generatedTitles ? (
+                <CheckCircle className="w-5 h-5 text-green-400" />
+              ) : (
+                <AlertCircle className="w-5 h-5 text-gray-400" />
+              )}
+            </div>
+            <p className="text-sm text-gray-400">
+              {generatedTitles ? 'Disponíveis' : 'Necessários'}
+            </p>
+          </div>
+
+          <div className="bg-gray-700 rounded-lg p-4">
+            <div className="flex items-center justify-between mb-2">
+              <h4 className="font-medium text-white">Premissas</h4>
+              {generatedPremises ? (
+                <CheckCircle className="w-5 h-5 text-green-400" />
+              ) : (
+                <AlertCircle className="w-5 h-5 text-gray-400" />
+              )}
+            </div>
+            <p className="text-sm text-gray-400">
+              {generatedPremises ? 'Disponíveis' : 'Necessárias'}
+            </p>
+          </div>
+
+          <div className="bg-gray-700 rounded-lg p-4">
+            <div className="flex items-center justify-between mb-2">
+              <h4 className="font-medium text-white">Roteiros</h4>
+              {generatedScripts ? (
+                <CheckCircle className="w-5 h-5 text-green-400" />
+              ) : (
+                <AlertCircle className="w-5 h-5 text-red-400" />
+              )}
+            </div>
+            <p className="text-sm text-gray-400">
+              {generatedScripts ? 'Prontos para TTS' : 'Obrigatórios'}
+            </p>
+          </div>
+        </div>
+
+        {/* DEBUG TEMPORÁRIO */}
+        <div className="mb-4 p-3 bg-yellow-900 border border-yellow-600 rounded-lg">
+          <h4 className="text-yellow-300 font-medium mb-2">🔍 DEBUG TTS</h4>
+          <div className="text-xs text-yellow-200 space-y-1">
+            <p>generatedScripts: {generatedScripts ? 'SIM' : 'NÃO'}</p>
+            <p>Capítulos: {generatedScripts?.chapters?.length || 0}</p>
+            <p>Título: {generatedScripts?.title || 'N/A'}</p>
+            <p>TTS Segments: {ttsSegments.length}</p>
+            <p>Final Audio: {finalTTSAudio ? 'SIM' : 'NÃO'}</p>
+            <p>API Keys: {(() => {
+              const keys = JSON.parse(localStorage.getItem('api_keys') || '{}')
+              return Object.keys(keys).join(', ')
+            })()}</p>
+            <div className="flex gap-2 mt-2">
+              <button
+                onClick={() => {
+                  console.log('🔍 DEBUG MANUAL:', { generatedScripts, ttsSegments, finalTTSAudio })
+                  const saved = localStorage.getItem('generated_scripts')
+                  const ttsData = localStorage.getItem('tts_script_data')
+                  console.log('🔍 DEBUG localStorage:', {
+                    scripts: saved ? JSON.parse(saved) : null,
+                    ttsData: ttsData ? JSON.parse(ttsData) : null
+                  })
+                }}
+                className="px-2 py-1 bg-yellow-600 text-white rounded text-xs"
+              >
+                Debug Console
+              </button>
+              <button
+                onClick={() => {
+                  const saved = localStorage.getItem('generated_scripts')
+                  const ttsData = localStorage.getItem('tts_script_data')
+                  if (saved) {
+                    setGeneratedScripts(JSON.parse(saved))
+                    console.log('🔄 Dados recarregados do localStorage')
+                  } else if (ttsData) {
+                    setGeneratedScripts(JSON.parse(ttsData))
+                    console.log('🔄 Dados TTS recarregados')
+                  }
+                }}
+                className="px-2 py-1 bg-blue-600 text-white rounded text-xs"
+              >
+                Recarregar Dados
+              </button>
+              <button
+                onClick={() => {
+                  // Redirecionar para configurações
+                  window.location.href = '/settings'
+                }}
+                className="px-2 py-1 bg-green-600 text-white rounded text-xs"
+              >
+                Configurar APIs
+              </button>
+              <button
+                onClick={async () => {
+                  try {
+                    const keys = await reloadApiKeys()
+                    alert('✅ Chaves sincronizadas com sucesso!')
+                    console.log('🔄 Chaves sincronizadas:', keys)
+                    // Forçar re-render
+                    window.location.reload()
+                  } catch (error) {
+                    alert('❌ Erro ao sincronizar chaves: ' + error.message)
+                    console.error('Erro detalhado:', error)
+                  }
+                }}
+                className="px-2 py-1 bg-purple-600 text-white rounded text-xs"
+              >
+                Sincronizar Chaves
+              </button>
+              <button
+                onClick={async () => {
+                  try {
+                    console.log('🔍 Testando rota TTS...')
+                    const response = await fetch('/api/automations/generate-tts', {
+                      method: 'POST',
+                      headers: { 'Content-Type': 'application/json' },
+                      body: JSON.stringify({
+                        text: 'teste',
+                        api_key: 'AIzaSyBqUjzLHNPycDIzvwnI5JisOwmNubkfRRc',
+                        voice_name: 'Aoede'
+                      })
+                    })
+                    console.log('🔍 Status:', response.status)
+                    const result = await response.text()
+                    console.log('🔍 Resposta:', result)
+                    alert(`Status: ${response.status}\nResposta: ${result.substring(0, 200)}`)
+                  } catch (error) {
+                    console.error('❌ Erro no teste:', error)
+                    alert('❌ Erro: ' + error.message)
+                  }
+                }}
+                className="px-2 py-1 bg-yellow-600 text-white rounded text-xs"
+              >
+                Testar Rota
+              </button>
+              <button
+                onClick={() => {
+                  // Solução alternativa: abrir configurações em nova aba e instruir o usuário
+                  window.open('/settings', '_blank')
+                  alert('📋 INSTRUÇÕES:\n\n1. Configure suas chaves na aba que abriu\n2. Clique "Salvar"\n3. Volte para esta aba\n4. Clique "Recarregar Dados"\n5. Teste novamente')
+                }}
+                className="px-2 py-1 bg-orange-600 text-white rounded text-xs"
+              >
+                Abrir Configurações
+              </button>
+              <button
+                onClick={() => {
+                  // Forçar criação das chaves conhecidas
+                  const knownKeys = {
+                    openai: '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',
+                    gemini_1: 'AIzaSyBqUjzLHNPycDIzvwnI5JisOwmNubkfRRc',
+                    gemini: 'AIzaSyBqUjzLHNPycDIzvwnI5JisOwmNubkfRRc',
+                    openrouter: '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',
+                    elevenlabs: '',
+                    together: '',
+                    rapidapi: '77322fda67msh6bbb767e727a6ebp147c75jsn5b47d75dfb80'
+                  }
+                  localStorage.setItem('api_keys', JSON.stringify(knownKeys))
+                  alert('✅ Chaves forçadas! Teste agora.')
+                  window.location.reload()
+                }}
+                className="px-2 py-1 bg-red-600 text-white rounded text-xs"
+              >
+                Forçar Chaves
+              </button>
+            </div>
+          </div>
+        </div>
+
+        {/* Conteúdo Principal */}
+        {generatedScripts ? (
+          <div className="space-y-6">
+            {/* Configurações de TTS */}
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+              {/* Configurações */}
+              <div className="space-y-4">
+                <h4 className="text-lg font-semibold text-white mb-3">⚙️ Configurações de TTS</h4>
+
+                {/* Provedor de TTS */}
+                <div>
+                  <label className="block text-sm font-medium text-gray-300 mb-2">
+                    Provedor de TTS
+                  </label>
+                  <div className="grid grid-cols-2 gap-3">
+                    <div
+                      onClick={() => setTtsProvider('elevenlabs')}
+                      className={`bg-gray-700 border rounded-lg p-3 cursor-pointer transition-colors ${
+                        ttsProvider === 'elevenlabs'
+                          ? 'border-purple-500 bg-purple-900/30'
+                          : 'border-gray-600 hover:border-purple-500'
+                      }`}
+                    >
+                      <div className="flex items-center space-x-2">
+                        <Mic className="w-4 h-4 text-purple-400" />
+                        <span className="text-white font-medium">ElevenLabs</span>
+                      </div>
+                      <p className="text-xs text-gray-400 mt-1">Melhor qualidade</p>
+                    </div>
+                    <div
+                      onClick={() => setTtsProvider('gemini')}
+                      className={`bg-gray-700 border rounded-lg p-3 cursor-pointer transition-colors ${
+                        ttsProvider === 'gemini'
+                          ? 'border-blue-500 bg-blue-900/30'
+                          : 'border-gray-600 hover:border-blue-500'
+                      }`}
+                    >
+                      <div className="flex items-center space-x-2">
+                        <Bot className="w-4 h-4 text-blue-400" />
+                        <span className="text-white font-medium">Gemini TTS</span>
+                      </div>
+                      <p className="text-xs text-gray-400 mt-1">Gratuito</p>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Configurações de Segmentação */}
+                <div className="space-y-3">
+                  <div className="flex items-center space-x-3 p-3 bg-blue-900/30 border border-blue-600 rounded-lg">
+                    <input
+                      type="checkbox"
+                      id="segmentAudio"
+                      checked={segmentAudio}
+                      onChange={(e) => setSegmentAudio(e.target.checked)}
+                      className="w-4 h-4 text-blue-600 bg-gray-100 border-gray-300 rounded focus:ring-blue-500"
+                    />
+                    <label htmlFor="segmentAudio" className="text-sm font-medium text-blue-200">
+                      Segmentar áudio (recomendado para textos longos)
+                    </label>
+                  </div>
+
+                  {segmentAudio && (
+                    <div>
+                      <label className="block text-sm font-medium text-gray-300 mb-2">
+                        Máximo de caracteres por segmento
+                      </label>
+                      <select
+                        value={maxCharsPerSegment}
+                        onChange={(e) => setMaxCharsPerSegment(parseInt(e.target.value))}
+                        className="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
+                      >
+                        <option value={2000}>2.000 caracteres (mais seguro)</option>
+                        <option value={3000}>3.000 caracteres (balanceado)</option>
+                        <option value={4000}>4.000 caracteres (máximo recomendado)</option>
+                        <option value={5000}>5.000 caracteres (pode dar erro)</option>
+                      </select>
+                      <p className="text-xs text-gray-400 mt-1">
+                        Textos muito longos podem causar erro nas APIs. Segmentar é mais seguro.
+                      </p>
+                    </div>
+                  )}
+                </div>
+
+                {/* Configurações específicas do provedor */}
+                {ttsProvider === 'elevenlabs' && (
+                  <div className="space-y-3">
+                    <h5 className="text-md font-medium text-white">🎤 Configurações ElevenLabs</h5>
+
+                    <div>
+                      <label className="block text-sm font-medium text-gray-300 mb-2">Voz</label>
+                      <select
+                        value={ttsSettings.elevenlabs.voice_id}
+                        onChange={(e) => setTtsSettings(prev => ({
+                          ...prev,
+                          elevenlabs: { ...prev.elevenlabs, voice_id: e.target.value }
+                        }))}
+                        className="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-purple-500"
+                      >
+                        <option value="default">Rachel (Padrão)</option>
+                        <option value="21m00Tcm4TlvDq8ikWAM">Rachel - Feminina Americana</option>
+                        <option value="AZnzlk1XvdvUeBnXmlld">Domi - Feminina Jovem</option>
+                        <option value="EXAVITQu4vr4xnSDxMaL">Bella - Feminina Suave</option>
+                        <option value="ErXwobaYiN019PkySvjV">Antoni - Masculina Americana</option>
+                        <option value="VR6AewLTigWG4xSOukaG">Arnold - Masculina Grave</option>
+                        <option value="pNInz6obpgDQGcFmaJgB">Adam - Masculina Profunda</option>
+                      </select>
+                    </div>
+
+                    <div className="grid grid-cols-2 gap-3">
+                      <div>
+                        <label className="block text-sm font-medium text-gray-300 mb-2">
+                          Estabilidade: {ttsSettings.elevenlabs.stability}
+                        </label>
+                        <input
+                          type="range"
+                          min="0"
+                          max="1"
+                          step="0.1"
+                          value={ttsSettings.elevenlabs.stability}
+                          onChange={(e) => setTtsSettings(prev => ({
+                            ...prev,
+                            elevenlabs: { ...prev.elevenlabs, stability: parseFloat(e.target.value) }
+                          }))}
+                          className="w-full h-2 bg-gray-700 rounded-lg appearance-none cursor-pointer"
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-sm font-medium text-gray-300 mb-2">
+                          Similaridade: {ttsSettings.elevenlabs.similarity_boost}
+                        </label>
+                        <input
+                          type="range"
+                          min="0"
+                          max="1"
+                          step="0.1"
+                          value={ttsSettings.elevenlabs.similarity_boost}
+                          onChange={(e) => setTtsSettings(prev => ({
+                            ...prev,
+                            elevenlabs: { ...prev.elevenlabs, similarity_boost: parseFloat(e.target.value) }
+                          }))}
+                          className="w-full h-2 bg-gray-700 rounded-lg appearance-none cursor-pointer"
+                        />
+                      </div>
+                    </div>
+                  </div>
+                )}
+
+                {ttsProvider === 'gemini' && (
+                  <div className="space-y-3">
+                    <h5 className="text-md font-medium text-white">🤖 Configurações Gemini TTS</h5>
+
+                    <div>
+                      <label className="block text-sm font-medium text-gray-300 mb-2">Voz</label>
+                      <select
+                        value={ttsSettings.gemini.voice_name}
+                        onChange={(e) => setTtsSettings(prev => ({
+                          ...prev,
+                          gemini: { ...prev.gemini, voice_name: e.target.value }
+                        }))}
+                        className="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
+                      >
+                        <option value="Aoede">Aoede - Feminina Suave</option>
+                        <option value="Charon">Charon - Masculina Grave</option>
+                        <option value="Fenrir">Fenrir - Masculina Forte</option>
+                        <option value="Kore">Kore - Feminina Jovem</option>
+                        <option value="Puck">Puck - Masculina Alegre</option>
+                        <option value="Sage">Sage - Feminina Sábia</option>
+                      </select>
+                    </div>
+
+                    <div className="grid grid-cols-3 gap-3">
+                      <div>
+                        <label className="block text-sm font-medium text-gray-300 mb-2">
+                          Velocidade: {ttsSettings.gemini.speed}x
+                        </label>
+                        <input
+                          type="range"
+                          min="0.5"
+                          max="2.0"
+                          step="0.1"
+                          value={ttsSettings.gemini.speed}
+                          onChange={(e) => setTtsSettings(prev => ({
+                            ...prev,
+                            gemini: { ...prev.gemini, speed: parseFloat(e.target.value) }
+                          }))}
+                          className="w-full h-2 bg-gray-700 rounded-lg appearance-none cursor-pointer"
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-sm font-medium text-gray-300 mb-2">
+                          Tom: {ttsSettings.gemini.pitch > 0 ? '+' : ''}{ttsSettings.gemini.pitch}
+                        </label>
+                        <input
+                          type="range"
+                          min="-20"
+                          max="20"
+                          step="1"
+                          value={ttsSettings.gemini.pitch}
+                          onChange={(e) => setTtsSettings(prev => ({
+                            ...prev,
+                            gemini: { ...prev.gemini, pitch: parseFloat(e.target.value) }
+                          }))}
+                          className="w-full h-2 bg-gray-700 rounded-lg appearance-none cursor-pointer"
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-sm font-medium text-gray-300 mb-2">
+                          Volume: {ttsSettings.gemini.volume_gain_db > 0 ? '+' : ''}{ttsSettings.gemini.volume_gain_db}dB
+                        </label>
+                        <input
+                          type="range"
+                          min="-96"
+                          max="16"
+                          step="1"
+                          value={ttsSettings.gemini.volume_gain_db}
+                          onChange={(e) => setTtsSettings(prev => ({
+                            ...prev,
+                            gemini: { ...prev.gemini, volume_gain_db: parseFloat(e.target.value) }
+                          }))}
+                          className="w-full h-2 bg-gray-700 rounded-lg appearance-none cursor-pointer"
+                        />
+                      </div>
+                    </div>
+                  </div>
+                )}
+
+                {/* Verificação de API Keys */}
+                {(() => {
+                  const apiKeys = JSON.parse(localStorage.getItem('api_keys') || '{}')
+                  const hasElevenLabs = !!apiKeys.elevenlabs
+                  const hasGemini = !!(apiKeys.gemini_1 || apiKeys.gemini)
+                  const hasSelectedProviderKey = ttsProvider === 'elevenlabs' ? hasElevenLabs : hasGemini
+
+                  console.log('🔍 Verificação de chaves:', {
+                    ttsProvider,
+                    hasElevenLabs,
+                    hasGemini,
+                    hasSelectedProviderKey,
+                    availableKeys: Object.keys(apiKeys),
+                    gemini_1: !!apiKeys.gemini_1,
+                    gemini: !!apiKeys.gemini,
+                    elevenlabs: !!apiKeys.elevenlabs
+                  })
+
+                  if (!hasSelectedProviderKey) {
+                    return (
+                      <div className="p-4 bg-red-900/30 border border-red-600 rounded-lg">
+                        <div className="flex items-center gap-3 text-red-300 mb-3">
+                          <AlertCircle className="w-5 h-5" />
+                          <span className="font-semibold">
+                            Chave da API {ttsProvider === 'elevenlabs' ? 'ElevenLabs' : 'Gemini'} não configurada
+                          </span>
+                        </div>
+                        <p className="text-sm text-red-200 mb-3">
+                          Para usar o TTS, você precisa configurar a chave da API do provedor selecionado.
+                        </p>
+                        <div className="text-xs text-red-300 mb-3 p-2 bg-red-800/30 rounded">
+                          <p>Debug: Chaves disponíveis: {Object.keys(apiKeys).join(', ') || 'Nenhuma'}</p>
+                          <p>Procurando por: {ttsProvider === 'elevenlabs' ? 'elevenlabs' : 'gemini_1 ou gemini'}</p>
+                        </div>
+                        <div className="flex gap-2">
+                          <button
+                            onClick={() => window.location.href = '/settings'}
+                            className="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors"
+                          >
+                            Configurar Chaves
+                          </button>
+                          <button
+                            onClick={async () => {
+                              try {
+                                await reloadApiKeys()
+                                window.location.reload()
+                              } catch (error) {
+                                alert('Erro ao sincronizar: ' + error.message)
+                              }
+                            }}
+                            className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
+                          >
+                            Sincronizar Chaves
+                          </button>
+                        </div>
+                      </div>
+                    )
+                  }
+
+                  return (
+                    <button
+                      onClick={generateTTSAudio}
+                      disabled={isGeneratingTTS}
+                      className="w-full px-4 py-3 bg-gradient-to-r from-yellow-600 to-orange-600 text-white rounded-lg hover:from-yellow-700 hover:to-orange-700 transition-all flex items-center justify-center space-x-2 disabled:opacity-50 disabled:cursor-not-allowed"
+                    >
+                      {isGeneratingTTS ? (
+                        <>
+                          <Loader2 size={18} className="animate-spin" />
+                          <span>Gerando Áudio...</span>
+                        </>
+                      ) : (
+                        <>
+                          <Mic size={18} />
+                          <span>Gerar Áudio TTS</span>
+                        </>
+                      )}
+                    </button>
+                  )
+                })()}
+              </div>
+
+              {/* Áudios Gerados */}
+              {generatedAudios.length > 0 && (
+                <div className="bg-gray-700 rounded-lg p-4 mb-4">
+                  <h4 className="font-medium text-white mb-3">🎵 Áudios Gerados Recentemente</h4>
+                  <div className="space-y-3 max-h-60 overflow-y-auto">
+                    {generatedAudios.map((audio) => (
+                      <div key={audio.id} className="bg-gray-800 rounded-lg p-3 border border-gray-600">
+                        <div className="flex items-center justify-between mb-2">
+                          <div className="flex items-center space-x-2">
+                            <span className="text-blue-400">🎵</span>
+                            <span className="text-sm font-medium text-white">{audio.filename}</span>
+                            <span className="text-xs text-gray-400">({(audio.size / 1024).toFixed(1)} KB)</span>
+                          </div>
+                          <span className="text-xs text-gray-400">{audio.timestamp}</span>
+                        </div>
+
+                        <div className="text-xs text-gray-300 mb-2">
+                          <strong>Voz:</strong> {audio.voice} | <strong>Texto:</strong> {audio.text}
+                        </div>
+
+                        <audio
+                          controls
+                          className="w-full h-8"
+                          style={{ filter: 'invert(1) hue-rotate(180deg)' }}
+                        >
+                          <source src={audio.url} type="audio/wav" />
+                          Seu navegador não suporta o elemento de áudio.
+                        </audio>
+                      </div>
+                    ))}
+                  </div>
+
+                  <div className="mt-3 flex justify-between items-center">
+                    <span className="text-xs text-gray-400">
+                      Mostrando {generatedAudios.length} áudio(s) mais recente(s)
+                    </span>
+                    <button
+                      onClick={() => setGeneratedAudios([])}
+                      className="text-xs text-red-400 hover:text-red-300 transition-colors"
+                    >
+                      Limpar Lista
+                    </button>
+                  </div>
+                </div>
+              )}
+
+              {/* Preview do Roteiro */}
+              <div className="bg-gray-700 rounded-lg p-4">
+                <h4 className="font-medium text-white mb-3">📝 Preview do Roteiro</h4>
+                <div className="space-y-3 max-h-96 overflow-y-auto">
+                  <div className="text-sm text-gray-300">
+                    <strong>Título:</strong> {generatedScripts.title || 'Sem título'}
+                  </div>
+                  <div className="text-sm text-gray-300">
+                    <strong>Capítulos:</strong> {generatedScripts.chapters?.length || 0}
+                  </div>
+                  <div className="text-sm text-gray-300">
+                    <strong>Palavras totais:</strong> {generatedScripts.total_words || 'N/A'}
+                  </div>
+
+                  {generatedScripts.chapters && generatedScripts.chapters.slice(0, 3).map((chapter, index) => (
+                    <div key={index} className="bg-gray-600 rounded p-3">
+                      <div className="text-sm font-medium text-white mb-1">
+                        Capítulo {index + 1}: {chapter.title}
+                      </div>
+                      <div className="text-xs text-gray-300 line-clamp-3">
+                        {chapter.content?.substring(0, 150)}...
+                      </div>
+                    </div>
+                  ))}
+
+                  {generatedScripts.chapters && generatedScripts.chapters.length > 3 && (
+                    <div className="text-center text-sm text-gray-400">
+                      ... e mais {generatedScripts.chapters.length - 3} capítulos
+                    </div>
+                  )}
+                </div>
+              </div>
+            </div>
+
+            {/* Erro de TTS */}
+            {ttsError && (
+              <div className="flex items-center gap-3 p-4 bg-red-900/30 border border-red-600 rounded-lg text-red-300">
+                <AlertCircle className="w-5 h-5" />
+                <span>{ttsError}</span>
+              </div>
+            )}
+
+            {/* Segmentos de Áudio Gerados */}
+            {ttsSegments.length > 0 && (
+              <div className="space-y-4">
+                <div className="p-4 bg-green-900/30 border border-green-600 rounded-lg">
+                  <div className="flex items-center justify-between mb-4">
+                    <div className="flex items-center gap-3 text-green-300">
+                      <CheckCircle className="w-5 h-5" />
+                      <span className="font-semibold">
+                        {ttsSegments.length} segmentos gerados com sucesso!
+                      </span>
+                    </div>
+
+                    {ttsSegments.length > 1 && (
+                      <button
+                        onClick={joinTTSAudio}
+                        disabled={isJoiningAudio}
+                        className="flex items-center gap-2 px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors disabled:opacity-50"
+                      >
+                        {isJoiningAudio ? (
+                          <>
+                            <Loader2 className="w-4 h-4 animate-spin" />
+                            Juntando...
+                          </>
+                        ) : (
+                          <>
+                            <Download className="w-4 h-4" />
+                            Juntar Áudios
+                          </>
+                        )}
+                      </button>
+                    )}
+                  </div>
+
+                  {/* Lista de Segmentos */}
+                  <div className="space-y-3 max-h-60 overflow-y-auto">
+                    {ttsSegments.map((segment, index) => (
+                      <div key={index} className="bg-gray-700 p-3 rounded-lg border border-gray-600">
+                        <div className="flex items-center justify-between mb-2">
+                          <span className="font-medium text-sm text-white">
+                            Segmento {segment.index}
+                          </span>
+                          <div className="flex gap-2">
+                            <button
+                              onClick={() => {
+                                const audio = new Audio(`/api/automations/audio/${segment.audio.filename}`)
+                                audio.play()
+                              }}
+                              className="p-1 text-green-400 hover:bg-green-900/30 rounded"
+                              title="Reproduzir segmento"
+                            >
+                              <Play className="w-4 h-4" />
+                            </button>
+                            <button
+                              onClick={() => {
+                                const link = document.createElement('a')
+                                link.href = `/api/automations/download/${segment.audio.filename}`
+                                link.download = segment.audio.filename
+                                document.body.appendChild(link)
+                                link.click()
+                                document.body.removeChild(link)
+                              }}
+                              className="p-1 text-blue-400 hover:bg-blue-900/30 rounded"
+                              title="Download segmento"
+                            >
+                              <Download className="w-4 h-4" />
+                            </button>
+                          </div>
+                        </div>
+                        <div className="text-xs text-gray-400 mb-2">
+                          {segment.audio.size ? `${(segment.audio.size / 1024).toFixed(1)} KB` : 'N/A'} • {segment.duration ? `${segment.duration.toFixed(1)}s` : 'N/A'}
+                        </div>
+                        <div className="text-xs text-gray-500 line-clamp-2">
+                          {segment.text.substring(0, 100)}...
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {/* Áudio Final Unificado */}
+            {finalTTSAudio && (
+              <div className="p-4 bg-purple-900/30 border border-purple-600 rounded-lg">
+                <div className="flex items-center gap-3 text-purple-300 mb-4">
+                  <CheckCircle className="w-5 h-5" />
+                  <span className="font-semibold">Áudio final unificado!</span>
+                </div>
+
+                <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm mb-4">
+                  <div className="flex items-center gap-2 text-gray-300">
+                    <FileAudio className="w-4 h-4" />
+                    <span>{finalTTSAudio.size ? `${(finalTTSAudio.size / 1024 / 1024).toFixed(1)} MB` : 'N/A'}</span>
+                  </div>
+                  <div className="flex items-center gap-2 text-gray-300">
+                    <Clock className="w-4 h-4" />
+                    <span>{finalTTSAudio.duration ? `${Math.floor(finalTTSAudio.duration / 60)}:${Math.floor(finalTTSAudio.duration % 60).toString().padStart(2, '0')}` : 'N/A'}</span>
+                  </div>
+                  <div className="flex items-center gap-2 text-gray-300">
+                    <User className="w-4 h-4" />
+                    <span>{finalTTSAudio.segments_count} segmentos</span>
+                  </div>
+                  <div className="flex items-center gap-2 text-gray-300">
+                    <Mic className="w-4 h-4" />
+                    <span>{ttsProvider}</span>
+                  </div>
+                </div>
+
+                <div className="flex gap-3">
+                  <button
+                    onClick={() => {
+                      const audio = new Audio(`/api/automations/audio/${finalTTSAudio.filename}`)
+                      audio.play()
+                    }}
+                    className="flex items-center gap-2 px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors"
+                  >
+                    <Play className="w-4 h-4" />
+                    Reproduzir Final
+                  </button>
+
+                  <button
+                    onClick={() => {
+                      const link = document.createElement('a')
+                      link.href = `/api/automations/download/${finalTTSAudio.filename}`
+                      link.download = finalTTSAudio.filename
+                      document.body.appendChild(link)
+                      link.click()
+                      document.body.removeChild(link)
+                    }}
+                    className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
+                  >
+                    <Download className="w-4 h-4" />
+                    Download Final
+                  </button>
+                </div>
+              </div>
+            )}
+          </div>
+        ) : (
+          <div className="text-center py-12">
+            <Mic size={48} className="mx-auto mb-4 text-gray-500 opacity-50" />
+            <h3 className="text-lg font-medium text-white mb-2">🎵 Geração de Áudio TTS</h3>
+            <p className="text-gray-400 text-sm mb-4">
+              Primeiro você precisa gerar um roteiro para converter em áudio
+            </p>
+            <div className="text-xs text-gray-500 space-y-1">
+              <p>1. 📺 Extraia títulos do YouTube</p>
+              <p>2. 🎯 Gere novos títulos</p>
+              <p>3. 💡 Crie premissas</p>
+              <p>4. 📝 Gere roteiros</p>
+              <p>5. 🎵 Converta em áudio</p>
+            </div>
+            <div className="mt-6 flex justify-center space-x-3">
+              <button
+                onClick={() => setActiveTab('youtube')}
+                className="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors text-sm"
+              >
+                Começar Extração
+              </button>
+              <button
+                onClick={() => setActiveTab('workflow')}
+                className="px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition-colors text-sm"
+              >
+                Automação Completa
+              </button>
+            </div>
+          </div>
+        )}
+      </div>
+    </div>
+  )
+
   const renderVideoEditor = () => (
     <div className="space-y-6">
       <div className="bg-gray-800 rounded-lg border border-gray-700 p-6">
@@ -2745,9 +4011,11 @@ Para cada título, forneça:
           {activeTab === 'titles' && renderTitleGeneration()}
           {activeTab === 'premise' && renderPremiseGeneration()}
           {activeTab === 'scripts' && renderScriptGeneration()}
+          {activeTab === 'tts' && renderTTSGeneration()}
           {activeTab === 'video-edit' && renderVideoEditor()}
           {activeTab === 'workflow' && renderCompleteWorkflow()}
-          {activeTab !== 'youtube' && activeTab !== 'titles' && activeTab !== 'premise' && activeTab !== 'scripts' && activeTab !== 'video-edit' && activeTab !== 'workflow' && (
+          {activeTab === 'api-tests' && renderAPITests()}
+          {activeTab !== 'youtube' && activeTab !== 'titles' && activeTab !== 'premise' && activeTab !== 'scripts' && activeTab !== 'tts' && activeTab !== 'video-edit' && activeTab !== 'workflow' && activeTab !== 'api-tests' && (
             <div className="text-center py-12">
               <Target size={48} className="text-purple-400 mx-auto mb-4" />
               <h3 className="text-xl font-semibold text-white mb-2">Em desenvolvimento</h3>

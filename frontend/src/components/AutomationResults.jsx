@@ -19,8 +19,10 @@ import {
   Clock,
   Eye,
   Download,
-  Package
+  Package,
+  Volume2
 } from 'lucide-react'
+
 
 const AutomationResults = ({ results, isVisible, onClose }) => {
   const [expandedSections, setExpandedSections] = useState({
@@ -30,7 +32,14 @@ const AutomationResults = ({ results, isVisible, onClose }) => {
   })
   const [copiedItems, setCopiedItems] = useState({})
 
+
   if (!results || !isVisible) return null
+
+  // DEBUG: Verificar estrutura dos dados
+  console.log('🔍 DEBUG AutomationResults - Dados recebidos:', results)
+  console.log('🔍 DEBUG AutomationResults - Títulos:', results.titles)
+  console.log('🔍 DEBUG AutomationResults - Premissas:', results.premises)
+  console.log('🔍 DEBUG AutomationResults - Roteiros:', results.scripts)
 
   const toggleSection = (section) => {
     setExpandedSections(prev => ({
@@ -51,19 +60,46 @@ const AutomationResults = ({ results, isVisible, onClose }) => {
     }
   }
 
+  // Função para obter dados de forma mais robusta
+  const getResultData = () => {
+    console.log('🔍 DEBUG: Extraindo dados dos resultados...')
+
+    // Títulos - tentar diferentes estruturas
+    let bestTitle = 'Título não disponível'
+    if (results.titles?.data?.generated_titles?.length > 0) {
+      const firstTitle = results.titles.data.generated_titles[0]
+      bestTitle = typeof firstTitle === 'string' ? firstTitle : firstTitle?.title || firstTitle
+    } else if (results.titles?.generated_titles?.length > 0) {
+      const firstTitle = results.titles.generated_titles[0]
+      bestTitle = typeof firstTitle === 'string' ? firstTitle : firstTitle?.title || firstTitle
+    }
+    console.log('🔍 DEBUG: Título extraído:', bestTitle)
+
+    // Premissas - tentar diferentes estruturas
+    let bestPremise = null
+    if (results.premises?.premises?.length > 0) {
+      bestPremise = results.premises.premises[0]
+    } else if (results.premises?.length > 0) {
+      bestPremise = results.premises[0]
+    }
+    console.log('🔍 DEBUG: Premissa extraída:', bestPremise)
+
+    // Roteiros - tentar diferentes estruturas
+    let script = null
+    if (results.scripts?.scripts) {
+      script = results.scripts.scripts
+    } else if (results.scripts) {
+      script = results.scripts
+    }
+    console.log('🔍 DEBUG: Roteiro extraído:', script)
+
+    return { bestTitle, bestPremise, script }
+  }
+
   const exportFinalDocuments = () => {
     if (!results) return
 
-    // Pegar o melhor título (primeiro da lista)
-    const bestTitle = results.titles?.data?.generated_titles?.[0]?.title ||
-                     results.titles?.data?.generated_titles?.[0] ||
-                     'Título não disponível'
-
-    // Pegar a primeira premissa
-    const bestPremise = results.premises?.premises?.[0] || null
-
-    // Pegar o roteiro completo
-    const script = results.scripts?.scripts || null
+    const { bestTitle, bestPremise, script } = getResultData()
 
     // Criar documento final
     let finalDocument = `# 📄 DOCUMENTOS FINAIS DA AUTOMAÇÃO\n\n`
@@ -99,8 +135,8 @@ const AutomationResults = ({ results, isVisible, onClose }) => {
     downloadDocument(finalDocument, 'documentos-finais.md')
   }
 
-  const downloadDocument = (content, filename) => {
-    const blob = new Blob([content], { type: 'text/markdown;charset=utf-8' })
+  const downloadDocument = (content, filename, type = 'text/markdown') => {
+    const blob = new Blob([content], { type: `${type};charset=utf-8` })
     const url = URL.createObjectURL(blob)
     const link = document.createElement('a')
     link.href = url
@@ -109,6 +145,45 @@ const AutomationResults = ({ results, isVisible, onClose }) => {
     link.click()
     document.body.removeChild(link)
     URL.revokeObjectURL(url)
+  }
+
+  const exportAsText = () => {
+    if (!results) return
+
+    const { bestTitle, bestPremise, script } = getResultData()
+
+    // Criar documento em formato TXT simples
+    let textDocument = `DOCUMENTOS FINAIS DA AUTOMACAO\n`
+    textDocument += `=====================================\n\n`
+
+    textDocument += `TITULO SELECIONADO:\n`
+    textDocument += `${bestTitle}\n\n`
+
+    if (bestPremise) {
+      textDocument += `PREMISSA:\n`
+      textDocument += `${bestPremise.premise || bestPremise}\n\n`
+    }
+
+    if (script && script.chapters) {
+      textDocument += `ROTEIRO COMPLETO:\n`
+      textDocument += `Titulo: ${script.title || 'Sem título'}\n`
+      textDocument += `Total de capitulos: ${script.chapters.length}\n`
+      textDocument += `Total de palavras: ${script.total_words || 'N/A'}\n\n`
+
+      script.chapters.forEach((chapter, index) => {
+        textDocument += `--- CAPITULO ${index + 1} ---\n`
+        textDocument += `Titulo: ${chapter.title || `Capítulo ${index + 1}`}\n`
+        textDocument += `Palavras: ${chapter.word_count || 'N/A'}\n\n`
+        textDocument += `${chapter.content || 'Conteúdo não disponível'}\n\n`
+        textDocument += `${'='.repeat(50)}\n\n`
+      })
+    }
+
+    // Copiar para clipboard
+    copyToClipboard(textDocument, 'text-export')
+
+    // Fazer download
+    downloadDocument(textDocument, 'documentos-finais.txt', 'text/plain')
   }
 
   const formatScore = (score) => {
@@ -187,61 +262,88 @@ const AutomationResults = ({ results, isVisible, onClose }) => {
                   </h3>
 
                   <div className="space-y-3">
-                    {/* Título Final */}
-                    <div className="bg-white/70 rounded-lg p-3 border border-green-200">
-                      <h4 className="font-semibold text-green-700 text-sm mb-1">🎯 TÍTULO SELECIONADO:</h4>
-                      <p className="text-gray-800 font-medium">
-                        {results?.titles?.data?.generated_titles?.[0]?.title ||
-                         results?.titles?.data?.generated_titles?.[0] ||
-                         'Título não disponível'}
-                      </p>
-                    </div>
+                    {(() => {
+                      const { bestTitle, bestPremise, script } = getResultData()
 
-                    {/* Premissa Final */}
-                    {results?.premises?.premises?.[0] && (
-                      <div className="bg-white/70 rounded-lg p-3 border border-green-200">
-                        <h4 className="font-semibold text-green-700 text-sm mb-1">💡 PREMISSA:</h4>
-                        <p className="text-gray-800 text-sm">
-                          {results.premises.premises[0].premise.substring(0, 150)}...
-                        </p>
-                      </div>
-                    )}
+                      return (
+                        <>
+                          {/* Título Final */}
+                          <div className="bg-white/70 rounded-lg p-3 border border-green-200">
+                            <h4 className="font-semibold text-green-700 text-sm mb-1">🎯 TÍTULO SELECIONADO:</h4>
+                            <p className="text-gray-800 font-medium">
+                              {bestTitle}
+                            </p>
+                          </div>
 
-                    {/* Roteiro Final */}
-                    {results?.scripts?.scripts?.chapters && (
-                      <div className="bg-white/70 rounded-lg p-3 border border-green-200">
-                        <h4 className="font-semibold text-green-700 text-sm mb-1">📝 ROTEIRO:</h4>
-                        <p className="text-gray-800 text-sm">
-                          {results.scripts.scripts.chapters.length} capítulos prontos
-                          {results.scripts.scripts.title && ` - "${results.scripts.scripts.title}"`}
-                        </p>
-                      </div>
-                    )}
+                          {/* Premissa Final */}
+                          {bestPremise && (
+                            <div className="bg-white/70 rounded-lg p-3 border border-green-200">
+                              <h4 className="font-semibold text-green-700 text-sm mb-1">💡 PREMISSA:</h4>
+                              <p className="text-gray-800 text-sm">
+                                {(bestPremise.premise || bestPremise).substring(0, 150)}...
+                              </p>
+                            </div>
+                          )}
+
+                          {/* Roteiro Final */}
+                          {script && script.chapters && (
+                            <div className="bg-white/70 rounded-lg p-3 border border-green-200">
+                              <h4 className="font-semibold text-green-700 text-sm mb-1">📝 ROTEIRO:</h4>
+                              <p className="text-gray-800 text-sm">
+                                {script.chapters.length} capítulos prontos
+                                {script.title && ` - "${script.title}"`}
+                              </p>
+                            </div>
+                          )}
+                        </>
+                      )
+                    })()}
                   </div>
                 </div>
 
                 <div className="ml-4 flex flex-col gap-2">
+                  <div className="flex gap-2">
+                    <button
+                      onClick={exportFinalDocuments}
+                      className="flex items-center gap-2 px-3 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors text-sm"
+                      title="Exportar como Markdown (.md)"
+                    >
+                      {copiedItems['final-documents'] ? (
+                        <>
+                          <Check className="w-3 h-3" />
+                          MD ✓
+                        </>
+                      ) : (
+                        <>
+                          <Download className="w-3 h-3" />
+                          MD
+                        </>
+                      )}
+                    </button>
+                    <button
+                      onClick={exportAsText}
+                      className="flex items-center gap-2 px-3 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors text-sm"
+                      title="Exportar como Texto (.txt)"
+                    >
+                      {copiedItems['text-export'] ? (
+                        <>
+                          <Check className="w-3 h-3" />
+                          TXT ✓
+                        </>
+                      ) : (
+                        <>
+                          <FileText className="w-3 h-3" />
+                          TXT
+                        </>
+                      )}
+                    </button>
+                  </div>
                   <button
-                    onClick={exportFinalDocuments}
-                    className="flex items-center gap-2 px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors text-sm"
-                  >
-                    {copiedItems['final-documents'] ? (
-                      <>
-                        <Check className="w-4 h-4" />
-                        Copiado!
-                      </>
-                    ) : (
-                      <>
-                        <Download className="w-4 h-4" />
-                        Baixar Docs
-                      </>
-                    )}
-                  </button>
-                  <button
-                    onClick={() => copyToClipboard(
-                      `TÍTULO: ${results?.titles?.data?.generated_titles?.[0]?.title || results?.titles?.data?.generated_titles?.[0] || 'N/A'}\n\nPREMISSA: ${results?.premises?.premises?.[0]?.premise || 'N/A'}\n\nROTEIRO: ${results?.scripts?.scripts?.chapters?.length || 0} capítulos`,
-                      'quick-summary'
-                    )}
+                    onClick={() => {
+                      const { bestTitle, bestPremise, script } = getResultData()
+                      const summary = `TÍTULO: ${bestTitle}\n\nPREMISSA: ${bestPremise?.premise || bestPremise || 'N/A'}\n\nROTEIRO: ${script?.chapters?.length || 0} capítulos${script?.title ? ` - "${script.title}"` : ''}`
+                      copyToClipboard(summary, 'quick-summary')
+                    }}
                     className="flex items-center gap-2 px-4 py-2 bg-gray-600 text-white rounded-lg hover:bg-gray-700 transition-colors text-sm"
                   >
                     {copiedItems['quick-summary'] ? (
@@ -255,6 +357,27 @@ const AutomationResults = ({ results, isVisible, onClose }) => {
                         Copiar Resumo
                       </>
                     )}
+                  </button>
+
+                  {/* Botão TTS - Redirecionar para aba TTS */}
+                  <button
+                    onClick={() => {
+                      // Salvar dados dos roteiros no localStorage para a aba TTS
+                      localStorage.setItem('tts_script_data', JSON.stringify(results.scripts))
+                      // Redirecionar para aba TTS (assumindo que há uma função para isso)
+                      if (window.location.hash) {
+                        window.location.hash = '#tts'
+                      } else {
+                        // Se não houver hash, tentar encontrar a função de mudança de aba
+                        const event = new CustomEvent('changeTab', { detail: 'tts' })
+                        window.dispatchEvent(event)
+                      }
+                    }}
+                    className="flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-purple-600 to-pink-600 text-white rounded-lg hover:from-purple-700 hover:to-pink-700 transition-all text-sm"
+                    title="Ir para geração de áudio"
+                  >
+                    <Volume2 className="w-4 h-4" />
+                    Gerar Áudio
                   </button>
                 </div>
               </div>
@@ -523,6 +646,8 @@ const AutomationResults = ({ results, isVisible, onClose }) => {
           </div>
         </motion.div>
       </motion.div>
+
+
     </AnimatePresence>
   )
 }

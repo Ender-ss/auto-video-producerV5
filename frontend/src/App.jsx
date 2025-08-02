@@ -21,6 +21,7 @@ import Automations from './pages/Automations'
 import Pipeline from './pages/Pipeline'
 import Videos from './pages/Videos'
 import Settings from './pages/SettingsSimple'
+import SettingsTest from './pages/SettingsTest'
 import Analytics from './pages/Analytics'
 import Logs from './pages/Logs'
 import ApiTests from './pages/ApiTests'
@@ -218,6 +219,21 @@ function App() {
                       transition={{ duration: 0.3 }}
                     >
                       <Settings />
+                    </motion.div>
+                  }
+                />
+
+                <Route
+                  path="/settings-test"
+                  element={
+                    <motion.div
+                      key="settings-test"
+                      initial={{ opacity: 0, y: 20 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      exit={{ opacity: 0, y: -20 }}
+                      transition={{ duration: 0.3 }}
+                    >
+                      <SettingsTest />
                     </motion.div>
                   }
                 />

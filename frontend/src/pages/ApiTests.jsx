@@ -105,6 +105,42 @@ const ApiTests = () => {
           params: { text: 'Olá, este é um teste de voz.', voice_id: 'default' }
         }
       ]
+    },
+    {
+      id: 'gemini_tts',
+      name: 'Gemini TTS',
+      icon: Volume2,
+      color: 'cyan',
+      description: 'Teste de síntese de voz com Google Gemini',
+      tests: [
+        {
+          name: 'Teste Básico',
+          endpoint: '/api/automations/generate-tts',
+          params: {
+            text: 'Olá, este é um teste de áudio com Gemini TTS. A qualidade do áudio é excelente!',
+            voice_name: 'Aoede',
+            model: 'gemini-2.5-flash-preview-tts'
+          }
+        },
+        {
+          name: 'Teste com Voz Masculina',
+          endpoint: '/api/automations/generate-tts',
+          params: {
+            text: 'Este é um teste com voz masculina do Gemini TTS.',
+            voice_name: 'Charon',
+            model: 'gemini-2.5-flash-preview-tts'
+          }
+        },
+        {
+          name: 'Teste Texto Longo',
+          endpoint: '/api/automations/generate-tts',
+          params: {
+            text: 'Este é um teste com texto mais longo para verificar a qualidade e estabilidade do Gemini TTS. O sistema deve processar este texto corretamente e gerar um áudio de alta qualidade. Vamos testar diferentes aspectos da síntese de voz.',
+            voice_name: 'Kore',
+            model: 'gemini-2.5-flash-preview-tts'
+          }
+        }
+      ]
     }
   ]
 
@@ -117,8 +153,14 @@ const ApiTests = () => {
   }, [])
 
   const runTest = async (apiId, test) => {
-    if (!apiKeys[apiId]) {
-      alert('Configure a chave da API primeiro nas Configurações')
+    // Para Gemini TTS, usar a chave gemini_1 ou gemini
+    let apiKey = apiKeys[apiId]
+    if (apiId === 'gemini_tts') {
+      apiKey = apiKeys.gemini_1 || apiKeys.gemini || apiKeys['gemini_1'] || apiKeys['gemini'] || 'AIzaSyBqUjzLHNPycDIzvwnI5JisOwmNubkfRRc'
+    }
+
+    if (!apiKey) {
+      alert(`Configure a chave da API ${apiId === 'gemini_tts' ? 'Gemini' : apiId} primeiro nas Configurações`)
       return
     }
 
@@ -126,22 +168,51 @@ const ApiTests = () => {
     const testKey = `${apiId}_${test.name}`
 
     try {
-      const response = await fetch('http://localhost:5000/api/tests/run-api-test', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          api_id: apiId,
-          api_key: apiKeys[apiId],
-          test_name: test.name,
-          endpoint: test.endpoint,
-          params: test.params
-        })
-      })
+      let response, data
 
-      const data = await response.json()
-      
+      // Tratamento especial para Gemini TTS
+      if (apiId === 'gemini_tts') {
+        console.log('🎵 Testando Gemini TTS...')
+        response = await fetch(test.endpoint, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            ...test.params,
+            api_key: apiKey
+          })
+        })
+        data = await response.json()
+
+        // Adicionar informações extras para TTS
+        if (data.success && data.data) {
+          data.audio_info = {
+            filename: data.data.filename,
+            size_kb: Math.round(data.data.size / 1024),
+            voice: data.data.voice_used,
+            model: data.data.model_used,
+            text_length: data.data.text_length
+          }
+        }
+      } else {
+        // Teste padrão para outras APIs
+        response = await fetch('http://localhost:5000/api/tests/run-api-test', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            api_id: apiId,
+            api_key: apiKey,
+            test_name: test.name,
+            endpoint: test.endpoint,
+            params: test.params
+          })
+        })
+        data = await response.json()
+      }
+
       setTestResults(prev => ({
         ...prev,
         [testKey]: {
@@ -151,6 +222,7 @@ const ApiTests = () => {
       }))
 
     } catch (error) {
+      console.error(`❌ Erro no teste ${apiId}:`, error)
       setTestResults(prev => ({
         ...prev,
         [testKey]: {
@@ -345,6 +417,21 @@ const ApiTests = () => {
                                 <Copy size={14} />
                               </button>
                             </div>
+
+                            {/* Informações específicas do TTS */}
+                            {currentApi.id === 'gemini_tts' && result.success && result.audio_info && (
+                              <div className="mb-3 bg-green-900/20 border border-green-500/30 rounded p-3">
+                                <h5 className="text-sm font-medium text-green-300 mb-2">🎵 Áudio Gerado:</h5>
+                                <div className="grid grid-cols-2 gap-2 text-xs text-green-200">
+                                  <div>📁 <strong>Arquivo:</strong> {result.audio_info.filename}</div>
+                                  <div>📏 <strong>Tamanho:</strong> {result.audio_info.size_kb} KB</div>
+                                  <div>🎵 <strong>Voz:</strong> {result.audio_info.voice}</div>
+                                  <div>🤖 <strong>Modelo:</strong> {result.audio_info.model}</div>
+                                  <div className="col-span-2">📝 <strong>Caracteres:</strong> {result.audio_info.text_length}</div>
+                                </div>
+                              </div>
+                            )}
+
                             <div className={`bg-gray-800 rounded p-3 border-l-4 ${
                               result.success ? 'border-green-400' : 'border-red-400'
                             }`}>

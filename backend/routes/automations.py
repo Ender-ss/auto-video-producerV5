@@ -15,12 +15,32 @@ import base64
 import wave
 import io
 
+# Importar sistema de logs em tempo real
+try:
+    from routes.system import add_real_time_log
+except ImportError:
+    # Fallback se não conseguir importar
+    def add_real_time_log(message, level="info", source="automations"):
+        print(f"[{level.upper()}] [{source}] {message}")
+
 # Import AI libraries
 try:
     import google.generativeai as genai
     GEMINI_AVAILABLE = True
 except ImportError:
     GEMINI_AVAILABLE = False
+
+# Sistema de rotação de chaves Gemini
+GEMINI_KEYS_ROTATION = {
+    'keys': [],
+    'current_index': 0,
+    'usage_count': {},
+    'last_reset': datetime.now().date()
+}
+
+# Sistema de controle de jobs TTS
+TTS_JOBS = {}
+TTS_JOB_COUNTER = 0
 
 # Import TitleGenerator
 try:
@@ -59,6 +79,82 @@ except ImportError:
     GOOGLE_GENAI_TTS_AVAILABLE = False
 
 automations_bp = Blueprint('automations', __name__)
+
+def load_gemini_keys():
+    """Carregar chaves Gemini do arquivo de configuração"""
+    try:
+        config_path = os.path.join(os.path.dirname(__file__), '..', 'config', 'api_keys.json')
+        if os.path.exists(config_path):
+            with open(config_path, 'r') as f:
+                keys = json.load(f)
+
+            # Coletar todas as chaves Gemini
+            gemini_keys = []
+            for key, value in keys.items():
+                if 'gemini' in key.lower() and value and len(value) > 10:
+                    gemini_keys.append(value)
+
+            # Adicionar chave padrão se não houver outras
+            default_key = 'AIzaSyBqUjzLHNPycDIzvwnI5JisOwmNubkfRRc'
+            if default_key not in gemini_keys:
+                gemini_keys.append(default_key)
+
+            GEMINI_KEYS_ROTATION['keys'] = gemini_keys
+            print(f"🔑 Carregadas {len(gemini_keys)} chaves Gemini para rotação")
+            return gemini_keys
+    except Exception as e:
+        print(f"❌ Erro ao carregar chaves Gemini: {e}")
+        # Usar chave padrão como fallback
+        GEMINI_KEYS_ROTATION['keys'] = ['AIzaSyBqUjzLHNPycDIzvwnI5JisOwmNubkfRRc']
+
+    return GEMINI_KEYS_ROTATION['keys']
+
+def get_next_gemini_key():
+    """Obter próxima chave Gemini na rotação"""
+    # Carregar chaves se não estiverem carregadas
+    if not GEMINI_KEYS_ROTATION['keys']:
+        load_gemini_keys()
+
+    # Reset diário do contador
+    today = datetime.now().date()
+    if GEMINI_KEYS_ROTATION['last_reset'] != today:
+        GEMINI_KEYS_ROTATION['usage_count'] = {}
+        GEMINI_KEYS_ROTATION['last_reset'] = today
+        GEMINI_KEYS_ROTATION['current_index'] = 0
+        print("🔄 Reset diário do contador de uso das chaves Gemini")
+        add_real_time_log("🔄 Reset diário do contador de uso das chaves Gemini", "info", "gemini-rotation")
+
+    keys = GEMINI_KEYS_ROTATION['keys']
+    if not keys:
+        return None
+
+    # Encontrar chave com menor uso
+    min_usage = float('inf')
+    best_key_index = 0
+
+    for i, key in enumerate(keys):
+        usage = GEMINI_KEYS_ROTATION['usage_count'].get(key, 0)
+        if usage < min_usage:
+            min_usage = usage
+            best_key_index = i
+
+    # Se todas as chaves atingiram o limite (15 por dia), usar rotação simples
+    if min_usage >= 15:
+        print("⚠️ Todas as chaves atingiram o limite diário, usando rotação simples")
+        add_real_time_log("⚠️ Todas as chaves atingiram o limite diário, usando rotação simples", "warning", "gemini-rotation")
+        best_key_index = GEMINI_KEYS_ROTATION['current_index']
+        GEMINI_KEYS_ROTATION['current_index'] = (GEMINI_KEYS_ROTATION['current_index'] + 1) % len(keys)
+
+    selected_key = keys[best_key_index]
+
+    # Incrementar contador de uso
+    GEMINI_KEYS_ROTATION['usage_count'][selected_key] = GEMINI_KEYS_ROTATION['usage_count'].get(selected_key, 0) + 1
+
+    usage_count = GEMINI_KEYS_ROTATION['usage_count'][selected_key]
+    print(f"🔑 Usando chave Gemini {best_key_index + 1}/{len(keys)} (uso: {usage_count}/15)")
+    add_real_time_log(f"🔑 Usando chave Gemini {best_key_index + 1}/{len(keys)} (uso: {usage_count}/15)", "info", "gemini-rotation")
+
+    return selected_key
 
 # ================================
 # 🧪 TESTE RAPIDAPI
@@ -383,20 +479,189 @@ def generate_tts_gemini():
                 'error': 'Texto é obrigatório'
             }), 400
 
-        if not api_key:
-            return jsonify({
-                'success': False,
-                'error': 'Chave da API Gemini é obrigatória'
-            }), 400
-
         if not GOOGLE_GENAI_TTS_AVAILABLE:
             return jsonify({
                 'success': False,
                 'error': 'Biblioteca google-genai não instalada'
             }), 400
 
-        # Gerar áudio TTS usando Gemini
-        result = generate_tts_with_gemini(text, api_key, voice_name, model)
+        # Parâmetros adicionais para Gemini TTS
+        speed = data.get('speed', 1.0)
+        pitch = data.get('pitch', 0.0)
+        volume_gain_db = data.get('volume_gain_db', 0.0)
+
+        # Criar job ID para controle
+        global TTS_JOB_COUNTER
+        TTS_JOB_COUNTER += 1
+        job_id = f"tts_{TTS_JOB_COUNTER}"
+
+        # Registrar job
+        TTS_JOBS[job_id] = {
+            'status': 'running',
+            'text': text[:50] + '...' if len(text) > 50 else text,
+            'start_time': time.time(),
+            'cancelled': False
+        }
+
+        add_real_time_log(f"🎵 Iniciando TTS Job {job_id} - {len(text)} chars", "info", "tts-gemini")
+
+        # Tentar múltiplas chaves se necessário
+        max_key_attempts = 3  # Tentar até 3 chaves diferentes
+        last_error = None
+
+        for attempt in range(max_key_attempts):
+            # Verificar se job foi cancelado
+            if TTS_JOBS.get(job_id, {}).get('cancelled', False):
+                add_real_time_log(f"🛑 TTS Job {job_id} cancelado pelo usuário", "warning", "tts-gemini")
+                TTS_JOBS[job_id]['status'] = 'cancelled'
+                return jsonify({
+                    'success': False,
+                    'error': 'Geração cancelada pelo usuário',
+                    'job_id': job_id
+                })
+
+            # Se não foi fornecida chave ou tentativa anterior falhou, usar rotação
+            if not api_key or attempt > 0:
+                api_key = get_next_gemini_key()
+                if not api_key:
+                    TTS_JOBS[job_id]['status'] = 'failed'
+                    return jsonify({
+                        'success': False,
+                        'error': 'Nenhuma chave Gemini disponível. Configure pelo menos uma chave nas Configurações.',
+                        'job_id': job_id
+                    }), 400
+                print(f"🔄 Tentativa {attempt + 1}: Usando rotação de chaves Gemini")
+                add_real_time_log(f"🔄 Tentativa {attempt + 1}: Usando rotação de chaves Gemini", "info", "tts-gemini")
+
+            # Gerar áudio TTS usando Gemini
+            result = generate_tts_with_gemini(
+                text, api_key, voice_name, model,
+                speed=speed, pitch=pitch, volume_gain_db=volume_gain_db,
+                job_id=job_id
+            )
+
+            # Verificar se foi bem-sucedido
+            if result.get('success', False):
+                TTS_JOBS[job_id]['status'] = 'completed'
+                add_real_time_log(f"✅ TTS Gemini gerado com sucesso - {len(text)} chars", "success", "tts-gemini")
+                result['job_id'] = job_id
+                return jsonify(result)
+
+            # Se falhou, verificar o erro
+            last_error = result.get('error', 'Erro desconhecido')
+            print(f"❌ Tentativa {attempt + 1} falhou: {last_error}")
+            add_real_time_log(f"❌ Tentativa {attempt + 1} falhou: {last_error}", "error", "tts-gemini")
+
+            # Se é erro 429 (quota exceeded), tentar próxima chave
+            if "429" in last_error or "quota" in last_error.lower() or "exceeded" in last_error.lower():
+                print(f"🔄 Erro de cota detectado, tentando próxima chave...")
+                add_real_time_log(f"🔄 Erro de cota detectado, tentando próxima chave...", "warning", "tts-gemini")
+                api_key = None  # Forçar nova chave na próxima tentativa
+                continue
+            else:
+                # Outros erros, não tentar novamente
+                print(f"🛑 Erro não relacionado à cota, parando tentativas")
+                break
+
+        # Se chegou aqui, todas as tentativas falharam
+        TTS_JOBS[job_id]['status'] = 'failed'
+        final_error = f'Todas as {max_key_attempts} chaves Gemini falharam. Último erro: {last_error}'
+        add_real_time_log(f"❌ {final_error}", "error", "tts-gemini")
+        return jsonify({
+            'success': False,
+            'error': final_error,
+            'job_id': job_id
+        })
+
+    except Exception as e:
+        return jsonify({
+            'success': False,
+            'error': f'Erro interno: {str(e)}'
+        }), 500
+
+@automations_bp.route('/generate-tts-elevenlabs', methods=['POST'])
+def generate_tts_elevenlabs():
+    """Gerar áudio TTS usando ElevenLabs"""
+    try:
+        data = request.get_json()
+        text = data.get('text', '').strip()
+        api_key = data.get('api_key', '').strip()
+        voice_id = data.get('voice_id', 'default')
+        model_id = data.get('model_id', 'eleven_monolingual_v1')
+
+        if not text:
+            return jsonify({
+                'success': False,
+                'error': 'Texto é obrigatório'
+            }), 400
+
+        if not api_key:
+            return jsonify({
+                'success': False,
+                'error': 'Chave da API ElevenLabs é obrigatória'
+            }), 400
+
+        # Parâmetros adicionais para ElevenLabs
+        stability = data.get('stability', 0.5)
+        similarity_boost = data.get('similarity_boost', 0.5)
+        style = data.get('style', 0.0)
+        use_speaker_boost = data.get('use_speaker_boost', True)
+
+        # Gerar áudio TTS usando ElevenLabs
+        result = generate_tts_with_elevenlabs(
+            text, api_key, voice_id, model_id,
+            stability=stability, similarity_boost=similarity_boost,
+            style=style, use_speaker_boost=use_speaker_boost
+        )
+        return jsonify(result)
+
+    except Exception as e:
+        return jsonify({
+            'success': False,
+            'error': f'Erro interno: {str(e)}'
+        }), 500
+
+# Função removida - duplicada mais abaixo
+
+@automations_bp.route('/download/<filename>')
+def download_audio(filename):
+    """Download de arquivos de áudio gerados"""
+    try:
+        import os
+        from flask import send_file
+
+        temp_dir = os.path.join(os.path.dirname(__file__), '..', 'temp')
+        filepath = os.path.join(temp_dir, filename)
+
+        if not os.path.exists(filepath):
+            return jsonify({
+                'success': False,
+                'error': 'Arquivo não encontrado'
+            }), 404
+
+        return send_file(filepath, as_attachment=True, download_name=filename)
+
+    except Exception as e:
+        return jsonify({
+            'success': False,
+            'error': f'Erro no download: {str(e)}'
+        }), 500
+
+@automations_bp.route('/join-audio', methods=['POST'])
+def join_audio_segments():
+    """Juntar múltiplos segmentos de áudio em um arquivo único"""
+    try:
+        data = request.get_json()
+        segments = data.get('segments', [])
+
+        if not segments:
+            return jsonify({
+                'success': False,
+                'error': 'Nenhum segmento fornecido'
+            }), 400
+
+        # Juntar áudios usando a função auxiliar
+        result = join_audio_files(segments)
         return jsonify(result)
 
     except Exception as e:
@@ -1033,3 +1298,451 @@ def generate_titles_custom():
             'success': False,
             'error': str(e)
         }), 500
+
+# ================================
+# 🎵 FUNÇÕES DE TTS
+# ================================
+
+def generate_tts_with_gemini(text, api_key=None, voice_name='Aoede', model='gemini-2.5-flash-preview-tts', job_id=None, **kwargs):
+    """Gerar áudio TTS usando API Gemini nativa com rotação de chaves"""
+    try:
+        print(f"🎵 Iniciando TTS com Gemini - Texto: {len(text)} chars, Voz: {voice_name}")
+
+        # Usar rotação de chaves se não foi fornecida uma chave específica
+        if not api_key:
+            api_key = get_next_gemini_key()
+            if not api_key:
+                raise Exception("Nenhuma chave Gemini disponível")
+
+        import requests
+        import json
+        import time
+
+        # Limitar o texto para evitar timeouts (Gemini TTS tem limite menor)
+        max_chars = 2000  # Limite mais conservador para TTS
+        if len(text) > max_chars:
+            text = text[:max_chars] + "..."
+            print(f"⚠️ Texto truncado para {len(text)} caracteres (limite TTS: {max_chars})")
+
+        # Usar API REST do Gemini para TTS
+        url = f"https://generativelanguage.googleapis.com/v1beta/models/{model}:generateContent"
+
+        headers = {
+            "x-goog-api-key": api_key,
+            "Content-Type": "application/json"
+        }
+
+        payload = {
+            "contents": [{
+                "parts": [{
+                    "text": text
+                }]
+            }],
+            "generationConfig": {
+                "responseModalities": ["AUDIO"],
+                "speechConfig": {
+                    "voiceConfig": {
+                        "prebuiltVoiceConfig": {
+                            "voiceName": voice_name
+                        }
+                    }
+                }
+            }
+        }
+
+        print(f"🔍 Enviando requisição para Gemini TTS API...")
+        print(f"🔍 URL: {url}")
+        print(f"🔍 Voz: {voice_name}")
+
+        # Implementar retry com timeout otimizado
+        max_retries = 2  # Reduzir para 2 tentativas para ser mais rápido
+        timeouts = [45, 90]  # Timeouts otimizados
+
+        for attempt in range(max_retries):
+            # Verificar se job foi cancelado
+            if job_id and TTS_JOBS.get(job_id, {}).get('cancelled', False):
+                add_real_time_log(f"🛑 TTS Gemini - Job {job_id} cancelado durante retry", "warning", "tts-gemini")
+                raise Exception("Geração cancelada pelo usuário")
+
+            try:
+                timeout = timeouts[attempt]
+                print(f"🔄 Tentativa {attempt + 1}/{max_retries} - Timeout: {timeout}s")
+                add_real_time_log(f"🔄 TTS Gemini - Tentativa {attempt + 1}/{max_retries} (timeout: {timeout}s)", "info", "tts-gemini")
+
+                response = requests.post(url, json=payload, headers=headers, timeout=timeout)
+                add_real_time_log(f"✅ TTS Gemini - Resposta recebida (status: {response.status_code})", "success", "tts-gemini")
+                break  # Se chegou aqui, a requisição foi bem-sucedida
+
+            except requests.exceptions.Timeout:
+                print(f"⏰ Timeout na tentativa {attempt + 1}")
+                add_real_time_log(f"⏰ TTS Gemini - Timeout na tentativa {attempt + 1}", "warning", "tts-gemini")
+                if attempt == max_retries - 1:
+                    error_msg = f"Timeout após {max_retries} tentativas. Tente novamente ou use ElevenLabs."
+                    add_real_time_log(f"❌ TTS Gemini - {error_msg}", "error", "tts-gemini")
+                    raise Exception(error_msg)
+                print(f"🔄 Tentando novamente em 3 segundos...")
+                time.sleep(3)
+            except Exception as e:
+                print(f"❌ Erro na tentativa {attempt + 1}: {str(e)}")
+                add_real_time_log(f"❌ TTS Gemini - Erro tentativa {attempt + 1}: {str(e)}", "error", "tts-gemini")
+                if attempt == max_retries - 1:
+                    raise
+                print(f"🔄 Tentando novamente em 3 segundos...")
+                time.sleep(3)
+
+        print(f"🔍 Status da resposta: {response.status_code}")
+
+        if response.status_code != 200:
+            error_msg = f"Erro da API Gemini TTS: {response.status_code} - {response.text}"
+            print(f"❌ {error_msg}")
+            raise Exception(error_msg)
+
+        result = response.json()
+        print(f"🔍 Resposta recebida: {result.keys() if isinstance(result, dict) else 'não é dict'}")
+        add_real_time_log(f"🔍 Processando resposta da API Gemini TTS", "info", "tts-gemini")
+
+        # Extrair dados do áudio da resposta Gemini
+        if 'candidates' not in result or not result['candidates']:
+            error_msg = "Resposta não contém candidates"
+            add_real_time_log(f"❌ {error_msg}", "error", "tts-gemini")
+            raise Exception(error_msg)
+
+        candidate = result['candidates'][0]
+        if 'content' not in candidate or 'parts' not in candidate['content']:
+            error_msg = "Resposta não contém content/parts"
+            add_real_time_log(f"❌ {error_msg}", "error", "tts-gemini")
+            raise Exception(error_msg)
+
+        parts = candidate['content']['parts']
+        if not parts or 'inlineData' not in parts[0]:
+            error_msg = "Resposta não contém inlineData"
+            add_real_time_log(f"❌ {error_msg}", "error", "tts-gemini")
+            raise Exception(error_msg)
+
+        audio_data = parts[0]['inlineData']['data']
+        add_real_time_log(f"✅ Dados de áudio extraídos com sucesso", "success", "tts-gemini")
+
+        # Salvar arquivo temporário
+        import tempfile
+        import os
+        import base64
+
+        temp_dir = os.path.join(os.path.dirname(__file__), '..', 'temp')
+        os.makedirs(temp_dir, exist_ok=True)
+
+        timestamp = int(time.time())
+        filename = f"tts_gemini_{timestamp}.wav"
+        filepath = os.path.join(temp_dir, filename)
+
+        print(f"🔍 Salvando áudio em: {filepath}")
+        add_real_time_log(f"🔍 Salvando áudio TTS: {filename}", "info", "tts-gemini")
+
+        # Decodificar base64 e salvar
+        audio_bytes = base64.b64decode(audio_data)
+        with open(filepath, 'wb') as f:
+            f.write(audio_bytes)
+
+        print(f"✅ Áudio TTS gerado com sucesso: {filepath}")
+        add_real_time_log(f"✅ Áudio TTS salvo com sucesso: {filename} ({len(audio_bytes)} bytes)", "success", "tts-gemini")
+
+        # URL para acessar o áudio
+        audio_url = f"/api/automations/audio/{filename}"
+
+        return {
+            'success': True,
+            'data': {
+                'audio_file': filepath,
+                'filename': filename,
+                'audio_url': audio_url,
+                'duration': get_audio_duration(filepath),
+                'size': len(audio_bytes),
+                'voice_used': voice_name,
+                'model_used': model,
+                'text_length': len(text)
+            }
+        }
+
+    except Exception as e:
+        print(f"❌ Erro no TTS Gemini: {e}")
+        return {
+            'success': False,
+            'error': f'Erro ao gerar áudio com Gemini: {str(e)}'
+        }
+
+@automations_bp.route('/tts/jobs', methods=['GET'])
+def get_tts_jobs():
+    """Obter lista de jobs TTS ativos"""
+    try:
+        # Limpar jobs antigos (mais de 1 hora)
+        current_time = time.time()
+        jobs_to_remove = []
+        for job_id, job_data in TTS_JOBS.items():
+            if current_time - job_data['start_time'] > 3600:  # 1 hora
+                jobs_to_remove.append(job_id)
+
+        for job_id in jobs_to_remove:
+            del TTS_JOBS[job_id]
+
+        return jsonify({
+            'success': True,
+            'jobs': TTS_JOBS
+        })
+    except Exception as e:
+        return jsonify({
+            'success': False,
+            'error': str(e)
+        }), 500
+
+@automations_bp.route('/tts/jobs/<job_id>/cancel', methods=['POST'])
+def cancel_tts_job(job_id):
+    """Cancelar job TTS específico"""
+    try:
+        if job_id in TTS_JOBS:
+            TTS_JOBS[job_id]['cancelled'] = True
+            TTS_JOBS[job_id]['status'] = 'cancelled'
+            add_real_time_log(f"🛑 TTS Job {job_id} cancelado via API", "warning", "tts-control")
+            return jsonify({
+                'success': True,
+                'message': f'Job {job_id} cancelado'
+            })
+        else:
+            return jsonify({
+                'success': False,
+                'error': 'Job não encontrado'
+            }), 404
+    except Exception as e:
+        return jsonify({
+            'success': False,
+            'error': str(e)
+        }), 500
+
+@automations_bp.route('/audio/<filename>')
+def serve_tts_audio(filename):
+    """Servir arquivos de áudio gerados"""
+    try:
+        import os
+        from flask import send_file
+
+        temp_dir = os.path.join(os.path.dirname(__file__), '..', 'temp')
+        filepath = os.path.join(temp_dir, filename)
+
+        print(f"🔍 Tentando servir áudio: {filepath}")
+        add_real_time_log(f"🔍 Servindo áudio: {filename}", "info", "audio-server")
+
+        if os.path.exists(filepath):
+            print(f"✅ Arquivo encontrado, servindo: {filename}")
+            add_real_time_log(f"✅ Áudio servido com sucesso: {filename}", "success", "audio-server")
+            return send_file(filepath, as_attachment=False, mimetype='audio/wav')
+        else:
+            print(f"❌ Arquivo não encontrado: {filepath}")
+            add_real_time_log(f"❌ Arquivo de áudio não encontrado: {filename}", "error", "audio-server")
+            return jsonify({'error': 'Arquivo não encontrado'}), 404
+
+    except Exception as e:
+        print(f"❌ Erro ao servir áudio: {str(e)}")
+        add_real_time_log(f"❌ Erro ao servir áudio: {str(e)}", "error", "audio-server")
+        return jsonify({'error': f'Erro ao servir áudio: {str(e)}'}), 500
+
+def get_audio_duration(filepath):
+    """Obter duração do arquivo de áudio"""
+    try:
+        # Tentar usar mutagen para MP3
+        try:
+            from mutagen.mp3 import MP3
+            audio = MP3(filepath)
+            return round(audio.info.length, 2)
+        except ImportError:
+            # Fallback: estimar duração baseado no tamanho do arquivo
+            import os
+            file_size = os.path.getsize(filepath)
+            # Estimativa: ~1KB por segundo para MP3 de qualidade média
+            estimated_duration = file_size / 1024
+            return round(estimated_duration, 2)
+        except:
+            # Se for WAV, usar wave
+            import wave
+            with wave.open(filepath, 'rb') as wav_file:
+                frames = wav_file.getnframes()
+                sample_rate = wav_file.getframerate()
+                duration = frames / float(sample_rate)
+                return round(duration, 2)
+    except Exception as e:
+        print(f"⚠️ Erro ao obter duração do áudio: {e}")
+        return 0.0
+
+def generate_tts_with_elevenlabs(text, api_key, voice_id='default', model_id='eleven_monolingual_v1', **kwargs):
+    """Gerar áudio TTS usando ElevenLabs"""
+    try:
+        print(f"🎵 Iniciando TTS com ElevenLabs - Texto: {len(text)} chars, Voz: {voice_id}")
+
+        # Se voice_id for 'default', usar uma voz padrão conhecida
+        if voice_id == 'default':
+            voice_id = '21m00Tcm4TlvDq8ikWAM'  # Rachel (voz feminina em inglês)
+
+        url = f"https://api.elevenlabs.io/v1/text-to-speech/{voice_id}"
+
+        headers = {
+            "xi-api-key": api_key,
+            "Content-Type": "application/json"
+        }
+
+        # Configurações de voz mais avançadas
+        voice_settings = {
+            "stability": kwargs.get('stability', 0.5),
+            "similarity_boost": kwargs.get('similarity_boost', 0.5),
+            "style": kwargs.get('style', 0.0),
+            "use_speaker_boost": kwargs.get('use_speaker_boost', True)
+        }
+
+        payload = {
+            "text": text,
+            "model_id": model_id,
+            "voice_settings": voice_settings
+        }
+
+        print(f"🔍 DEBUG: Fazendo requisição para ElevenLabs...")
+        response = requests.post(url, headers=headers, json=payload, timeout=60)
+
+        if response.status_code != 200:
+            error_msg = f"Erro ElevenLabs: {response.status_code}"
+            try:
+                error_data = response.json()
+                error_msg += f" - {error_data.get('detail', response.text)}"
+            except:
+                error_msg += f" - {response.text}"
+
+            return {
+                'success': False,
+                'error': error_msg
+            }
+
+        # Salvar arquivo de áudio
+        import tempfile
+        import os
+
+        temp_dir = os.path.join(os.path.dirname(__file__), '..', 'temp')
+        os.makedirs(temp_dir, exist_ok=True)
+
+        timestamp = int(time.time())
+        filename = f"tts_elevenlabs_{timestamp}.mp3"
+        filepath = os.path.join(temp_dir, filename)
+
+        with open(filepath, 'wb') as f:
+            f.write(response.content)
+
+        print(f"✅ Áudio TTS ElevenLabs gerado com sucesso: {filepath}")
+
+        return {
+            'success': True,
+            'data': {
+                'audio_file': filepath,
+                'filename': filename,
+                'size': len(response.content),
+                'voice_used': voice_id,
+                'model_used': model_id,
+                'text_length': len(text),
+                'format': 'mp3'
+            }
+        }
+
+    except Exception as e:
+        print(f"❌ Erro no TTS ElevenLabs: {e}")
+        return {
+            'success': False,
+            'error': f'Erro ao gerar áudio com ElevenLabs: {str(e)}'
+        }
+
+def join_audio_files(segments):
+    """Juntar múltiplos arquivos de áudio em um só"""
+    try:
+        print(f"🔗 Juntando {len(segments)} segmentos de áudio...")
+
+        import os
+        from pydub import AudioSegment
+
+        temp_dir = os.path.join(os.path.dirname(__file__), '..', 'temp')
+
+        # Carregar todos os segmentos
+        audio_segments = []
+        total_duration = 0
+        total_size = 0
+
+        for segment in sorted(segments, key=lambda x: x.get('index', 0)):
+            filename = segment.get('filename')
+            if not filename:
+                continue
+
+            filepath = os.path.join(temp_dir, filename)
+            if not os.path.exists(filepath):
+                print(f"⚠️ Arquivo não encontrado: {filepath}")
+                continue
+
+            # Carregar segmento de áudio
+            if filename.endswith('.mp3'):
+                audio_seg = AudioSegment.from_mp3(filepath)
+            elif filename.endswith('.wav'):
+                audio_seg = AudioSegment.from_wav(filepath)
+            else:
+                # Tentar detectar formato automaticamente
+                audio_seg = AudioSegment.from_file(filepath)
+
+            audio_segments.append(audio_seg)
+            total_duration += len(audio_seg) / 1000.0  # pydub usa milissegundos
+            total_size += os.path.getsize(filepath)
+
+            print(f"✅ Carregado segmento: {filename} ({len(audio_seg)/1000:.1f}s)")
+
+        if not audio_segments:
+            return {
+                'success': False,
+                'error': 'Nenhum segmento de áudio válido encontrado'
+            }
+
+        # Juntar todos os segmentos
+        print("🔗 Concatenando segmentos...")
+        final_audio = audio_segments[0]
+        for segment in audio_segments[1:]:
+            final_audio += segment
+
+        # Salvar arquivo final
+        timestamp = int(time.time())
+        final_filename = f"audio_final_{timestamp}.mp3"
+        final_filepath = os.path.join(temp_dir, final_filename)
+
+        # Exportar como MP3 com qualidade alta
+        final_audio.export(
+            final_filepath,
+            format="mp3",
+            bitrate="192k",
+            parameters=["-q:a", "0"]
+        )
+
+        final_size = os.path.getsize(final_filepath)
+        final_duration = len(final_audio) / 1000.0
+
+        print(f"✅ Áudio final criado: {final_filename} ({final_duration:.1f}s, {final_size} bytes)")
+
+        return {
+            'success': True,
+            'data': {
+                'audio_file': final_filepath,
+                'filename': final_filename,
+                'duration': final_duration,
+                'size': final_size,
+                'segments_count': len(audio_segments),
+                'format': 'mp3',
+                'bitrate': '192k'
+            }
+        }
+
+    except ImportError:
+        return {
+            'success': False,
+            'error': 'Biblioteca pydub não instalada. Execute: pip install pydub'
+        }
+    except Exception as e:
+        print(f"❌ Erro ao juntar áudios: {e}")
+        return {
+            'success': False,
+            'error': f'Erro ao juntar áudios: {str(e)}'
+        }

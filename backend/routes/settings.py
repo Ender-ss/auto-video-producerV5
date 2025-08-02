@@ -453,7 +453,16 @@ def save_api_keys_new():
             'google_key': 'gemini',
             'rapidapi': 'rapidapi',
             'openai': 'openai',
-            'gemini_1': 'gemini',
+            'gemini_1': 'gemini_1',
+            'gemini_2': 'gemini_2',
+            'gemini_3': 'gemini_3',
+            'gemini_4': 'gemini_4',
+            'gemini_5': 'gemini_5',
+            'gemini_6': 'gemini_6',
+            'gemini_7': 'gemini_7',
+            'gemini_8': 'gemini_8',
+            'gemini_9': 'gemini_9',
+            'gemini_10': 'gemini_10',
             'openrouter': 'openrouter'
         }
 
@@ -489,8 +498,14 @@ def save_api_keys_new():
         })
 
     except Exception as e:
-        print(f"❌ DEBUG: Erro ao salvar: {str(e)}")
-        logger.error(f"❌ Erro ao salvar chaves de API: {str(e)}")
+        logger.error(f"❌ Erro ao salvar chaves de API via nova rota: {str(e)}")
+        return jsonify({
+            'success': False,
+            'error': str(e)
+        }), 500
+
+    except Exception as e:
+        logger.error(f"Erro ao salvar chaves de API: {str(e)}")
         return jsonify({
             'success': False,
             'error': str(e)

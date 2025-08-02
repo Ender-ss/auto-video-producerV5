@@ -26,7 +26,8 @@ const Logs = () => {
   const [loading, setLoading] = useState(false)
   const [searchTerm, setSearchTerm] = useState('')
   const [levelFilter, setLevelFilter] = useState('all')
-  const [autoRefresh, setAutoRefresh] = useState(false)
+  const [autoRefresh, setAutoRefresh] = useState(true)
+  const [lastTimestamp, setLastTimestamp] = useState(0)
 
   const logLevels = [
     { value: 'all', label: 'Todos', color: 'gray' },
@@ -38,12 +39,12 @@ const Logs = () => {
 
   useEffect(() => {
     fetchLogs()
-    
+
     if (autoRefresh) {
-      const interval = setInterval(fetchLogs, 5000)
+      const interval = setInterval(fetchNewLogs, 2000) // Buscar novos logs a cada 2 segundos
       return () => clearInterval(interval)
     }
-  }, [autoRefresh])
+  }, [autoRefresh, lastTimestamp])
 
   useEffect(() => {
     filterLogs()
@@ -54,14 +55,43 @@ const Logs = () => {
     try {
       const response = await fetch('http://localhost:5000/api/system/logs')
       const data = await response.json()
-      
+
       if (data.success) {
-        setLogs(data.data.logs || [])
+        const newLogs = data.data.logs || []
+        setLogs(newLogs)
+
+        // Atualizar timestamp do último log
+        if (newLogs.length > 0) {
+          setLastTimestamp(newLogs[0].unix_timestamp || 0)
+        }
       }
     } catch (error) {
       console.error('Erro ao buscar logs:', error)
     } finally {
       setLoading(false)
+    }
+  }
+
+  const fetchNewLogs = async () => {
+    try {
+      const response = await fetch(`http://localhost:5000/api/system/logs?since=${lastTimestamp}`)
+      const data = await response.json()
+
+      if (data.success && data.data.logs.length > 0) {
+        const newLogs = data.data.logs
+
+        // Adicionar novos logs ao início da lista (mais recentes primeiro)
+        setLogs(prevLogs => {
+          const combined = [...newLogs, ...prevLogs]
+          // Manter apenas os últimos 500 logs para performance
+          return combined.slice(0, 500)
+        })
+
+        // Atualizar timestamp
+        setLastTimestamp(newLogs[0].unix_timestamp || lastTimestamp)
+      }
+    } catch (error) {
+      console.error('Erro ao buscar novos logs:', error)
     }
   }
 

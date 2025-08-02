@@ -22,6 +22,15 @@ const SettingsSimple = () => {
   const [apiKeys, setApiKeys] = useState({
     openai: '',
     gemini_1: '',
+    gemini_2: '',
+    gemini_3: '',
+    gemini_4: '',
+    gemini_5: '',
+    gemini_6: '',
+    gemini_7: '',
+    gemini_8: '',
+    gemini_9: '',
+    gemini_10: '',
     openrouter: '',
     elevenlabs: '',
     together: '',
@@ -46,7 +55,16 @@ const SettingsSimple = () => {
           // Mapear as chaves do backend para o formato do frontend
           const mappedKeys = {
             openai: data.keys.openai || '',
-            gemini_1: data.keys.gemini || '',
+            gemini_1: data.keys.gemini_1 || data.keys.gemini || '',
+            gemini_2: data.keys.gemini_2 || '',
+            gemini_3: data.keys.gemini_3 || '',
+            gemini_4: data.keys.gemini_4 || '',
+            gemini_5: data.keys.gemini_5 || '',
+            gemini_6: data.keys.gemini_6 || '',
+            gemini_7: data.keys.gemini_7 || '',
+            gemini_8: data.keys.gemini_8 || '',
+            gemini_9: data.keys.gemini_9 || '',
+            gemini_10: data.keys.gemini_10 || '',
             openrouter: data.keys.openrouter || '',
             elevenlabs: data.keys.elevenlabs || '',
             together: data.keys.together || '',
@@ -100,11 +118,24 @@ const SettingsSimple = () => {
 
   const apis = [
     { key: 'openai', name: 'OpenAI GPT-4', description: 'Melhor qualidade para títulos e roteiros' },
-    { key: 'gemini_1', name: 'Google Gemini', description: 'Gratuito - Recomendado para começar' },
     { key: 'openrouter', name: 'OpenRouter', description: 'Acesso a múltiplos modelos (Claude, Llama, etc.)' },
     { key: 'elevenlabs', name: 'ElevenLabs', description: 'Text-to-Speech de alta qualidade' },
     { key: 'together', name: 'Together.ai FLUX', description: 'Geração de imagens gratuita' },
     { key: 'rapidapi', name: 'RapidAPI YouTube', description: 'Extração de dados do YouTube' }
+  ]
+
+  // Chaves Gemini separadas para rotação
+  const geminiKeys = [
+    { key: 'gemini_1', name: 'Gemini Chave 1', description: 'Primeira chave Gemini (principal)' },
+    { key: 'gemini_2', name: 'Gemini Chave 2', description: 'Segunda chave para rotação' },
+    { key: 'gemini_3', name: 'Gemini Chave 3', description: 'Terceira chave para rotação' },
+    { key: 'gemini_4', name: 'Gemini Chave 4', description: 'Quarta chave para rotação' },
+    { key: 'gemini_5', name: 'Gemini Chave 5', description: 'Quinta chave para rotação' },
+    { key: 'gemini_6', name: 'Gemini Chave 6', description: 'Sexta chave para rotação' },
+    { key: 'gemini_7', name: 'Gemini Chave 7', description: 'Sétima chave para rotação' },
+    { key: 'gemini_8', name: 'Gemini Chave 8', description: 'Oitava chave para rotação' },
+    { key: 'gemini_9', name: 'Gemini Chave 9', description: 'Nona chave para rotação' },
+    { key: 'gemini_10', name: 'Gemini Chave 10', description: 'Décima chave para rotação' }
   ]
 
   return (
@@ -165,6 +196,71 @@ const SettingsSimple = () => {
                 </div>
               </div>
             ))}
+          </div>
+        </div>
+
+        {/* Seção Google Gemini - Rotação de Chaves */}
+        <div className="bg-gray-800 rounded-lg border border-gray-700 p-6">
+          <div className="flex items-center space-x-2 mb-4">
+            <Zap size={20} className="text-cyan-400" />
+            <h2 className="text-xl font-semibold text-white">🔄 Google Gemini - Rotação de Chaves</h2>
+          </div>
+
+          <div className="mb-4 p-3 bg-cyan-900/20 border border-cyan-600 rounded-lg">
+            <p className="text-cyan-200 text-sm">
+              💡 Configure múltiplas chaves Gemini para evitar limites de cota. O sistema rotacionará automaticamente entre elas.
+              <br />
+              <strong>Limite:</strong> 15 requisições por chave por dia • <strong>Reset:</strong> Diário às 00:00
+            </p>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            {geminiKeys.map((api) => (
+              <div key={api.key} className="bg-gray-700 rounded-lg p-4 border border-gray-600">
+                <div className="mb-3">
+                  <h4 className="font-medium text-white">{api.name}</h4>
+                  <p className="text-sm text-gray-400">{api.description}</p>
+                </div>
+
+                <div className="flex items-center space-x-2">
+                  <input
+                    type={showPasswords[api.key] ? 'text' : 'password'}
+                    value={apiKeys[api.key]}
+                    onChange={(e) => handleApiKeyChange(api.key, e.target.value)}
+                    placeholder={`Digite sua chave ${api.name}...`}
+                    className="flex-1 px-3 py-2 bg-gray-600 border border-gray-500 rounded-md text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-cyan-500"
+                  />
+                  <button
+                    onClick={() => togglePasswordVisibility(api.key)}
+                    className="p-2 text-gray-400 hover:text-white transition-colors"
+                  >
+                    {showPasswords[api.key] ? <EyeOff size={18} /> : <Eye size={18} />}
+                  </button>
+                </div>
+              </div>
+            ))}
+          </div>
+
+          {/* Status das Chaves Gemini */}
+          <div className="mt-6 p-4 bg-gray-700 rounded-lg">
+            <h3 className="text-white font-medium mb-3">📊 Status das Chaves</h3>
+            <div className="grid grid-cols-2 md:grid-cols-5 gap-2">
+              {geminiKeys.map((api, index) => {
+                const hasKey = apiKeys[api.key] && apiKeys[api.key].length > 10
+                return (
+                  <div key={api.key} className="flex items-center space-x-2">
+                    {hasKey ? (
+                      <CheckCircle size={16} className="text-green-400" />
+                    ) : (
+                      <XCircle size={16} className="text-gray-500" />
+                    )}
+                    <span className={`text-xs ${hasKey ? 'text-green-300' : 'text-gray-500'}`}>
+                      Chave {index + 1}
+                    </span>
+                  </div>
+                )
+              })}
+            </div>
           </div>
 
           {/* Instruções */}

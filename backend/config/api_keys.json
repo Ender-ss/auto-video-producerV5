@@ -1,6 +1,8 @@
 {
   "rapidapi": "77322fda67msh6bbb767e727a6ebp147c75jsn5b47d75dfb80",
   "openai": "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",
-  "gemini": "AIzaSyBqUjzLHNPycDIzvwnI5JisOwmNubkfRRc",
+  "gemini_1": "AIzaSyBqUjzLHNPycDIzvwnI5JisOwmNubkfRRc",
+  "gemini_2": "AIzaSyAzcc4WHhCnlgujjGXih8671ll6C3jdHc0",
+  "gemini_3": "AIzaSyBXyUWxp6NtRzjxPRF9IDcmFA_0mLR2yGU",
   "openrouter": "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"
 }

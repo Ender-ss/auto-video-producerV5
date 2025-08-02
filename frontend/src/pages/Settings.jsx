@@ -29,6 +29,15 @@ const Settings = () => {
   const [apiKeys, setApiKeys] = useState({
     openai: '',
     gemini_1: '',
+    gemini_2: '',
+    gemini_3: '',
+    gemini_4: '',
+    gemini_5: '',
+    gemini_6: '',
+    gemini_7: '',
+    gemini_8: '',
+    gemini_9: '',
+    gemini_10: '',
     openrouter: '',
     elevenlabs: '',
     together: '',
@@ -37,6 +46,15 @@ const Settings = () => {
   const [apiStatus, setApiStatus] = useState({
     openai: 'unknown',
     gemini_1: 'unknown',
+    gemini_2: 'unknown',
+    gemini_3: 'unknown',
+    gemini_4: 'unknown',
+    gemini_5: 'unknown',
+    gemini_6: 'unknown',
+    gemini_7: 'unknown',
+    gemini_8: 'unknown',
+    gemini_9: 'unknown',
+    gemini_10: 'unknown',
     openrouter: 'unknown',
     elevenlabs: 'unknown',
     together: 'unknown',
@@ -139,6 +157,8 @@ const Settings = () => {
     }))
   }
 
+  console.log('🔍 Renderizando Settings.jsx com múltiplas chaves Gemini')
+
   const apiSections = [
     {
       title: 'Extração de Conteúdo',
@@ -152,8 +172,24 @@ const Settings = () => {
       icon: Zap,
       apis: [
         { key: 'openai', name: 'OpenAI GPT-4', description: 'Melhor qualidade para títulos e roteiros' },
-        { key: 'gemini_1', name: 'Google Gemini', description: 'Gratuito - Recomendado' },
         { key: 'openrouter', name: 'OpenRouter', description: 'Acesso a múltiplos modelos (Claude, Llama, etc.)' }
+      ]
+    },
+    {
+      title: 'Google Gemini (Rotação de Chaves)',
+      icon: Zap,
+      description: '🔄 Configure múltiplas chaves para evitar limites de cota. O sistema rotacionará automaticamente.',
+      apis: [
+        { key: 'gemini_1', name: 'Gemini Chave 1', description: 'Primeira chave Gemini (principal)' },
+        { key: 'gemini_2', name: 'Gemini Chave 2', description: 'Segunda chave para rotação' },
+        { key: 'gemini_3', name: 'Gemini Chave 3', description: 'Terceira chave para rotação' },
+        { key: 'gemini_4', name: 'Gemini Chave 4', description: 'Quarta chave para rotação' },
+        { key: 'gemini_5', name: 'Gemini Chave 5', description: 'Quinta chave para rotação' },
+        { key: 'gemini_6', name: 'Gemini Chave 6', description: 'Sexta chave para rotação' },
+        { key: 'gemini_7', name: 'Gemini Chave 7', description: 'Sétima chave para rotação' },
+        { key: 'gemini_8', name: 'Gemini Chave 8', description: 'Oitava chave para rotação' },
+        { key: 'gemini_9', name: 'Gemini Chave 9', description: 'Nona chave para rotação' },
+        { key: 'gemini_10', name: 'Gemini Chave 10', description: 'Décima chave para rotação' }
       ]
     },
     {
@@ -249,18 +285,30 @@ const Settings = () => {
           {activeTab === 'apis' && (
             <div>
               <div className="mb-6">
-                <h2 className="text-2xl font-bold text-white mb-2">Configuração de APIs</h2>
+                <h2 className="text-2xl font-bold text-white mb-2">🔧 Configuração de APIs - ATUALIZADO</h2>
                 <p className="text-gray-400">
-                  Configure suas chaves de API para habilitar todas as funcionalidades
+                  Configure suas chaves de API para habilitar todas as funcionalidades.
+                  <span className="text-yellow-400">🔄 Agora com suporte para múltiplas chaves Gemini!</span>
                 </p>
               </div>
               
-              {apiSections.map((section) => (
+              {/* DEBUG: Mostrando total de seções */}
+              <div className="mb-4 p-3 bg-yellow-900 border border-yellow-600 rounded">
+                <p className="text-yellow-200">🔍 DEBUG: Total de seções: {apiSections.length}</p>
+                <p className="text-yellow-200">📝 Seções: {apiSections.map(s => s.title).join(', ')}</p>
+              </div>
+
+              {apiSections.map((section, index) => (
                 <div key={section.title} className="mb-8">
                   <div className="flex items-center space-x-2 mb-4">
                     <section.icon size={20} className="text-blue-400" />
-                    <h3 className="text-lg font-semibold text-white">{section.title}</h3>
+                    <h3 className="text-lg font-semibold text-white">
+                      {section.title} {section.title.includes('Gemini') && '🎯 NOVA SEÇÃO!'}
+                    </h3>
                   </div>
+                  {section.description && (
+                    <p className="text-gray-400 mb-4">{section.description}</p>
+                  )}
                   <div className="space-y-4">
                     {section.apis.map((api) => (
                       <div key={api.key} className="bg-gray-700 rounded-lg p-4 border border-gray-600">
@@ -306,6 +354,52 @@ const Settings = () => {
                   </div>
                 </div>
               ))}
+
+              {/* Status da Rotação de Chaves Gemini */}
+              <div className="mt-8 bg-gray-700 rounded-lg p-4 border border-gray-600">
+                <div className="flex items-center space-x-2 mb-4">
+                  <RefreshCw size={20} className="text-cyan-400" />
+                  <h3 className="text-lg font-semibold text-white">Status da Rotação Gemini</h3>
+                </div>
+
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div className="bg-gray-800 rounded p-3">
+                    <h4 className="text-sm font-medium text-gray-300 mb-2">Chaves Configuradas</h4>
+                    <div className="space-y-1">
+                      {[1,2,3,4,5,6,7,8,9,10].map(num => {
+                        const key = `gemini_${num}`
+                        const hasKey = apiKeys[key] && apiKeys[key].length > 10
+                        return (
+                          <div key={key} className="flex items-center space-x-2 text-xs">
+                            {hasKey ? (
+                              <CheckCircle size={12} className="text-green-400" />
+                            ) : (
+                              <XCircle size={12} className="text-gray-500" />
+                            )}
+                            <span className={hasKey ? 'text-green-300' : 'text-gray-500'}>
+                              Chave {num}: {hasKey ? 'Configurada' : 'Não configurada'}
+                            </span>
+                          </div>
+                        )
+                      })}
+                    </div>
+                  </div>
+
+                  <div className="bg-gray-800 rounded p-3">
+                    <h4 className="text-sm font-medium text-gray-300 mb-2">Informações</h4>
+                    <div className="space-y-1 text-xs text-gray-400">
+                      <div>• Limite por chave: 15 requisições/dia</div>
+                      <div>• Rotação automática por uso</div>
+                      <div>• Reset diário às 00:00</div>
+                      <div>• Usado para TTS Gemini</div>
+                    </div>
+                  </div>
+                </div>
+
+                <div className="mt-3 text-xs text-gray-400">
+                  💡 <strong>Dica:</strong> Configure pelo menos 3-5 chaves para evitar limites de cota durante uso intenso.
+                </div>
+              </div>
             </div>
           )}
 

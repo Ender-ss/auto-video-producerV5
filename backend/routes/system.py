@@ -8,8 +8,15 @@ import json
 import os
 from datetime import datetime
 import logging
+import time
+import threading
+from collections import deque
 
 system_bp = Blueprint('system', __name__)
+
+# Sistema de logs em tempo real
+real_time_logs = deque(maxlen=1000)  # Manter últimos 1000 logs
+log_lock = threading.Lock()
 
 # Configurar logging
 LOG_FILE = 'logs/system.log'
@@ -27,59 +34,63 @@ logging.basicConfig(
 
 logger = logging.getLogger(__name__)
 
+def add_real_time_log(message, level="info", source="system"):
+    """Adicionar log ao sistema em tempo real"""
+    with log_lock:
+        log_entry = {
+            'timestamp': datetime.now().isoformat(),
+            'level': level.lower(),
+            'message': message,
+            'source': source,
+            'unix_timestamp': time.time()
+        }
+        real_time_logs.append(log_entry)
+
+        # Também logar no sistema tradicional
+        if level.lower() == 'error':
+            logger.error(f"[{source}] {message}")
+        elif level.lower() == 'warning':
+            logger.warning(f"[{source}] {message}")
+        elif level.lower() == 'success':
+            logger.info(f"[{source}] ✅ {message}")
+        else:
+            logger.info(f"[{source}] {message}")
+
 # ================================
 # 📋 LOGS
 # ================================
 
 @system_bp.route('/logs', methods=['GET'])
 def get_logs():
-    """Obter logs do sistema"""
+    """Obter logs do sistema em tempo real"""
     try:
-        logs = []
-        
-        if os.path.exists(LOG_FILE):
-            with open(LOG_FILE, 'r', encoding='utf-8') as f:
-                lines = f.readlines()
-                
-            # Processar últimas 100 linhas
-            for line in lines[-100:]:
-                if line.strip():
-                    try:
-                        # Parse do formato de log
-                        parts = line.strip().split(' - ', 2)
-                        if len(parts) >= 3:
-                            timestamp = parts[0]
-                            level = parts[1].lower()
-                            message = parts[2]
-                            
-                            logs.append({
-                                'timestamp': timestamp,
-                                'level': level,
-                                'message': message,
-                                'source': 'system'
-                            })
-                    except Exception:
-                        # Se não conseguir parsear, adiciona como info
-                        logs.append({
-                            'timestamp': datetime.now().isoformat(),
-                            'level': 'info',
-                            'message': line.strip(),
-                            'source': 'system'
-                        })
-        
+        since = request.args.get('since', type=float, default=0)
+
+        with log_lock:
+            # Filtrar logs desde o timestamp especificado
+            if since > 0:
+                filtered_logs = [
+                    log for log in real_time_logs
+                    if log['unix_timestamp'] > since
+                ]
+            else:
+                # Se não especificou 'since', retornar todos os logs
+                filtered_logs = list(real_time_logs)
+
         # Ordenar por timestamp (mais recentes primeiro)
-        logs.reverse()
-        
+        filtered_logs.sort(key=lambda x: x['unix_timestamp'], reverse=True)
+
         return jsonify({
             'success': True,
             'data': {
-                'logs': logs,
-                'total': len(logs)
+                'logs': filtered_logs,
+                'total': len(filtered_logs),
+                'server_time': time.time()
             }
         })
-        
+
     except Exception as e:
-        logger.error(f"Erro ao obter logs: {str(e)}")
+        add_real_time_log(f"Erro ao obter logs: {str(e)}", "error", "system")
         return jsonify({
             'success': False,
             'error': str(e)
@@ -89,19 +100,22 @@ def get_logs():
 def clear_logs():
     """Limpar logs do sistema"""
     try:
+        with log_lock:
+            real_time_logs.clear()
+
         if os.path.exists(LOG_FILE):
             with open(LOG_FILE, 'w') as f:
                 f.write('')
-        
-        logger.info("Logs limpos pelo usuário")
-        
+
+        add_real_time_log("Logs limpos pelo usuário", "info", "system")
+
         return jsonify({
             'success': True,
             'message': 'Logs limpos com sucesso'
         })
-        
+
     except Exception as e:
-        logger.error(f"Erro ao limpar logs: {str(e)}")
+        add_real_time_log(f"Erro ao limpar logs: {str(e)}", "error", "system")
         return jsonify({
             'success': False,
             'error': str(e)
@@ -115,24 +129,17 @@ def add_log():
         level = data.get('level', 'info')
         message = data.get('message', '')
         source = data.get('source', 'frontend')
-        
-        # Log usando o logger configurado
-        if level == 'error':
-            logger.error(f"[{source}] {message}")
-        elif level == 'warning':
-            logger.warning(f"[{source}] {message}")
-        elif level == 'success':
-            logger.info(f"[{source}] ✅ {message}")
-        else:
-            logger.info(f"[{source}] {message}")
-        
+
+        # Adicionar ao sistema de logs em tempo real
+        add_real_time_log(message, level, source)
+
         return jsonify({
             'success': True,
             'message': 'Log adicionado'
         })
-        
+
     except Exception as e:
-        logger.error(f"Erro ao adicionar log: {str(e)}")
+        add_real_time_log(f"Erro ao adicionar log: {str(e)}", "error", "system")
         return jsonify({
             'success': False,
             'error': str(e)
