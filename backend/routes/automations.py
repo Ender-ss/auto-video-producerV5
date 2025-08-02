@@ -579,6 +579,121 @@ def generate_tts_gemini():
             'error': f'Erro interno: {str(e)}'
         }), 500
 
+@automations_bp.route('/generate-tts-kokoro', methods=['POST'])
+def generate_tts_kokoro():
+    """Gerar áudio TTS usando Kokoro FastAPI"""
+    try:
+        data = request.get_json()
+        text = data.get('text', '')
+        voice_name = data.get('voice', 'af_bella')
+        kokoro_url = data.get('kokoro_url', 'http://localhost:8880')
+        speed = data.get('speed', 1.0)
+
+        if not text:
+            return jsonify({
+                'success': False,
+                'error': 'Texto é obrigatório'
+            }), 400
+
+        # Criar job ID para controle
+        global TTS_JOB_COUNTER
+        TTS_JOB_COUNTER += 1
+        job_id = f"kokoro_{TTS_JOB_COUNTER}"
+
+        # Registrar job
+        TTS_JOBS[job_id] = {
+            'status': 'running',
+            'text': text[:50] + '...' if len(text) > 50 else text,
+            'start_time': time.time(),
+            'cancelled': False
+        }
+
+        add_real_time_log(f"🎵 Iniciando Kokoro TTS Job {job_id} - {len(text)} chars", "info", "tts-kokoro")
+
+        try:
+            # Gerar áudio TTS usando Kokoro
+            result = generate_tts_with_kokoro(
+                text, kokoro_url=kokoro_url, voice_name=voice_name,
+                speed=speed, job_id=job_id
+            )
+
+            # Verificar se foi bem-sucedido
+            if result.get('success', False):
+                TTS_JOBS[job_id]['status'] = 'completed'
+                add_real_time_log(f"✅ Kokoro TTS gerado com sucesso - {len(text)} chars", "success", "tts-kokoro")
+                result['job_id'] = job_id
+                return jsonify(result)
+            else:
+                TTS_JOBS[job_id]['status'] = 'failed'
+                return jsonify(result)
+
+        except Exception as e:
+            TTS_JOBS[job_id]['status'] = 'failed'
+            error_msg = f'Erro ao gerar áudio com Kokoro: {str(e)}'
+            add_real_time_log(f"❌ {error_msg}", "error", "tts-kokoro")
+            return jsonify({
+                'success': False,
+                'error': error_msg,
+                'job_id': job_id
+            })
+
+    except Exception as e:
+        return jsonify({
+            'success': False,
+            'error': f'Erro interno: {str(e)}'
+        }), 500
+
+@automations_bp.route('/test-kokoro', methods=['POST'])
+def test_kokoro():
+    """Testar conexão com API Kokoro"""
+    try:
+        data = request.get_json()
+        kokoro_url = data.get('kokoro_url', 'http://localhost:8880')
+
+        # Testar endpoint de vozes
+        voices_url = f"{kokoro_url}/v1/audio/voices"
+
+        print(f"🔍 Testando conexão Kokoro: {voices_url}")
+        add_real_time_log(f"🔍 Testando conexão Kokoro: {kokoro_url}", "info", "kokoro-test")
+
+        response = requests.get(voices_url, timeout=10)
+
+        if response.status_code == 200:
+            voices_data = response.json()
+            voices = voices_data.get('voices', [])
+
+            add_real_time_log(f"✅ Kokoro conectado com sucesso - {len(voices)} vozes disponíveis", "success", "kokoro-test")
+
+            return jsonify({
+                'success': True,
+                'message': f'Conexão com Kokoro estabelecida com sucesso',
+                'url': kokoro_url,
+                'voices_count': len(voices),
+                'voices': voices[:10]  # Mostrar apenas as primeiras 10 vozes
+            })
+        else:
+            error_msg = f"Erro ao conectar com Kokoro: {response.status_code} - {response.text}"
+            add_real_time_log(f"❌ {error_msg}", "error", "kokoro-test")
+            return jsonify({
+                'success': False,
+                'error': error_msg
+            })
+
+    except requests.exceptions.ConnectionError:
+        error_msg = f"Não foi possível conectar com Kokoro em {kokoro_url}. Verifique se o servidor está rodando."
+        add_real_time_log(f"❌ {error_msg}", "error", "kokoro-test")
+        return jsonify({
+            'success': False,
+            'error': error_msg
+        })
+    except Exception as e:
+        error_msg = f"Erro ao testar Kokoro: {str(e)}"
+        add_real_time_log(f"❌ {error_msg}", "error", "kokoro-test")
+        return jsonify({
+            'success': False,
+            'error': error_msg
+        })
+
 @automations_bp.route('/generate-tts-elevenlabs', methods=['POST'])
 def generate_tts_elevenlabs():
     """Gerar áudio TTS usando ElevenLabs"""
@@ -1302,6 +1417,97 @@ def generate_titles_custom():
 # ================================
 # 🎵 FUNÇÕES DE TTS
 # ================================
+
+def generate_tts_with_kokoro(text, kokoro_url='http://localhost:8880', voice_name='af_bella', job_id=None, **kwargs):
+    """Gerar áudio TTS usando API Kokoro FastAPI"""
+    try:
+        print(f"🎵 Iniciando TTS com Kokoro - Texto: {len(text)} chars, Voz: {voice_name}")
+        add_real_time_log(f"🎵 Iniciando TTS com Kokoro - Texto: {len(text)} chars, Voz: {voice_name}", "info", "tts-kokoro")
+
+        # Verificar se job foi cancelado
+        if job_id and TTS_JOBS.get(job_id, {}).get('cancelled', False):
+            add_real_time_log(f"🛑 TTS Kokoro - Job {job_id} cancelado antes do início", "warning", "tts-kokoro")
+            raise Exception("Geração cancelada pelo usuário")
+
+        # Configurar URL da API Kokoro
+        url = f"{kokoro_url}/v1/audio/speech"
+
+        # Preparar payload compatível com OpenAI
+        payload = {
+            "model": "kokoro",
+            "input": text,
+            "voice": voice_name,
+            "response_format": "wav",
+            "speed": kwargs.get('speed', 1.0)
+        }
+
+        headers = {
+            'Content-Type': 'application/json'
+        }
+
+        print(f"🔍 Enviando requisição para Kokoro TTS API...")
+        print(f"🔍 URL: {url}")
+        print(f"🔍 Voz: {voice_name}")
+        add_real_time_log(f"🔍 Enviando requisição para Kokoro TTS: {voice_name}", "info", "tts-kokoro")
+
+        # Fazer requisição com timeout otimizado
+        timeout = 60  # Timeout de 60 segundos para Kokoro
+
+        # Verificar cancelamento antes da requisição
+        if job_id and TTS_JOBS.get(job_id, {}).get('cancelled', False):
+            add_real_time_log(f"🛑 TTS Kokoro - Job {job_id} cancelado durante requisição", "warning", "tts-kokoro")
+            raise Exception("Geração cancelada pelo usuário")
+
+        response = requests.post(url, json=payload, headers=headers, timeout=timeout)
+
+        print(f"🔍 Status da resposta: {response.status_code}")
+        add_real_time_log(f"✅ Kokoro TTS - Resposta recebida (status: {response.status_code})", "success", "tts-kokoro")
+
+        if response.status_code != 200:
+            error_msg = f"Erro da API Kokoro TTS: {response.status_code} - {response.text}"
+            print(f"❌ {error_msg}")
+            add_real_time_log(f"❌ {error_msg}", "error", "tts-kokoro")
+            raise Exception(error_msg)
+
+        # Verificar cancelamento após resposta
+        if job_id and TTS_JOBS.get(job_id, {}).get('cancelled', False):
+            add_real_time_log(f"🛑 TTS Kokoro - Job {job_id} cancelado após resposta", "warning", "tts-kokoro")
+            raise Exception("Geração cancelada pelo usuário")
+
+        # Salvar áudio diretamente (Kokoro retorna áudio binário)
+        audio_bytes = response.content
+
+        temp_dir = os.path.join(os.path.dirname(__file__), '..', 'temp')
+        os.makedirs(temp_dir, exist_ok=True)
+
+        timestamp = int(time.time())
+        filename = f"tts_kokoro_{timestamp}.wav"
+        filepath = os.path.join(temp_dir, filename)
+
+        print(f"🔍 Salvando áudio em: {filepath}")
+        add_real_time_log(f"🔍 Salvando áudio Kokoro: {filename}", "info", "tts-kokoro")
+
+        with open(filepath, 'wb') as f:
+            f.write(audio_bytes)
+
+        print(f"✅ Áudio TTS Kokoro gerado com sucesso: {filepath}")
+        add_real_time_log(f"✅ Áudio Kokoro salvo com sucesso: {filename} ({len(audio_bytes)} bytes)", "success", "tts-kokoro")
+
+        return {
+            'success': True,
+            'audio_url': f'/api/automations/audio/{filename}',
+            'filename': filename,
+            'message': 'Áudio gerado com sucesso usando Kokoro TTS'
+        }
+
+    except Exception as e:
+        error_msg = f"Erro no TTS Kokoro: {str(e)}"
+        print(f"❌ {error_msg}")
+        add_real_time_log(f"❌ {error_msg}", "error", "tts-kokoro")
+        return {
+            'success': False,
+            'error': error_msg
+        }
 
 def generate_tts_with_gemini(text, api_key=None, voice_name='Aoede', model='gemini-2.5-flash-preview-tts', job_id=None, **kwargs):
     """Gerar áudio TTS usando API Gemini nativa com rotação de chaves"""

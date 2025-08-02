@@ -73,7 +73,8 @@ const Automations = () => {
   const [apiKeys, setApiKeys] = useState({})
   const [apiStatus, setApiStatus] = useState({
     rapidapi: 'unknown',
-    gemini_tts: 'unknown'
+    gemini_tts: 'unknown',
+    kokoro_tts: 'unknown'
   })
 
   // Estados para teste TTS Gemini
@@ -330,6 +331,47 @@ const Automations = () => {
     }
 
     await checkApiStatus()
+  }
+
+  // Função para testar Kokoro TTS
+  const handleTestKokoroTTS = async () => {
+    const kokoroUrl = ttsSettings.kokoro.kokoro_url
+
+    if (!kokoroUrl.trim()) {
+      alert('Configure a URL do Kokoro TTS primeiro')
+      return
+    }
+
+    setApiStatus(prev => ({ ...prev, kokoro_tts: 'testing' }))
+
+    try {
+      console.log('🎵 Testando Kokoro TTS...')
+
+      const response = await fetch('/api/automations/test-kokoro', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          kokoro_url: kokoroUrl
+        })
+      })
+
+      const result = await response.json()
+      console.log('🔍 Resultado do teste Kokoro:', result)
+
+      if (result.success) {
+        setApiStatus(prev => ({ ...prev, kokoro_tts: 'connected' }))
+        alert(`✅ Kokoro conectado com sucesso!\n\nURL: ${result.url}\nVozes disponíveis: ${result.voices_count}`)
+      } else {
+        setApiStatus(prev => ({ ...prev, kokoro_tts: 'error' }))
+        alert(`❌ Erro ao conectar com Kokoro:\n\n${result.error}`)
+      }
+    } catch (error) {
+      console.error('❌ Erro no teste Kokoro:', error)
+      setApiStatus(prev => ({ ...prev, kokoro_tts: 'error' }))
+      alert(`❌ Erro de conexão com Kokoro:\n\n${error.message}`)
+    }
   }
 
   // Função para testar TTS Gemini
@@ -2630,6 +2672,11 @@ Para cada título, forneça:
       speed: 1.0,
       pitch: 0.0,
       volume_gain_db: 0.0
+    },
+    kokoro: {
+      voice: 'af_bella',
+      kokoro_url: 'http://localhost:8880',
+      speed: 1.0
     }
   })
 
@@ -2836,6 +2883,15 @@ Para cada título, forneça:
           speed: ttsSettings.gemini.speed,
           pitch: ttsSettings.gemini.pitch,
           volume_gain_db: ttsSettings.gemini.volume_gain_db
+        }
+      } else if (ttsProvider === 'kokoro') {
+        console.log('🔄 Usando Kokoro TTS local')
+
+        endpoint = '/api/automations/generate-tts-kokoro'
+        baseRequestData = {
+          voice: ttsSettings.kokoro.voice,
+          kokoro_url: ttsSettings.kokoro.kokoro_url,
+          speed: ttsSettings.kokoro.speed
         }
       }
 
@@ -3176,7 +3232,7 @@ Para cada título, forneça:
                   <label className="block text-sm font-medium text-gray-300 mb-2">
                     Provedor de TTS
                   </label>
-                  <div className="grid grid-cols-2 gap-3">
+                  <div className="grid grid-cols-3 gap-3">
                     <div
                       onClick={() => setTtsProvider('elevenlabs')}
                       className={`bg-gray-700 border rounded-lg p-3 cursor-pointer transition-colors ${
@@ -3204,6 +3260,20 @@ Para cada título, forneça:
                         <span className="text-white font-medium">Gemini TTS</span>
                       </div>
                       <p className="text-xs text-gray-400 mt-1">Gratuito</p>
+                    </div>
+                    <div
+                      onClick={() => setTtsProvider('kokoro')}
+                      className={`bg-gray-700 border rounded-lg p-3 cursor-pointer transition-colors ${
+                        ttsProvider === 'kokoro'
+                          ? 'border-green-500 bg-green-900/30'
+                          : 'border-gray-600 hover:border-green-500'
+                      }`}
+                    >
+                      <div className="flex items-center space-x-2">
+                        <Zap className="w-4 h-4 text-green-400" />
+                        <span className="text-white font-medium">Kokoro TTS</span>
+                      </div>
+                      <p className="text-xs text-gray-400 mt-1">Local/Rápido</p>
                     </div>
                   </div>
                 </div>
@@ -3388,17 +3458,117 @@ Para cada título, forneça:
                   </div>
                 )}
 
+                {ttsProvider === 'kokoro' && (
+                  <div className="space-y-3">
+                    <h5 className="text-md font-medium text-white">⚡ Configurações Kokoro TTS</h5>
+
+                    <div>
+                      <label className="block text-sm font-medium text-gray-300 mb-2">URL do Servidor Kokoro</label>
+                      <input
+                        type="text"
+                        value={ttsSettings.kokoro.kokoro_url}
+                        onChange={(e) => setTtsSettings(prev => ({
+                          ...prev,
+                          kokoro: { ...prev.kokoro, kokoro_url: e.target.value }
+                        }))}
+                        placeholder="http://localhost:8880"
+                        className="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-green-500"
+                      />
+                      <p className="text-xs text-gray-400 mt-1">URL onde o servidor Kokoro FastAPI está rodando</p>
+                    </div>
+
+                    <div>
+                      <label className="block text-sm font-medium text-gray-300 mb-2">Voz</label>
+                      <select
+                        value={ttsSettings.kokoro.voice}
+                        onChange={(e) => setTtsSettings(prev => ({
+                          ...prev,
+                          kokoro: { ...prev.kokoro, voice: e.target.value }
+                        }))}
+                        className="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-green-500"
+                      >
+                        <option value="af_bella">af_bella - Feminina Americana</option>
+                        <option value="af_sarah">af_sarah - Feminina Americana</option>
+                        <option value="af_nicole">af_nicole - Feminina Americana</option>
+                        <option value="af_sky">af_sky - Feminina Americana</option>
+                        <option value="af_heart">af_heart - Feminina Americana</option>
+                        <option value="am_adam">am_adam - Masculina Americana</option>
+                        <option value="am_michael">am_michael - Masculina Americana</option>
+                        <option value="bf_emma">bf_emma - Feminina Britânica</option>
+                        <option value="bf_isabella">bf_isabella - Feminina Britânica</option>
+                        <option value="bm_george">bm_george - Masculina Britânica</option>
+                        <option value="bm_lewis">bm_lewis - Masculina Britânica</option>
+                      </select>
+                    </div>
+
+                    <div>
+                      <label className="block text-sm font-medium text-gray-300 mb-2">
+                        Velocidade: {ttsSettings.kokoro.speed}x
+                      </label>
+                      <input
+                        type="range"
+                        min="0.5"
+                        max="2.0"
+                        step="0.1"
+                        value={ttsSettings.kokoro.speed}
+                        onChange={(e) => setTtsSettings(prev => ({
+                          ...prev,
+                          kokoro: { ...prev.kokoro, speed: parseFloat(e.target.value) }
+                        }))}
+                        className="w-full h-2 bg-gray-700 rounded-lg appearance-none cursor-pointer"
+                      />
+                    </div>
+
+                    <div className="p-3 bg-green-900/20 border border-green-600 rounded-lg">
+                      <div className="flex items-center gap-2 text-green-300 mb-2">
+                        <Zap className="w-4 h-4" />
+                        <span className="font-semibold">Teste de Conexão</span>
+                      </div>
+                      <p className="text-sm text-green-200 mb-3">
+                        Teste se o servidor Kokoro está rodando e acessível.
+                      </p>
+                      <button
+                        onClick={handleTestKokoroTTS}
+                        disabled={apiStatus.kokoro_tts === 'testing'}
+                        className="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors disabled:opacity-50"
+                      >
+                        {apiStatus.kokoro_tts === 'testing' ? 'Testando...' : 'Testar Conexão'}
+                      </button>
+                      {apiStatus.kokoro_tts === 'connected' && (
+                        <div className="mt-2 text-sm text-green-300">
+                          ✅ Conectado com sucesso!
+                        </div>
+                      )}
+                      {apiStatus.kokoro_tts === 'error' && (
+                        <div className="mt-2 text-sm text-red-300">
+                          ❌ Erro de conexão
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                )}
+
                 {/* Verificação de API Keys */}
                 {(() => {
                   const apiKeys = JSON.parse(localStorage.getItem('api_keys') || '{}')
                   const hasElevenLabs = !!apiKeys.elevenlabs
                   const hasGemini = !!(apiKeys.gemini_1 || apiKeys.gemini)
-                  const hasSelectedProviderKey = ttsProvider === 'elevenlabs' ? hasElevenLabs : hasGemini
+                  const hasKokoro = true // Kokoro não precisa de chave de API
+
+                  let hasSelectedProviderKey = false
+                  if (ttsProvider === 'elevenlabs') {
+                    hasSelectedProviderKey = hasElevenLabs
+                  } else if (ttsProvider === 'gemini') {
+                    hasSelectedProviderKey = hasGemini
+                  } else if (ttsProvider === 'kokoro') {
+                    hasSelectedProviderKey = hasKokoro
+                  }
 
                   console.log('🔍 Verificação de chaves:', {
                     ttsProvider,
                     hasElevenLabs,
                     hasGemini,
+                    hasKokoro,
                     hasSelectedProviderKey,
                     availableKeys: Object.keys(apiKeys),
                     gemini_1: !!apiKeys.gemini_1,
@@ -3412,15 +3582,24 @@ Para cada título, forneça:
                         <div className="flex items-center gap-3 text-red-300 mb-3">
                           <AlertCircle className="w-5 h-5" />
                           <span className="font-semibold">
-                            Chave da API {ttsProvider === 'elevenlabs' ? 'ElevenLabs' : 'Gemini'} não configurada
+                            {ttsProvider === 'elevenlabs' && 'Chave da API ElevenLabs não configurada'}
+                            {ttsProvider === 'gemini' && 'Chave da API Gemini não configurada'}
+                            {ttsProvider === 'kokoro' && 'Servidor Kokoro não configurado'}
                           </span>
                         </div>
                         <p className="text-sm text-red-200 mb-3">
-                          Para usar o TTS, você precisa configurar a chave da API do provedor selecionado.
+                          {ttsProvider === 'kokoro'
+                            ? 'Para usar o Kokoro TTS, você precisa ter o servidor rodando localmente.'
+                            : 'Para usar o TTS, você precisa configurar a chave da API do provedor selecionado.'
+                          }
                         </p>
                         <div className="text-xs text-red-300 mb-3 p-2 bg-red-800/30 rounded">
                           <p>Debug: Chaves disponíveis: {Object.keys(apiKeys).join(', ') || 'Nenhuma'}</p>
-                          <p>Procurando por: {ttsProvider === 'elevenlabs' ? 'elevenlabs' : 'gemini_1 ou gemini'}</p>
+                          <p>Procurando por: {
+                            ttsProvider === 'elevenlabs' ? 'elevenlabs' :
+                            ttsProvider === 'gemini' ? 'gemini_1 ou gemini' :
+                            'servidor kokoro local'
+                          }</p>
                         </div>
                         <div className="flex gap-2">
                           <button
