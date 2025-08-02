@@ -15,13 +15,17 @@ import {
   Clock,
   Calendar,
   Copy,
-  FileText
+  FileText,
+  TrendingUp
 } from 'lucide-react'
+import AutomationResults from '../components/AutomationResults'
 
 const AutomationsSimple = () => {
   const [activeTab, setActiveTab] = useState('youtube')
   const [isProcessing, setIsProcessing] = useState(false)
   const [results, setResults] = useState(null)
+  const [showResults, setShowResults] = useState(false)
+  const [automationResults, setAutomationResults] = useState(null)
 
   // Estado para o formulário de extração do YouTube
   const [formData, setFormData] = useState({

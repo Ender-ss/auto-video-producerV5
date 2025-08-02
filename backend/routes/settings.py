@@ -394,7 +394,7 @@ def test_api_connection(api_name, api_key):
 
 logger = logging.getLogger(__name__)
 
-CONFIG_DIR = 'config'
+CONFIG_DIR = os.path.join(os.path.dirname(__file__), '..', 'config')
 API_KEYS_FILE = os.path.join(CONFIG_DIR, 'api_keys.json')
 
 # Criar diretório se não existir
@@ -420,6 +420,77 @@ def save_api_keys():
 
     except Exception as e:
         logger.error(f"Erro ao salvar chaves de API: {str(e)}")
+        return jsonify({
+            'success': False,
+            'error': str(e)
+        }), 500
+
+@settings_bp.route('/api-keys', methods=['POST'])
+def save_api_keys_new():
+    """Salvar chaves de API - Nova rota para compatibilidade com frontend"""
+    try:
+        data = request.get_json()
+
+        print(f"🔍 DEBUG: Dados recebidos no POST: {data}")
+        print(f"🔍 DEBUG: Tipo dos dados: {type(data)}")
+        logger.info(f"🔍 DEBUG: Dados recebidos no POST: {data}")
+        logger.info(f"🔍 DEBUG: Tipo dos dados: {type(data)}")
+
+        if not data:
+            print("❌ Nenhum dado recebido")
+            logger.error("❌ Nenhum dado recebido")
+            return jsonify({
+                'success': False,
+                'error': 'Nenhum dado recebido'
+            }), 400
+
+        # Extrair as chaves do formato complexo do frontend
+        api_keys = {}
+
+        # Mapear os nomes das chaves do frontend para o formato esperado
+        key_mapping = {
+            'openai_key': 'openai',
+            'google_key': 'gemini',
+            'rapidapi': 'rapidapi',
+            'openai': 'openai',
+            'gemini_1': 'gemini',
+            'openrouter': 'openrouter'
+        }
+
+        # SIMPLIFICADO: Processar diretamente as chaves do frontend
+        print(f"🔍 DEBUG: Chaves recebidas: {list(data.keys())}")
+
+        # Processar cada chave diretamente
+        for frontend_key, backend_key in key_mapping.items():
+            if frontend_key in data and data[frontend_key]:
+                clean_key = str(data[frontend_key]).strip()
+                if clean_key and clean_key != '':
+                    api_keys[backend_key] = clean_key
+                    print(f"✅ DEBUG: {frontend_key} -> {backend_key}: {clean_key[:20]}...")
+
+        print(f"🔍 DEBUG: Total de chaves processadas: {len(api_keys)}")
+        print(f"🔍 DEBUG: Chaves finais: {list(api_keys.keys())}")
+        logger.info(f"🔍 DEBUG: Chaves a serem salvas: {api_keys}")
+
+        # Garantir que o diretório existe
+        os.makedirs(CONFIG_DIR, exist_ok=True)
+        print(f"🔍 DEBUG: Salvando em: {API_KEYS_FILE}")
+
+        # Salvar no arquivo
+        with open(API_KEYS_FILE, 'w', encoding='utf-8') as f:
+            json.dump(api_keys, f, indent=2, ensure_ascii=False)
+
+        print("✅ DEBUG: Arquivo salvo com sucesso!")
+        logger.info("✅ Chaves de API salvas via nova rota")
+
+        return jsonify({
+            'success': True,
+            'message': 'Chaves de API salvas com sucesso'
+        })
+
+    except Exception as e:
+        print(f"❌ DEBUG: Erro ao salvar: {str(e)}")
+        logger.error(f"❌ Erro ao salvar chaves de API: {str(e)}")
         return jsonify({
             'success': False,
             'error': str(e)

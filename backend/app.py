@@ -260,6 +260,9 @@ def register_blueprints():
     """Registrar blueprints das rotas"""
     try:
         from routes.automations import automations_bp
+        from routes.premise import premise_bp
+        from routes.scripts import scripts_bp
+        from routes.workflow import workflow_bp
         from routes.channels import channels_bp
         from routes.pipelines import pipelines_bp
         from routes.videos import videos_bp
@@ -268,6 +271,9 @@ def register_blueprints():
         from routes.tests import tests_bp
 
         app.register_blueprint(automations_bp, url_prefix='/api/automations')
+        app.register_blueprint(premise_bp, url_prefix='/api/premise')
+        app.register_blueprint(scripts_bp, url_prefix='/api/scripts')
+        app.register_blueprint(workflow_bp, url_prefix='/api/workflow')
         app.register_blueprint(channels_bp, url_prefix='/api/channels')
         app.register_blueprint(pipelines_bp, url_prefix='/api/pipelines')
         app.register_blueprint(videos_bp, url_prefix='/api/videos')

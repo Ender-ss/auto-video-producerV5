@@ -20,7 +20,7 @@ import Channels from './pages/Channels'
 import Automations from './pages/Automations'
 import Pipeline from './pages/Pipeline'
 import Videos from './pages/Videos'
-import Settings from './pages/Settings'
+import Settings from './pages/SettingsSimple'
 import Analytics from './pages/Analytics'
 import Logs from './pages/Logs'
 import ApiTests from './pages/ApiTests'
@@ -161,9 +161,9 @@ function App() {
                     </motion.div>
                   }
                 />
-                
-                <Route 
-                  path="/pipeline" 
+
+                <Route
+                  path="/pipeline"
                   element={
                     <motion.div
                       key="pipeline"

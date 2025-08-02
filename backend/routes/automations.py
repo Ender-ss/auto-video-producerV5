@@ -470,8 +470,10 @@ def extract_channel_id_from_url(url):
 def extract_channel_name_or_id(input_str):
     """Extrair nome ou ID do canal de URL do YouTube"""
     input_str = input_str.strip()
+    print(f"🔍 DEBUG: Processando entrada: '{input_str}'")
 
     if input_str.startswith('UC') and len(input_str) == 24:
+        print(f"🔍 DEBUG: ID do canal detectado: {input_str}")
         return input_str
 
     patterns = [
@@ -487,10 +489,14 @@ def extract_channel_name_or_id(input_str):
         match = re.search(pattern, input_str)
         if match:
             extracted = match.group(1)
+            print(f"🔍 DEBUG: Padrão '{pattern}' encontrou: '{extracted}'")
             if extracted.startswith('UC') and len(extracted) == 24:
+                print(f"🔍 DEBUG: ID do canal válido: {extracted}")
                 return extracted
+            print(f"🔍 DEBUG: Nome/handle do canal: {extracted}")
             return extracted
 
+    print(f"🔍 DEBUG: Nenhum padrão encontrado para: {input_str}")
     return None
 
 def get_channel_id_rapidapi(channel_name, api_key):
@@ -607,6 +613,9 @@ def get_channel_videos_rapidapi(channel_id, api_key, max_results=50):
             "max_results": min(max_results, 50)  # Limite da API
         }
         print(f"🔍 DEBUG: Parâmetros: {params}")
+        print(f"🔍 DEBUG: Headers: {headers}")
+        print(f"🔍 DEBUG: API Key presente: {'Sim' if api_key else 'Não'}")
+        print(f"🔍 DEBUG: API Key length: {len(api_key) if api_key else 0}")
 
         # Tentar com retry em caso de timeout
         max_retries = 3
@@ -630,13 +639,20 @@ def get_channel_videos_rapidapi(channel_id, api_key, max_results=50):
             }
 
         data = response.json()
-        print(f"🔍 DEBUG: Resposta da API: {data}")
+        print(f"🔍 DEBUG: Resposta da API (primeiros 500 chars): {str(data)[:500]}...")
 
         if 'videos' not in data:
             print(f"🔍 DEBUG: Chaves disponíveis na resposta: {list(data.keys())}")
+            # Verificar se há erro na resposta da API
+            if 'error' in data:
+                print(f"🔍 DEBUG: Erro da API: {data['error']}")
+                return {
+                    'success': False,
+                    'error': f'Erro da API RapidAPI: {data["error"]}'
+                }
             return {
                 'success': False,
-                'error': 'Nenhum vídeo encontrado no canal'
+                'error': 'Nenhum vídeo encontrado no canal - verifique se o ID do canal está correto'
             }
 
         print(f"🔍 DEBUG: Encontrados {len(data['videos'])} vídeos na resposta")
@@ -823,6 +839,7 @@ def generate_titles():
         # Configurar IAs disponíveis
         openai_configured = False
         gemini_configured = False
+        openrouter_configured = False
 
         if api_keys.get('openai'):
             openai_configured = title_generator.configure_openai(api_keys['openai'])
@@ -830,10 +847,13 @@ def generate_titles():
         if api_keys.get('gemini'):
             gemini_configured = title_generator.configure_gemini(api_keys['gemini'])
 
-        if not openai_configured and not gemini_configured:
+        if api_keys.get('openrouter'):
+            openrouter_configured = title_generator.configure_openrouter(api_keys['openrouter'])
+
+        if not openai_configured and not gemini_configured and not openrouter_configured:
             return jsonify({
                 'success': False,
-                'error': 'Nenhuma IA configurada. Configure OpenAI ou Gemini nas configurações.'
+                'error': 'Nenhuma IA configurada. Configure OpenAI, Gemini ou OpenRouter nas configurações.'
             }), 400
 
         print(f"🤖 Gerando títulos sobre '{topic}' baseado em {len(source_titles)} títulos de referência")
@@ -961,6 +981,7 @@ def generate_titles_custom():
         # Configurar IAs disponíveis
         openai_configured = False
         gemini_configured = False
+        openrouter_configured = False
 
         if api_keys.get('openai'):
             openai_configured = title_generator.configure_openai(api_keys['openai'])
@@ -968,10 +989,13 @@ def generate_titles_custom():
         if api_keys.get('gemini'):
             gemini_configured = title_generator.configure_gemini(api_keys['gemini'])
 
-        if not openai_configured and not gemini_configured:
+        if api_keys.get('openrouter'):
+            openrouter_configured = title_generator.configure_openrouter(api_keys['openrouter'])
+
+        if not openai_configured and not gemini_configured and not openrouter_configured:
             return jsonify({
                 'success': False,
-                'error': 'Nenhuma IA configurada. Configure OpenAI ou Gemini nas configurações.'
+                'error': 'Nenhuma IA configurada. Configure OpenAI, Gemini ou OpenRouter nas configurações.'
             }), 400
 
         print(f"🎨 Gerando títulos com prompt personalizado baseado em {len(source_titles)} títulos")

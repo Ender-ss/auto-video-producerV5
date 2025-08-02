@@ -3,7 +3,6 @@
 Auto Video Producer - Geração inteligente de títulos virais
 """
 
-import openai
 import google.generativeai as genai
 import json
 import re
@@ -16,25 +15,71 @@ class TitleGenerator:
     def __init__(self):
         self.openai_client = None
         self.gemini_model = None
+        self.openrouter_api_key = None
         
     def configure_openai(self, api_key: str):
         """Configurar cliente OpenAI"""
         try:
-            openai.api_key = api_key
-            self.openai_client = openai
-            return True
+            print(f"🔍 DEBUG: Tentando configurar OpenAI com chave: {api_key[:20]}...")
+            from openai import OpenAI
+            print("🔍 DEBUG: Biblioteca OpenAI importada com sucesso")
+
+            # Validar formato da chave
+            if not api_key.startswith('sk-'):
+                print(f"❌ Chave OpenAI inválida: deve começar com 'sk-'")
+                return False
+
+            self.openai_client = OpenAI(api_key=api_key)
+            print("🔍 DEBUG: Cliente OpenAI criado com sucesso")
+
+            # Testar a conexão fazendo uma chamada simples
+            try:
+                models = self.openai_client.models.list()
+                print("🔍 DEBUG: Teste de conexão OpenAI bem-sucedido")
+                return True
+            except Exception as test_error:
+                print(f"❌ Erro no teste de conexão OpenAI: {test_error}")
+                return False
+
+        except ImportError as e:
+            print(f"❌ Erro de importação OpenAI: {e}")
+            print("💡 Instale a biblioteca: pip install openai")
+            return False
         except Exception as e:
             print(f"❌ Erro ao configurar OpenAI: {e}")
+            print(f"🔍 DEBUG: Tipo do erro: {type(e)}")
             return False
             
     def configure_gemini(self, api_key: str):
         """Configurar cliente Google Gemini"""
         try:
+            print(f"🔍 DEBUG: Tentando configurar Gemini com chave: {api_key[:20]}...")
             genai.configure(api_key=api_key)
-            self.gemini_model = genai.GenerativeModel('gemini-pro')
+            print("🔍 DEBUG: Gemini configurado com sucesso")
+            # Usar o modelo mais recente disponível
+            self.gemini_model = genai.GenerativeModel('gemini-1.5-flash')
+            print("✅ Gemini configurado com modelo: gemini-1.5-flash")
             return True
         except Exception as e:
             print(f"❌ Erro ao configurar Gemini: {e}")
+            print(f"🔍 DEBUG: Tipo do erro: {type(e)}")
+            # Tentar modelo alternativo
+            try:
+                self.gemini_model = genai.GenerativeModel('gemini-1.5-pro')
+                print("✅ Gemini configurado com modelo alternativo: gemini-1.5-pro")
+                return True
+            except Exception as e2:
+                print(f"❌ Erro ao configurar Gemini (modelo alternativo): {e2}")
+                return False
+
+    def configure_openrouter(self, api_key: str):
+        """Configurar cliente OpenRouter"""
+        try:
+            self.openrouter_api_key = api_key
+            print("✅ OpenRouter configurado com sucesso")
+            return True
+        except Exception as e:
+            print(f"❌ Erro ao configurar OpenRouter: {e}")
             return False
     
     def analyze_viral_patterns(self, titles: List[str]) -> Dict:
@@ -115,7 +160,7 @@ class TitleGenerator:
         prompt = self.create_openai_prompt(source_titles, topic, patterns, style)
         
         try:
-            response = self.openai_client.ChatCompletion.create(
+            response = self.openai_client.chat.completions.create(
                 model="gpt-3.5-turbo",
                 messages=[
                     {"role": "system", "content": "Você é um especialista em criação de títulos virais para YouTube."},
@@ -124,10 +169,10 @@ class TitleGenerator:
                 max_tokens=1000,
                 temperature=0.8
             )
-            
+
             content = response.choices[0].message.content
             titles = self.parse_generated_titles(content)
-            
+
             return titles[:count]
             
         except Exception as e:
@@ -150,11 +195,29 @@ class TitleGenerator:
         prompt = self.create_gemini_prompt(source_titles, topic, patterns, style)
         
         try:
+            print(f"🔍 DEBUG: Enviando prompt para Gemini...")
+            print(f"🔍 DEBUG: Títulos de origem: {source_titles}")
+            print(f"🔍 DEBUG: Quantidade solicitada: {count}")
+
+            # Verificar cancelamento antes de chamar a IA
+            try:
+                from routes.workflow import check_workflow_status
+                check_workflow_status()
+            except:
+                pass  # Se não conseguir importar, continua
+
             response = self.gemini_model.generate_content(prompt)
+            print(f"🔍 DEBUG: Resposta bruta do Gemini: {response.text[:200]}...")
+
             titles = self.parse_generated_titles(response.text)
-            
-            return titles[:count]
-            
+            print(f"🔍 DEBUG: Títulos parseados ({len(titles)}): {titles}")
+            print(f"🔍 DEBUG: Limitando para {count} títulos")
+
+            limited_titles = titles[:count]
+            print(f"🔍 DEBUG: Títulos finais ({len(limited_titles)}): {limited_titles}")
+
+            return limited_titles
+
         except Exception as e:
             print(f"❌ Erro na geração Gemini: {e}")
             return []
@@ -162,9 +225,9 @@ class TitleGenerator:
     def create_openai_prompt(self, source_titles: List[str], topic: str, patterns: Dict, style: str) -> str:
         """Criar prompt otimizado para OpenAI"""
         prompt = f"""
-Analise estes títulos virais de YouTube e crie novos títulos sobre "{topic}":
+Você é um especialista em marketing digital para YouTube. Analise os títulos de referência abaixo e crie NOVOS títulos SIMILARES mas MELHORADOS sobre o mesmo tema.
 
-TÍTULOS DE REFERÊNCIA:
+TÍTULOS DE REFERÊNCIA (extraídos de canal de sucesso):
 {chr(10).join([f"• {title}" for title in source_titles[:5]])}
 
 PADRÕES IDENTIFICADOS:
@@ -173,20 +236,25 @@ PADRÕES IDENTIFICADOS:
 • Estruturas: {', '.join(patterns['structures'])}
 • Comprimento médio: {patterns['length_stats']['avg']:.0f} caracteres
 
-INSTRUÇÕES:
-1. Crie 15 títulos únicos sobre "{topic}"
-2. Use os padrões identificados acima
-3. Estilo: {style}
-4. Mantenha entre {patterns['length_stats']['min']} e {patterns['length_stats']['max']} caracteres
-5. Use gatilhos emocionais e números quando apropriado
-6. Foque em curiosidade, urgência e benefício claro
+INSTRUÇÕES ESPECÍFICAS:
+1. 🎯 MANTENHA o mesmo NICHO/TEMA dos títulos de referência
+2. 🚀 Crie 15 títulos SIMILARES mas MELHORADOS
+3. 📈 Use os padrões identificados para otimizar engajamento
+4. 🎪 Aplique gatilhos psicológicos mais fortes (curiosidade, urgência, exclusividade)
+5. 🔥 Mantenha entre {patterns['length_stats']['min']} e {patterns['length_stats']['max']} caracteres
+6. 💡 Varie as estruturas mas mantenha o estilo {style}
+7. 📊 Foque em títulos que superem os originais em atratividade
+
+IMPORTANTE: Os novos títulos devem ser sobre o MESMO TEMA dos títulos de referência, mas mais otimizados para cliques.
 
 FORMATO DE RESPOSTA:
 1. [TÍTULO 1]
 2. [TÍTULO 2]
 ...
 
-Títulos:
+IMPORTANTE: Gere EXATAMENTE {count} títulos, nem mais nem menos.
+
+Títulos ({count} títulos):
 """
         return prompt
     
@@ -195,60 +263,74 @@ Títulos:
         prompt = f"""
 Você é um especialista em marketing digital e criação de conteúdo viral para YouTube.
 
-TAREFA: Criar títulos virais sobre "{topic}" baseado nos padrões dos títulos de sucesso abaixo.
+TAREFA: Analisar os títulos de referência abaixo e criar NOVOS títulos SIMILARES mas MELHORADOS sobre o mesmo tema/nicho.
 
-TÍTULOS DE REFERÊNCIA (alta performance):
+TÍTULOS DE REFERÊNCIA (extraídos de canal de sucesso):
 {chr(10).join([f"• {title}" for title in source_titles[:5]])}
 
-ANÁLISE DOS PADRÕES:
-• Palavras-chave emocionais mais usadas: {', '.join(patterns['emotional_triggers'][:8])}
-• Números que geram engajamento: {', '.join(patterns['numbers'][:5])}
-• Estruturas eficazes: {', '.join(patterns['structures'])}
+ANÁLISE DOS PADRÕES IDENTIFICADOS:
+• Palavras-chave emocionais: {', '.join(patterns['emotional_triggers'][:8])}
+• Números eficazes: {', '.join(patterns['numbers'][:5])}
+• Estruturas que funcionam: {', '.join(patterns['structures'])}
 • Comprimento ideal: {patterns['length_stats']['min']}-{patterns['length_stats']['max']} caracteres
 
-DIRETRIZES PARA CRIAÇÃO:
-1. Tópico principal: "{topic}"
-2. Estilo desejado: {style}
-3. Quantidade: 15 títulos únicos
-4. Use gatilhos psicológicos (curiosidade, urgência, exclusividade)
-5. Inclua números específicos quando relevante
-6. Mantenha o comprimento otimizado para YouTube
-7. Foque no benefício claro para o viewer
+INSTRUÇÕES ESPECÍFICAS:
+1. 🎯 MANTENHA o mesmo NICHO/TEMA dos títulos de referência
+2. 🚀 MELHORE usando gatilhos psicológicos mais fortes
+3. 📈 OTIMIZE para maior engajamento e cliques
+4. 🎪 Use elementos de curiosidade, urgência, exclusividade
+5. 🔥 Inclua emojis estratégicos quando apropriado
+6. 💡 Varie as estruturas mas mantenha o estilo viral
+7. 📊 Crie títulos que superem os originais em atratividade
+
+IMPORTANTE: Os novos títulos devem ser sobre o MESMO TEMA dos títulos de referência, mas mais atrativos e otimizados.
 
 FORMATO DE RESPOSTA:
 Liste apenas os títulos numerados, um por linha:
 
-1. [TÍTULO]
-2. [TÍTULO]
+1. [TÍTULO MELHORADO]
+2. [TÍTULO MELHORADO]
 ...
 
-Gere os títulos agora:
+IMPORTANTE: Gere EXATAMENTE {count} títulos, nem mais nem menos.
+
+Gere os {count} títulos agora:
 """
         return prompt
     
     def parse_generated_titles(self, content: str) -> List[str]:
         """Extrair títulos do texto gerado pela IA"""
         titles = []
-        
+
+        print(f"🔍 DEBUG: Parseando conteúdo: {content[:200]}...")
+
         # Dividir por linhas
         lines = content.strip().split('\n')
-        
-        for line in lines:
+        print(f"🔍 DEBUG: {len(lines)} linhas encontradas")
+
+        for i, line in enumerate(lines):
+            original_line = line
             line = line.strip()
-            
+
             # Remover numeração (1., 2., etc.)
             line = re.sub(r'^\d+\.?\s*', '', line)
-            
+
             # Remover marcadores (-, •, etc.)
             line = re.sub(r'^[-•*]\s*', '', line)
-            
+
             # Remover colchetes se existirem
             line = re.sub(r'^\[|\]$', '', line)
-            
+
+            print(f"🔍 DEBUG: Linha {i+1}: '{original_line}' -> '{line}' (len: {len(line)})")
+
             # Verificar se é um título válido
             if line and len(line) > 10 and not line.startswith('Título'):
                 titles.append(line.strip())
-        
+                print(f"✅ DEBUG: Título aceito: '{line.strip()}'")
+            else:
+                print(f"❌ DEBUG: Título rejeitado: '{line}' (muito curto ou inválido)")
+
+        print(f"🔍 DEBUG: Total de títulos extraídos: {len(titles)}")
         return titles
     
     def generate_titles_hybrid(self, 
@@ -366,9 +448,14 @@ Gere os títulos agora:
             elif ai_provider == "gemini" and self.gemini_model:
                 titles = self.generate_with_gemini_custom(final_prompt)
                 results['ai_provider_used'] = 'gemini'
+            elif ai_provider == "openrouter" and self.openrouter_api_key:
+                titles = self.generate_with_openrouter_custom(final_prompt, "anthropic/claude-3.5-sonnet")
+                results['ai_provider_used'] = 'openrouter'
             else:
-                # Modo automático - tentar OpenAI primeiro, depois Gemini
+                # Modo automático - tentar OpenAI primeiro, depois OpenRouter, depois Gemini
                 titles = []
+
+                # Tentar OpenAI primeiro
                 if self.openai_client:
                     try:
                         titles = self.generate_with_openai_custom(final_prompt)
@@ -376,6 +463,15 @@ Gere os títulos agora:
                     except Exception as e:
                         print(f"⚠️ OpenAI falhou: {e}")
 
+                # Tentar OpenRouter se OpenAI falhou
+                if not titles and self.openrouter_api_key:
+                    try:
+                        titles = self.generate_with_openrouter_custom(final_prompt, "anthropic/claude-3.5-sonnet")
+                        results['ai_provider_used'] = 'openrouter'
+                    except Exception as e:
+                        print(f"⚠️ OpenRouter falhou: {e}")
+
+                # Tentar Gemini como último recurso
                 if not titles and self.gemini_model:
                     try:
                         titles = self.generate_with_gemini_custom(final_prompt)
@@ -435,7 +531,7 @@ Gere os {count} títulos agora:
             raise Exception("OpenAI não configurado")
 
         try:
-            response = self.openai_client.ChatCompletion.create(
+            response = self.openai_client.chat.completions.create(
                 model="gpt-3.5-turbo",
                 messages=[
                     {"role": "system", "content": "Você é um especialista em criação de títulos virais para YouTube. Siga exatamente as instruções fornecidas."},
@@ -460,11 +556,57 @@ Gere os {count} títulos agora:
             raise Exception("Gemini não configurado")
 
         try:
+            print(f"🔍 DEBUG: Enviando prompt personalizado para Gemini...")
             response = self.gemini_model.generate_content(prompt)
+            print(f"🔍 DEBUG: Resposta bruta do Gemini: {response.text[:300]}...")
+
             titles = self.parse_generated_titles(response.text)
+            print(f"🔍 DEBUG: Títulos parseados do Gemini: {titles}")
 
             return titles
 
         except Exception as e:
             print(f"❌ Erro na geração Gemini: {e}")
+            raise e
+
+    def generate_with_openrouter_custom(self, prompt: str, model: str = "anthropic/claude-3.5-sonnet") -> List[str]:
+        """Gerar títulos com OpenRouter usando prompt personalizado"""
+        if not self.openrouter_api_key:
+            raise Exception("OpenRouter não configurado")
+
+        try:
+            headers = {
+                "Authorization": f"Bearer {self.openrouter_api_key}",
+                "Content-Type": "application/json",
+                "HTTP-Referer": "http://localhost:5173",
+                "X-Title": "Auto Video Producer"
+            }
+
+            data = {
+                "model": model,
+                "messages": [
+                    {"role": "system", "content": "Você é um especialista em criação de títulos virais para YouTube. Siga exatamente as instruções fornecidas."},
+                    {"role": "user", "content": prompt}
+                ],
+                "max_tokens": 1000,
+                "temperature": 0.8
+            }
+
+            response = requests.post(
+                "https://openrouter.ai/api/v1/chat/completions",
+                headers=headers,
+                json=data,
+                timeout=30
+            )
+
+            if response.status_code == 200:
+                result = response.json()
+                content = result['choices'][0]['message']['content']
+                titles = self.parse_generated_titles(content)
+                return titles
+            else:
+                raise Exception(f"OpenRouter API error: {response.status_code} - {response.text}")
+
+        except Exception as e:
+            print(f"❌ Erro na geração OpenRouter: {e}")
             raise e

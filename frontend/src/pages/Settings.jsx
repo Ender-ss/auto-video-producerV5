@@ -29,13 +29,15 @@ const Settings = () => {
   const [apiKeys, setApiKeys] = useState({
     openai: '',
     gemini_1: '',
+    openrouter: '',
     elevenlabs: '',
     together: '',
     rapidapi: ''
   })
   const [apiStatus, setApiStatus] = useState({
     openai: 'unknown',
-    gemini_1: 'unknown', 
+    gemini_1: 'unknown',
+    openrouter: 'unknown',
     elevenlabs: 'unknown',
     together: 'unknown',
     rapidapi: 'unknown'
@@ -103,12 +105,12 @@ const Settings = () => {
       localStorage.setItem('api_keys', JSON.stringify(apiKeys))
       
       // Salvar no backend
-      const response = await fetch('http://localhost:5000/api/settings/save-apis', {
+      const response = await fetch('http://localhost:5000/api/settings/api-keys', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify({ api_keys: apiKeys })
+        body: JSON.stringify(apiKeys)
       })
 
       const data = await response.json()
@@ -150,7 +152,8 @@ const Settings = () => {
       icon: Zap,
       apis: [
         { key: 'openai', name: 'OpenAI GPT-4', description: 'Melhor qualidade para títulos e roteiros' },
-        { key: 'gemini_1', name: 'Google Gemini', description: 'Gratuito - Recomendado' }
+        { key: 'gemini_1', name: 'Google Gemini', description: 'Gratuito - Recomendado' },
+        { key: 'openrouter', name: 'OpenRouter', description: 'Acesso a múltiplos modelos (Claude, Llama, etc.)' }
       ]
     },
     {
@@ -196,25 +199,26 @@ const Settings = () => {
   }
 
   return (
-    <div className="space-y-6">
-      {/* Header */}
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-3xl font-bold text-white">Configurações</h1>
-          <p className="text-gray-400 mt-1">
-            Configure APIs, preferências e parâmetros do sistema
-          </p>
+    <div className="min-h-screen bg-gray-900 p-6">
+      <div className="max-w-6xl mx-auto space-y-6">
+        {/* Header */}
+        <div className="flex items-center justify-between">
+          <div>
+            <h1 className="text-3xl font-bold text-white">Configurações</h1>
+            <p className="text-gray-400 mt-1">
+              Configure APIs, preferências e parâmetros do sistema
+            </p>
+          </div>
+          {unsavedChanges && (
+            <button
+              onClick={saveApiKeys}
+              className="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors flex items-center space-x-2"
+            >
+              <Save size={18} />
+              <span>Salvar Alterações</span>
+            </button>
+          )}
         </div>
-        {unsavedChanges && (
-          <button
-            onClick={saveApiKeys}
-            className="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors flex items-center space-x-2"
-          >
-            <Save size={18} />
-            <span>Salvar Alterações</span>
-          </button>
-        )}
-      </div>
 
       {/* Tabs */}
       <div className="bg-gray-800 rounded-lg border border-gray-700">
