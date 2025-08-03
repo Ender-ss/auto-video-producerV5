@@ -100,6 +100,10 @@ def generate_premises():
                 }), 400
             premises = generate_premises_openai(titles, prompt, title_generator)
 
+        print(f"🔍 DEBUG: Premissas geradas: {len(premises)}")
+        for i, premise in enumerate(premises):
+            print(f"🔍 DEBUG: Premissa {i+1}: título='{premise.get('title', 'N/A')}', premissa_len={len(premise.get('premise', ''))}")
+
         return jsonify({
             'success': True,
             'premises': premises,
@@ -165,12 +169,14 @@ def generate_premises_gemini(titles, prompt, title_generator):
     try:
         if not title_generator.gemini_model:
             raise Exception('Gemini não configurado')
-        
+
+        print(f"🔍 DEBUG: Prompt enviado para Gemini (primeiros 500 chars): {prompt[:500]}...")
+
         response = title_generator.gemini_model.generate_content(prompt)
         content = response.text
-        
+
         return parse_premises_response(content, titles)
-        
+
     except Exception as e:
         raise Exception(f'Erro Gemini: {str(e)}')
 
@@ -200,42 +206,100 @@ def generate_premises_openai(titles, prompt, title_generator):
 def parse_premises_response(content, titles):
     """Parsear resposta da IA para extrair premissas"""
     premises = []
-    
+
+    print(f"🔍 DEBUG: Parseando resposta da IA...")
+    print(f"🔍 DEBUG: Títulos fornecidos: {titles}")
+    print(f"🔍 DEBUG: Conteúdo da resposta (primeiros 500 chars): {content[:500]}...")
+
     try:
-        # Dividir por seções
+        # MÉTODO 1: Tentar parsing estruturado primeiro
         sections = content.split('---')
-        
-        for section in sections:
+        print(f"🔍 DEBUG: Método 1 - Encontradas {len(sections)} seções")
+
+        for i, section in enumerate(sections):
             section = section.strip()
             if not section:
                 continue
-            
+
+            print(f"🔍 DEBUG: Processando seção {i+1}: {section[:100]}...")
+
             # Procurar por padrões de título e premissa
             lines = section.split('\n')
             current_title = None
             current_premise = []
-            
+
             for line in lines:
                 line = line.strip()
                 if not line:
                     continue
-                
+
                 # Detectar título
                 if line.startswith('**TÍTULO:**') or line.startswith('TÍTULO:'):
                     current_title = line.replace('**TÍTULO:**', '').replace('TÍTULO:', '').strip()
+                    print(f"🔍 DEBUG: Título encontrado: '{current_title}'")
                 elif line.startswith('**PREMISSA:**') or line.startswith('PREMISSA:'):
                     current_premise = []
+                    print(f"🔍 DEBUG: Início de premissa detectado")
                 elif current_title and line:
                     current_premise.append(line)
-            
+
             if current_title and current_premise:
+                premise_text = '\n'.join(current_premise).strip()
+                print(f"🔍 DEBUG: Premissa encontrada - Título: '{current_title}', Premissa: {len(premise_text)} chars")
                 premises.append({
                     'title': current_title,
-                    'premise': '\n'.join(current_premise).strip()
+                    'premise': premise_text
+                })
+
+        # MÉTODO 2: Se não encontrou nada, tentar parsing mais flexível
+        if not premises:
+            print(f"🔍 DEBUG: Método 1 falhou, tentando método 2 - parsing flexível...")
+
+            # Tentar encontrar qualquer padrão de título seguido de texto
+            lines = content.split('\n')
+            current_title = None
+            current_premise = []
+
+            for line in lines:
+                line = line.strip()
+                if not line:
+                    continue
+
+                # Procurar por qualquer linha que contenha um dos títulos fornecidos
+                title_found = None
+                for title in titles:
+                    if title.lower() in line.lower() or line.lower() in title.lower():
+                        title_found = title
+                        break
+
+                if title_found:
+                    # Salvar premissa anterior se existir
+                    if current_title and current_premise:
+                        premise_text = '\n'.join(current_premise).strip()
+                        print(f"🔍 DEBUG: Método 2 - Premissa encontrada: '{current_title}', {len(premise_text)} chars")
+                        premises.append({
+                            'title': current_title,
+                            'premise': premise_text
+                        })
+
+                    current_title = title_found
+                    current_premise = []
+                    print(f"🔍 DEBUG: Método 2 - Novo título: '{current_title}'")
+                elif current_title and line and not line.startswith('#'):
+                    current_premise.append(line)
+
+            # Adicionar última premissa
+            if current_title and current_premise:
+                premise_text = '\n'.join(current_premise).strip()
+                print(f"🔍 DEBUG: Método 2 - Última premissa: '{current_title}', {len(premise_text)} chars")
+                premises.append({
+                    'title': current_title,
+                    'premise': premise_text
                 })
         
-        # Se não conseguiu parsear, tentar método alternativo
+        # MÉTODO 3: Se ainda não encontrou nada, criar premissas baseadas no conteúdo completo
         if not premises and titles:
+            print(f"🔍 DEBUG: Métodos 1 e 2 falharam, tentando método 3 - divisão por títulos...")
             # Dividir por títulos conhecidos
             for title in titles:
                 if title in content:
@@ -258,20 +322,44 @@ def parse_premises_response(content, titles):
                         premise_text = premise_text.replace('**PREMISSA:**', '').replace('PREMISSA:', '').strip()
                         
                         if premise_text:
+                            print(f"🔍 DEBUG: Método 3 - Premissa criada: '{title}', {len(premise_text)} chars")
                             premises.append({
                                 'title': title,
                                 'premise': premise_text
                             })
-        
+
+        # MÉTODO 4: Se ainda não tem premissas, criar uma genérica baseada no conteúdo completo
+        if not premises and titles and content.strip():
+            print(f"🔍 DEBUG: Método 4 - Criando premissas genéricas baseadas no conteúdo...")
+            # Dividir o conteúdo em partes iguais para cada título
+            content_clean = content.strip()
+            content_per_title = len(content_clean) // len(titles)
+
+            for i, title in enumerate(titles):
+                start_pos = i * content_per_title
+                end_pos = (i + 1) * content_per_title if i < len(titles) - 1 else len(content_clean)
+                premise_text = content_clean[start_pos:end_pos].strip()
+
+                if premise_text:
+                    print(f"🔍 DEBUG: Método 4 - Premissa genérica: '{title}', {len(premise_text)} chars")
+                    premises.append({
+                        'title': title,
+                        'premise': premise_text
+                    })
+
+        print(f"🔍 DEBUG: Total de premissas parseadas: {len(premises)}")
         return premises
-        
+
     except Exception as e:
         print(f"❌ Erro ao parsear premissas: {e}")
+        print(f"🔍 DEBUG: Usando fallback - criando premissas genéricas para {len(titles)} títulos")
         # Fallback: criar uma premissa genérica para cada título
-        return [
+        fallback_premises = [
             {
                 'title': title,
                 'premise': f"Premissa gerada para: {title}\n\nEsta é uma premissa de exemplo que seria desenvolvida com base no título fornecido."
             }
             for title in titles
         ]
+        print(f"🔍 DEBUG: Fallback criou {len(fallback_premises)} premissas")
+        return fallback_premises

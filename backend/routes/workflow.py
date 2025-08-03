@@ -321,6 +321,25 @@ def test_workflow():
         add_workflow_log(f"✅ Roteiro com {len(scripts_result['scripts']['chapters'])} capítulos gerado",
                         "success", scripts_result['scripts'])
 
+        # ETAPA 5: Geração de TTS (opcional)
+        tts_provider = data.get('tts_provider', None)
+        if tts_provider and tts_provider != 'none':
+            add_workflow_log("🎵 ETAPA 5: Gerando áudio TTS...")
+            check_workflow_status()  # Verificar pausa/cancelamento
+
+            tts_result = execute_tts_generation(
+                scripts_result['scripts'], tts_provider, api_keys, data
+            )
+
+            if tts_result['success']:
+                results['tts'] = tts_result['tts_data']
+                add_workflow_log(f"✅ TTS gerado com sucesso - {len(tts_result['tts_data']['segments'])} segmentos",
+                               "success", tts_result['tts_data'])
+            else:
+                add_workflow_log(f"⚠️ Falha na geração de TTS: {tts_result.get('error', 'Erro desconhecido')}", "warning")
+                # TTS é opcional, não falhar o workflow inteiro
+                results['tts'] = {'error': tts_result.get('error', 'Erro desconhecido')}
+
         # Resultado final
         final_result = {
             'extraction': results['extraction'],
@@ -332,7 +351,8 @@ def test_workflow():
                 'generated_titles': len(results['titles']['generated_titles']),
                 'created_premises': len(results['premises']),
                 'script_chapters': len(results['scripts']['chapters']),
-                'total_words': results['scripts']['total_words']
+                'total_words': results['scripts']['total_words'],
+                'tts_segments': len(results.get('tts', {}).get('segments', [])) if 'tts' in results and 'segments' in results['tts'] else 0
             },
             'timestamp': time.time()
         }
@@ -495,7 +515,25 @@ def complete_workflow():
         
         results['scripts'] = scripts_result['scripts']
         print(f"✅ Roteiro com {len(scripts_result['scripts']['chapters'])} capítulos gerado")
-        
+
+        # ETAPA 5: Geração de TTS (opcional)
+        tts_provider = data.get('tts_provider', None)
+        if tts_provider and tts_provider != 'none':
+            print("🎵 ETAPA 5: Gerando áudio TTS...")
+            check_workflow_status()  # Verificar pausa/cancelamento
+
+            tts_result = execute_tts_generation(
+                scripts_result['scripts'], tts_provider, api_keys, data
+            )
+
+            if tts_result['success']:
+                results['tts'] = tts_result['tts_data']
+                print(f"✅ TTS gerado com sucesso - {len(tts_result['tts_data']['segments'])} segmentos")
+            else:
+                print(f"⚠️ Falha na geração de TTS: {tts_result.get('error', 'Erro desconhecido')}")
+                # TTS é opcional, não falhar o workflow inteiro
+                results['tts'] = {'error': tts_result.get('error', 'Erro desconhecido')}
+
         # Resultado final
         final_result = {
             'extraction': results['extraction'],
@@ -507,7 +545,8 @@ def complete_workflow():
                 'generated_titles': len(results['titles']['generated_titles']),
                 'created_premises': len(results['premises']),
                 'script_chapters': len(results['scripts']['chapters']),
-                'total_words': results['scripts']['total_words']
+                'total_words': results['scripts']['total_words'],
+                'tts_segments': len(results.get('tts', {}).get('segments', [])) if 'tts' in results and 'segments' in results['tts'] else 0
             },
             'timestamp': time.time()
         }
@@ -934,6 +973,122 @@ def execute_script_generation(title_generator, selected_title, selected_premise,
         }
         
     except Exception as e:
+        return {
+            'success': False,
+            'error': str(e)
+        }
+
+def execute_tts_generation(scripts_data, tts_provider, api_keys, workflow_data):
+    """Executar geração de TTS automática"""
+    try:
+        from routes.automations import generate_tts_with_elevenlabs, generate_tts_with_gemini, generate_tts_with_kokoro
+
+        add_workflow_log(f"🎵 Iniciando geração de TTS com {tts_provider.upper()}...")
+
+        # Extrair texto completo do roteiro
+        full_text = ""
+        chapters = scripts_data.get('chapters', [])
+
+        for chapter in chapters:
+            if chapter.get('content'):
+                full_text += chapter['content'] + "\n\n"
+
+        if not full_text.strip():
+            raise Exception("Nenhum conteúdo encontrado no roteiro para gerar TTS")
+
+        add_workflow_log(f"📝 Texto extraído: {len(full_text)} caracteres")
+
+        # Configurar parâmetros baseado no provedor
+        segments = []
+
+        if tts_provider == 'elevenlabs':
+            # Configurações ElevenLabs
+            api_key = api_keys.get('elevenlabs')
+            if not api_key:
+                raise Exception("Chave da API ElevenLabs não configurada")
+
+            voice_id = workflow_data.get('elevenlabs_voice_id', 'default')
+            model_id = workflow_data.get('elevenlabs_model_id', 'eleven_monolingual_v1')
+
+            add_workflow_log(f"🎤 Gerando com ElevenLabs - Voz: {voice_id}")
+
+            result = generate_tts_with_elevenlabs(
+                full_text, api_key, voice_id=voice_id, model_id=model_id
+            )
+
+            if result.get('success'):
+                segments.append({
+                    'index': 1,
+                    'text': full_text[:100] + '...',
+                    'audio': result['data'],
+                    'provider': 'elevenlabs'
+                })
+            else:
+                raise Exception(f"Erro no ElevenLabs: {result.get('error', 'Erro desconhecido')}")
+
+        elif tts_provider == 'gemini':
+            # Configurações Gemini (usar rotação automática)
+            voice_name = workflow_data.get('gemini_voice_name', 'Aoede')
+            model = workflow_data.get('gemini_model', 'gemini-2.0-flash-exp')
+            speed = workflow_data.get('gemini_speed', 1.0)
+
+            add_workflow_log(f"🤖 Gerando com Gemini TTS - Voz: {voice_name}")
+
+            result = generate_tts_with_gemini(
+                full_text, voice_name=voice_name, model=model, speed=speed
+            )
+
+            if result.get('success'):
+                segments.append({
+                    'index': 1,
+                    'text': full_text[:100] + '...',
+                    'audio': result['data'],
+                    'provider': 'gemini'
+                })
+            else:
+                raise Exception(f"Erro no Gemini TTS: {result.get('error', 'Erro desconhecido')}")
+
+        elif tts_provider == 'kokoro':
+            # Configurações Kokoro
+            voice = workflow_data.get('kokoro_voice', 'af_bella')
+            kokoro_url = workflow_data.get('kokoro_url', 'http://localhost:8880')
+            language = workflow_data.get('kokoro_language', 'en')
+            speed = workflow_data.get('kokoro_speed', 1.0)
+
+            add_workflow_log(f"⚡ Gerando com Kokoro TTS - Voz: {voice}, Idioma: {language}")
+
+            result = generate_tts_with_kokoro(
+                full_text, kokoro_url=kokoro_url, voice_name=voice,
+                language=language, speed=speed
+            )
+
+            if result.get('success'):
+                segments.append({
+                    'index': 1,
+                    'text': full_text[:100] + '...',
+                    'audio': result['data'],
+                    'provider': 'kokoro'
+                })
+            else:
+                raise Exception(f"Erro no Kokoro TTS: {result.get('error', 'Erro desconhecido')}")
+
+        else:
+            raise Exception(f"Provedor TTS não suportado: {tts_provider}")
+
+        add_workflow_log(f"✅ TTS gerado com sucesso - {len(segments)} segmento(s)")
+
+        return {
+            'success': True,
+            'tts_data': {
+                'provider': tts_provider,
+                'segments': segments,
+                'total_segments': len(segments),
+                'text_length': len(full_text)
+            }
+        }
+
+    except Exception as e:
+        add_workflow_log(f"❌ Erro na geração de TTS: {str(e)}", "error")
         return {
             'success': False,
             'error': str(e)

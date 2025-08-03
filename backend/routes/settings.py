@@ -763,3 +763,376 @@ def test_together_connection(api_key):
             'success': False,
             'message': f'Erro: {str(e)}'
         }
+
+# ================================
+# 📝 GERENCIAMENTO DE PROMPTS PERSONALIZADOS
+# ================================
+
+def get_db_connection():
+    """Obter conexão com banco de dados SQLite"""
+    import sqlite3
+    db_path = os.path.join(CONFIG_DIR, 'prompts.db')
+    conn = sqlite3.connect(db_path)
+
+    # Criar tabela se não existir
+    cursor = conn.cursor()
+    cursor.execute('''
+        CREATE TABLE IF NOT EXISTS custom_prompts (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            name TEXT UNIQUE NOT NULL,
+            prompt_text TEXT NOT NULL,
+            category TEXT DEFAULT 'geral',
+            created_at TEXT NOT NULL,
+            updated_at TEXT NOT NULL
+        )
+    ''')
+    conn.commit()
+
+    return conn
+
+@settings_bp.route('/custom-prompts', methods=['GET'])
+def get_custom_prompts():
+    """Obter todos os prompts personalizados salvos"""
+    try:
+        conn = get_db_connection()
+        cursor = conn.cursor()
+
+        cursor.execute('''
+            SELECT id, name, prompt_text, category, created_at, updated_at
+            FROM custom_prompts
+            ORDER BY category, name
+        ''')
+
+        prompts = []
+        for row in cursor.fetchall():
+            prompts.append({
+                'id': row[0],
+                'name': row[1],
+                'prompt_text': row[2],
+                'category': row[3],
+                'created_at': row[4],
+                'updated_at': row[5]
+            })
+
+        conn.close()
+
+        return jsonify({
+            'success': True,
+            'prompts': prompts
+        })
+
+    except Exception as e:
+        return jsonify({
+            'success': False,
+            'error': str(e)
+        }), 500
+
+@settings_bp.route('/custom-prompts', methods=['POST'])
+def save_custom_prompt():
+    """Salvar um novo prompt personalizado"""
+    try:
+        data = request.get_json()
+        name = data.get('name', '').strip()
+        prompt_text = data.get('prompt_text', '').strip()
+        category = data.get('category', 'geral').strip()
+
+        if not name or not prompt_text:
+            return jsonify({
+                'success': False,
+                'error': 'Nome e texto do prompt são obrigatórios'
+            }), 400
+
+        conn = get_db_connection()
+        cursor = conn.cursor()
+
+        # Verificar se já existe um prompt com esse nome
+        cursor.execute('SELECT id FROM custom_prompts WHERE name = ?', (name,))
+        existing = cursor.fetchone()
+
+        if existing:
+            conn.close()
+            return jsonify({
+                'success': False,
+                'error': f'Já existe um prompt com o nome "{name}"'
+            }), 400
+
+        # Inserir novo prompt
+        from datetime import datetime
+        now = datetime.now().isoformat()
+        cursor.execute('''
+            INSERT INTO custom_prompts (name, prompt_text, category, created_at, updated_at)
+            VALUES (?, ?, ?, ?, ?)
+        ''', (name, prompt_text, category, now, now))
+
+        prompt_id = cursor.lastrowid
+        conn.commit()
+        conn.close()
+
+        return jsonify({
+            'success': True,
+            'message': f'Prompt "{name}" salvo com sucesso',
+            'prompt_id': prompt_id
+        })
+
+    except Exception as e:
+        return jsonify({
+            'success': False,
+            'error': str(e)
+        }), 500
+
+@settings_bp.route('/custom-prompts/<int:prompt_id>', methods=['PUT'])
+def update_custom_prompt(prompt_id):
+    """Atualizar um prompt personalizado existente"""
+    try:
+        data = request.get_json()
+        name = data.get('name', '').strip()
+        prompt_text = data.get('prompt_text', '').strip()
+        category = data.get('category', 'geral').strip()
+
+        if not name or not prompt_text:
+            return jsonify({
+                'success': False,
+                'error': 'Nome e texto do prompt são obrigatórios'
+            }), 400
+
+        conn = get_db_connection()
+        cursor = conn.cursor()
+
+        # Verificar se o prompt existe
+        cursor.execute('SELECT id FROM custom_prompts WHERE id = ?', (prompt_id,))
+        if not cursor.fetchone():
+            conn.close()
+            return jsonify({
+                'success': False,
+                'error': 'Prompt não encontrado'
+            }), 404
+
+        # Verificar se já existe outro prompt com esse nome
+        cursor.execute('SELECT id FROM custom_prompts WHERE name = ? AND id != ?', (name, prompt_id))
+        if cursor.fetchone():
+            conn.close()
+            return jsonify({
+                'success': False,
+                'error': f'Já existe outro prompt com o nome "{name}"'
+            }), 400
+
+        # Atualizar prompt
+        from datetime import datetime
+        now = datetime.now().isoformat()
+        cursor.execute('''
+            UPDATE custom_prompts
+            SET name = ?, prompt_text = ?, category = ?, updated_at = ?
+            WHERE id = ?
+        ''', (name, prompt_text, category, now, prompt_id))
+
+        conn.commit()
+        conn.close()
+
+        return jsonify({
+            'success': True,
+            'message': f'Prompt "{name}" atualizado com sucesso'
+        })
+
+    except Exception as e:
+        return jsonify({
+            'success': False,
+            'error': str(e)
+        }), 500
+
+@settings_bp.route('/custom-prompts/<int:prompt_id>', methods=['DELETE'])
+def delete_custom_prompt(prompt_id):
+    """Deletar um prompt personalizado"""
+    try:
+        conn = get_db_connection()
+        cursor = conn.cursor()
+
+        # Verificar se o prompt existe e obter o nome
+        cursor.execute('SELECT name FROM custom_prompts WHERE id = ?', (prompt_id,))
+        result = cursor.fetchone()
+
+        if not result:
+            conn.close()
+            return jsonify({
+                'success': False,
+                'error': 'Prompt não encontrado'
+            }), 404
+
+        prompt_name = result[0]
+
+        # Deletar prompt
+        cursor.execute('DELETE FROM custom_prompts WHERE id = ?', (prompt_id,))
+        conn.commit()
+        conn.close()
+
+        return jsonify({
+            'success': True,
+            'message': f'Prompt "{prompt_name}" deletado com sucesso'
+        })
+
+    except Exception as e:
+        return jsonify({
+            'success': False,
+            'error': str(e)
+        }), 500
+
+# ================================
+# 📺 GERENCIAMENTO DE CANAIS SALVOS
+# ================================
+
+def get_channels_db_connection():
+    """Obter conexão com banco de dados SQLite para canais"""
+    import sqlite3
+    db_path = os.path.join(CONFIG_DIR, 'channels.db')
+    conn = sqlite3.connect(db_path)
+
+    # Criar tabela se não existir
+    cursor = conn.cursor()
+    cursor.execute('''
+        CREATE TABLE IF NOT EXISTS saved_channels (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            name TEXT UNIQUE NOT NULL,
+            url TEXT NOT NULL,
+            description TEXT,
+            category TEXT DEFAULT 'geral',
+            created_at TEXT NOT NULL,
+            updated_at TEXT NOT NULL
+        )
+    ''')
+    conn.commit()
+
+    return conn
+
+@settings_bp.route('/saved-channels', methods=['GET'])
+def get_saved_channels():
+    """Obter todos os canais salvos"""
+    try:
+        conn = get_channels_db_connection()
+        cursor = conn.cursor()
+
+        cursor.execute('''
+            SELECT id, name, url, description, category, created_at, updated_at
+            FROM saved_channels
+            ORDER BY category, name
+        ''')
+
+        channels = []
+        for row in cursor.fetchall():
+            channels.append({
+                'id': row[0],
+                'name': row[1],
+                'url': row[2],
+                'description': row[3],
+                'category': row[4],
+                'created_at': row[5],
+                'updated_at': row[6]
+            })
+
+        conn.close()
+
+        return jsonify({
+            'success': True,
+            'channels': channels
+        })
+
+    except Exception as e:
+        return jsonify({
+            'success': False,
+            'error': str(e)
+        }), 500
+
+@settings_bp.route('/saved-channels', methods=['POST'])
+def save_channel():
+    """Salvar um novo canal"""
+    try:
+        data = request.get_json()
+        name = data.get('name', '').strip()
+        url = data.get('url', '').strip()
+        description = data.get('description', '').strip()
+        category = data.get('category', 'geral').strip()
+
+        if not name or not url:
+            return jsonify({
+                'success': False,
+                'error': 'Nome e URL do canal são obrigatórios'
+            }), 400
+
+        # Validar URL do YouTube
+        if 'youtube.com' not in url and 'youtu.be' not in url:
+            return jsonify({
+                'success': False,
+                'error': 'URL deve ser de um canal do YouTube'
+            }), 400
+
+        conn = get_channels_db_connection()
+        cursor = conn.cursor()
+
+        # Verificar se já existe um canal com esse nome
+        cursor.execute('SELECT id FROM saved_channels WHERE name = ?', (name,))
+        existing = cursor.fetchone()
+
+        if existing:
+            conn.close()
+            return jsonify({
+                'success': False,
+                'error': f'Já existe um canal com o nome "{name}"'
+            }), 400
+
+        # Inserir novo canal
+        from datetime import datetime
+        now = datetime.now().isoformat()
+        cursor.execute('''
+            INSERT INTO saved_channels (name, url, description, category, created_at, updated_at)
+            VALUES (?, ?, ?, ?, ?, ?)
+        ''', (name, url, description, category, now, now))
+
+        channel_id = cursor.lastrowid
+        conn.commit()
+        conn.close()
+
+        return jsonify({
+            'success': True,
+            'message': f'Canal "{name}" salvo com sucesso',
+            'channel_id': channel_id
+        })
+
+    except Exception as e:
+        return jsonify({
+            'success': False,
+            'error': str(e)
+        }), 500
+
+@settings_bp.route('/saved-channels/<int:channel_id>', methods=['DELETE'])
+def delete_saved_channel(channel_id):
+    """Deletar um canal salvo"""
+    try:
+        conn = get_channels_db_connection()
+        cursor = conn.cursor()
+
+        # Verificar se o canal existe e obter o nome
+        cursor.execute('SELECT name FROM saved_channels WHERE id = ?', (channel_id,))
+        result = cursor.fetchone()
+
+        if not result:
+            conn.close()
+            return jsonify({
+                'success': False,
+                'error': 'Canal não encontrado'
+            }), 404
+
+        channel_name = result[0]
+
+        # Deletar canal
+        cursor.execute('DELETE FROM saved_channels WHERE id = ?', (channel_id,))
+        conn.commit()
+        conn.close()
+
+        return jsonify({
+            'success': True,
+            'message': f'Canal "{channel_name}" deletado com sucesso'
+        })
+
+    except Exception as e:
+        return jsonify({
+            'success': False,
+            'error': str(e)
+        }), 500

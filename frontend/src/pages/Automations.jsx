@@ -6,6 +6,8 @@
 
 import React, { useState, useEffect } from 'react'
 import { motion } from 'framer-motion'
+import CustomPromptManager from '../components/CustomPromptManager'
+import SavedChannelsManager from '../components/SavedChannelsManager'
 import {
   Play,
   Pause,
@@ -40,7 +42,9 @@ import {
   Copy,
   Calendar,
   Terminal,
-  AlertTriangle
+  AlertTriangle,
+  X,
+  Save
 } from 'lucide-react'
 import AutomationResults from '../components/AutomationResults'
 
@@ -60,6 +64,8 @@ const Automations = () => {
   })
   const [useCustomPrompt, setUseCustomPrompt] = useState(false)
   const [customPrompt, setCustomPrompt] = useState('')
+  const [showPromptManager, setShowPromptManager] = useState(false)
+  const [showChannelsManager, setShowChannelsManager] = useState(false)
 
   // Estado para o formulário de extração do YouTube
   const [formData, setFormData] = useState({
@@ -501,6 +507,36 @@ const Automations = () => {
     }
   }
 
+  // Função para selecionar um prompt salvo
+  const handleSelectPrompt = (prompt) => {
+    setCustomPrompt(prompt.prompt_text)
+    setUseCustomPrompt(true)
+    setShowPromptManager(false)
+
+    // Também atualizar o prompt do workflow se estiver na aba de fluxos completos
+    if (activeTab === 'complete') {
+      setWorkflowConfig(prev => ({
+        ...prev,
+        custom_prompt: prompt.prompt_text,
+        use_custom_prompt: true
+      }))
+    }
+  }
+
+  // Função para selecionar um canal salvo
+  const handleSelectChannel = (channel) => {
+    setChannelUrl(channel.url)
+    setShowChannelsManager(false)
+
+    // Também atualizar o canal do workflow se estiver na aba de fluxos completos
+    if (activeTab === 'complete') {
+      setWorkflowConfig(prev => ({
+        ...prev,
+        channel_url: channel.url
+      }))
+    }
+  }
+
   const handleGenerateTitles = async () => {
     // Validações
     if (useCustomPrompt) {
@@ -595,17 +631,25 @@ const Automations = () => {
     setIsGeneratingPremises(true)
 
     try {
-      const defaultPrompt = `# Gerador de Premissas Profissionais para Vídeos
+      const defaultPrompt = `# Gerador de Premissas Profissionais e Diversas para Vídeos
 
 Você é um especialista em criação de conteúdo e storytelling para YouTube. Sua tarefa é criar premissas envolventes e profissionais baseadas nos títulos fornecidos.
 
-## Instruções:
+## Instruções IMPORTANTES:
 1. Analise cada título fornecido
 2. Crie uma premissa única e cativante para cada um
 3. A premissa deve ter entre 100-200 palavras
 4. Inclua elementos de storytelling (problema, conflito, resolução)
 5. Mantenha o tom adequado ao nicho do título
 6. Adicione ganchos emocionais e curiosidade
+
+## DIVERSIDADE OBRIGATÓRIA:
+- NUNCA use "Em uma pequena vila" ou "Em uma pequena cidade"
+- VARIE os locais: grandes cidades, metrópoles, bairros, empresas, escolas, hospitais, etc.
+- VARIE os inícios: "Durante uma noite", "No meio de", "Quando", "Após anos", "Em pleno", etc.
+- EVITE repetir padrões de início entre diferentes premissas
+- Use cenários modernos e contemporâneos
+- Seja criativo com os ambientes e situações
 
 ## Formato de Resposta:
 Para cada título, forneça:
@@ -715,6 +759,48 @@ Para cada título, forneça:
     ).join('')}`
     navigator.clipboard.writeText(fullScript)
     alert('Roteiro completo copiado para a área de transferência!')
+  }
+
+  const copyScriptConcatenatedToClipboard = (script) => {
+    // Concatenar apenas o conteúdo dos capítulos, sem títulos nem separadores
+    const concatenatedScript = script.chapters.map(chapter =>
+      chapter.content.trim()
+    ).join(' ')
+
+    navigator.clipboard.writeText(concatenatedScript)
+    alert('Roteiro concatenado (sequência completa) copiado para a área de transferência!')
+  }
+
+  const downloadScriptAsTxt = (script, format = 'chapters') => {
+    let content = ''
+    let filename = ''
+
+    if (format === 'chapters') {
+      // Formato com capítulos
+      content = `${script.title}\n\n${script.chapters.map((chapter, i) =>
+        `CAPÍTULO ${i + 1}:\n${chapter.content}\n\n`
+      ).join('')}`
+      filename = `roteiro_${script.title.replace(/[^a-zA-Z0-9]/g, '_').substring(0, 50)}_com_capitulos.txt`
+    } else {
+      // Formato concatenado (sequência completa)
+      content = script.chapters.map(chapter =>
+        chapter.content.trim()
+      ).join(' ')
+      filename = `roteiro_${script.title.replace(/[^a-zA-Z0-9]/g, '_').substring(0, 50)}_sequencia_completa.txt`
+    }
+
+    // Criar blob e fazer download
+    const blob = new Blob([content], { type: 'text/plain;charset=utf-8' })
+    const url = URL.createObjectURL(blob)
+    const link = document.createElement('a')
+    link.href = url
+    link.download = filename
+    document.body.appendChild(link)
+    link.click()
+    document.body.removeChild(link)
+    URL.revokeObjectURL(url)
+
+    alert(`📄 Roteiro baixado como: ${filename}`)
   }
 
   const copyChapterToClipboard = (chapter, index) => {
@@ -1403,9 +1489,19 @@ Para cada título, forneça:
                   rows={4}
                   className="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent resize-none"
                 />
-                <p className="text-xs text-gray-400 mt-1">
-                  💡 Descreva como você quer que os títulos sejam remodelados baseado nos títulos extraídos
-                </p>
+                <div className="flex items-center justify-between mt-2">
+                  <p className="text-xs text-gray-400">
+                    💡 Descreva como você quer que os títulos sejam remodelados baseado nos títulos extraídos
+                  </p>
+                  <button
+                    type="button"
+                    onClick={() => setShowPromptManager(true)}
+                    className="text-xs bg-purple-600 text-white px-3 py-1 rounded hover:bg-purple-700 flex items-center gap-1"
+                  >
+                    <Save className="w-3 h-3" />
+                    Prompts Salvos
+                  </button>
+                </div>
 
                 {/* Exemplos de prompts */}
                 <div className="mt-2">
@@ -1676,8 +1772,54 @@ Para cada título, forneça:
         {/* Seleção de Títulos */}
         <div className="mb-6">
           <h4 className="text-lg font-medium text-white mb-3">Títulos Disponíveis</h4>
-          {results && results.videos && results.videos.length > 0 ? (
+
+          {/* Priorizar títulos gerados, senão usar originais */}
+          {generatedTitles && generatedTitles.generated_titles && generatedTitles.generated_titles.length > 0 ? (
             <div className="space-y-2 max-h-64 overflow-y-auto">
+              <div className="mb-3 p-2 bg-green-900/30 border border-green-700 rounded-lg">
+                <p className="text-green-300 text-sm font-medium">
+                  ✨ Usando títulos gerados pela IA ({generatedTitles.generated_titles.length} disponíveis)
+                </p>
+              </div>
+              {generatedTitles.generated_titles.slice(0, 15).map((title, index) => (
+                <div
+                  key={index}
+                  className={`p-3 rounded-lg border cursor-pointer transition-all ${
+                    selectedTitles.includes(title)
+                      ? 'border-purple-400 bg-purple-900/30'
+                      : 'border-gray-600 hover:border-gray-500'
+                  }`}
+                  onClick={() => toggleTitleSelection(title)}
+                >
+                  <div className="flex items-start space-x-3">
+                    <div className={`w-4 h-4 rounded border-2 mt-1 flex items-center justify-center ${
+                      selectedTitles.includes(title)
+                        ? 'border-purple-400 bg-purple-400'
+                        : 'border-gray-500'
+                    }`}>
+                      {selectedTitles.includes(title) && (
+                        <CheckCircle className="w-3 h-3 text-white" />
+                      )}
+                    </div>
+                    <div className="flex-1">
+                      <p className="text-sm font-medium text-white line-clamp-2">
+                        {title}
+                      </p>
+                      <p className="text-xs text-green-400 mt-1">
+                        🤖 Título gerado pela IA
+                      </p>
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          ) : results && results.videos && results.videos.length > 0 ? (
+            <div className="space-y-2 max-h-64 overflow-y-auto">
+              <div className="mb-3 p-2 bg-yellow-900/30 border border-yellow-700 rounded-lg">
+                <p className="text-yellow-300 text-sm font-medium">
+                  ⚠️ Usando títulos originais - Recomendamos gerar títulos primeiro
+                </p>
+              </div>
               {results.videos.slice(0, 10).map((video, index) => (
                 <div
                   key={index}
@@ -1715,7 +1857,7 @@ Para cada título, forneça:
               <AlertCircle className="w-12 h-12 text-gray-400 mx-auto mb-3" />
               <p className="text-gray-400">Nenhum título encontrado</p>
               <p className="text-sm text-gray-500 mt-1">
-                Extraia títulos primeiro na aba "Extração YouTube"
+                Extraia títulos primeiro na aba "Extração YouTube" e gere títulos na aba "Geração de Títulos"
               </p>
             </div>
           )}
@@ -1773,9 +1915,19 @@ Para cada título, forneça:
             placeholder="Digite seu prompt personalizado aqui... (deixe vazio para usar o padrão)"
             className="w-full h-32 px-3 py-2 bg-gray-700 border border-gray-600 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent resize-none"
           />
-          <p className="text-xs text-gray-400 mt-1">
-            Prompt personalizado para gerar premissas específicas para seu nicho
-          </p>
+          <div className="flex items-center justify-between mt-2">
+            <p className="text-xs text-gray-400">
+              💡 Prompt personalizado para gerar premissas específicas para seu nicho
+            </p>
+            <button
+              type="button"
+              onClick={() => setShowPromptManager(true)}
+              className="text-xs bg-purple-600 text-white px-3 py-1 rounded hover:bg-purple-700 flex items-center gap-1"
+            >
+              <Save className="w-3 h-3" />
+              Prompts Salvos
+            </button>
+          </div>
         </div>
 
         {/* Botão de Geração */}
@@ -2075,13 +2227,39 @@ Para cada título, forneça:
               <FileText className="text-green-400" />
               <span>Roteiro Gerado</span>
             </h4>
-            <button
-              onClick={() => copyScriptToClipboard(generatedScripts)}
-              className="flex items-center space-x-2 px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors"
-            >
-              <Copy size={16} />
-              <span>Copiar Roteiro Completo</span>
-            </button>
+            <div className="flex items-center space-x-2 flex-wrap">
+              {/* Botões de Copiar */}
+              <button
+                onClick={() => copyScriptToClipboard(generatedScripts)}
+                className="flex items-center space-x-2 px-3 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors text-sm"
+              >
+                <Copy size={14} />
+                <span>Copiar com Capítulos</span>
+              </button>
+              <button
+                onClick={() => copyScriptConcatenatedToClipboard(generatedScripts)}
+                className="flex items-center space-x-2 px-3 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors text-sm"
+              >
+                <Copy size={14} />
+                <span>Copiar Sequência</span>
+              </button>
+
+              {/* Botões de Download */}
+              <button
+                onClick={() => downloadScriptAsTxt(generatedScripts, 'chapters')}
+                className="flex items-center space-x-2 px-3 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors text-sm"
+              >
+                <Download size={14} />
+                <span>Baixar com Capítulos</span>
+              </button>
+              <button
+                onClick={() => downloadScriptAsTxt(generatedScripts, 'concatenated')}
+                className="flex items-center space-x-2 px-3 py-2 bg-orange-600 text-white rounded-lg hover:bg-orange-700 transition-colors text-sm"
+              >
+                <Download size={14} />
+                <span>Baixar Sequência</span>
+              </button>
+            </div>
           </div>
 
           {/* Informações do Roteiro */}
@@ -2162,6 +2340,16 @@ Para cada título, forneça:
                   placeholder="CanalClaYOliveiraOficial ou UCykzGI8qdfLywefslXnnyGw"
                   className="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
                 />
+                <div className="flex justify-end mt-2">
+                  <button
+                    type="button"
+                    onClick={() => setShowChannelsManager(true)}
+                    className="text-xs bg-red-600 text-white px-3 py-1 rounded hover:bg-red-700 flex items-center gap-1"
+                  >
+                    <Youtube className="w-3 h-3" />
+                    Canais Salvos
+                  </button>
+                </div>
               </div>
 
               <div className="grid grid-cols-2 gap-4">
@@ -2255,9 +2443,19 @@ Para cada título, forneça:
                       rows={3}
                       className="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent resize-none"
                     />
-                    <p className="text-xs text-gray-400 mt-1">
-                      💡 Descreva como você quer que os títulos sejam remodelados
-                    </p>
+                    <div className="flex items-center justify-between mt-2">
+                      <p className="text-xs text-gray-400">
+                        💡 Descreva como você quer que os títulos sejam remodelados
+                      </p>
+                      <button
+                        type="button"
+                        onClick={() => setShowPromptManager(true)}
+                        className="text-xs bg-purple-600 text-white px-3 py-1 rounded hover:bg-purple-700 flex items-center gap-1"
+                      >
+                        <Save className="w-3 h-3" />
+                        Prompts Salvos
+                      </button>
+                    </div>
                   </div>
                 )}
               </div>
@@ -2624,13 +2822,39 @@ Para cada título, forneça:
                 <h5 className="font-medium text-white">
                   Roteiro Final: {workflowResults.scripts.title}
                 </h5>
-                <button
-                  onClick={() => copyScriptToClipboard(workflowResults.scripts)}
-                  className="flex items-center space-x-2 px-3 py-1 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors"
-                >
-                  <Copy size={14} />
-                  <span>Copiar Roteiro</span>
-                </button>
+                <div className="flex items-center space-x-1 flex-wrap">
+                  {/* Botões de Copiar */}
+                  <button
+                    onClick={() => copyScriptToClipboard(workflowResults.scripts)}
+                    className="flex items-center space-x-1 px-2 py-1 bg-green-600 text-white rounded hover:bg-green-700 transition-colors text-xs"
+                  >
+                    <Copy size={12} />
+                    <span>Copiar</span>
+                  </button>
+                  <button
+                    onClick={() => copyScriptConcatenatedToClipboard(workflowResults.scripts)}
+                    className="flex items-center space-x-1 px-2 py-1 bg-blue-600 text-white rounded hover:bg-blue-700 transition-colors text-xs"
+                  >
+                    <Copy size={12} />
+                    <span>Sequência</span>
+                  </button>
+
+                  {/* Botões de Download */}
+                  <button
+                    onClick={() => downloadScriptAsTxt(workflowResults.scripts, 'chapters')}
+                    className="flex items-center space-x-1 px-2 py-1 bg-purple-600 text-white rounded hover:bg-purple-700 transition-colors text-xs"
+                  >
+                    <Download size={12} />
+                    <span>TXT</span>
+                  </button>
+                  <button
+                    onClick={() => downloadScriptAsTxt(workflowResults.scripts, 'concatenated')}
+                    className="flex items-center space-x-1 px-2 py-1 bg-orange-600 text-white rounded hover:bg-orange-700 transition-colors text-xs"
+                  >
+                    <Download size={12} />
+                    <span>TXT Seq</span>
+                  </button>
+                </div>
               </div>
               <div className="text-sm text-gray-400 mb-2">
                 {workflowResults.scripts.total_words} palavras • {workflowResults.scripts.chapters.length} capítulos
@@ -4264,6 +4488,52 @@ Para cada título, forneça:
           )}
         </div>
       </div>
+
+      {/* Modal do Gerenciador de Prompts */}
+      {showPromptManager && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-lg max-w-4xl w-full max-h-[90vh] overflow-hidden">
+            <div className="flex items-center justify-between p-4 border-b">
+              <h2 className="text-xl font-semibold text-gray-900">📝 Gerenciador de Prompts</h2>
+              <button
+                onClick={() => setShowPromptManager(false)}
+                className="text-gray-500 hover:text-gray-700"
+              >
+                <X className="w-6 h-6" />
+              </button>
+            </div>
+            <div className="p-4 overflow-y-auto max-h-[calc(90vh-80px)]">
+              <CustomPromptManager
+                onSelectPrompt={handleSelectPrompt}
+                showInModal={true}
+              />
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Modal do Gerenciador de Canais */}
+      {showChannelsManager && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-lg max-w-4xl w-full max-h-[90vh] overflow-hidden">
+            <div className="flex items-center justify-between p-4 border-b">
+              <h2 className="text-xl font-semibold text-gray-900">📺 Gerenciador de Canais</h2>
+              <button
+                onClick={() => setShowChannelsManager(false)}
+                className="text-gray-500 hover:text-gray-700"
+              >
+                <X className="w-6 h-6" />
+              </button>
+            </div>
+            <div className="p-4 overflow-y-auto max-h-[calc(90vh-80px)]">
+              <SavedChannelsManager
+                onSelectChannel={handleSelectChannel}
+                showInModal={true}
+              />
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Modal de Resultados */}
       <AutomationResults

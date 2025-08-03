@@ -18,7 +18,8 @@ import {
   AlertCircle,
   FileAudio,
   Clock,
-  User
+  User,
+  Zap
 } from 'lucide-react'
 
 const TTSGenerator = ({ scriptData, isVisible, onClose }) => {
@@ -43,6 +44,12 @@ const TTSGenerator = ({ scriptData, isVisible, onClose }) => {
       speed: 1.0,
       pitch: 0.0,
       volume_gain_db: 0.0
+    },
+    kokoro: {
+      voice: 'af_bella',
+      kokoro_url: 'http://localhost:8880',
+      speed: 1.0,
+      language: 'en'
     }
   })
   const [segmentAudio, setSegmentAudio] = useState(true)
@@ -199,6 +206,16 @@ const TTSGenerator = ({ scriptData, isVisible, onClose }) => {
           pitch: voiceSettings.gemini.pitch,
           volume_gain_db: voiceSettings.gemini.volume_gain_db
         }
+      } else if (currentProvider === 'kokoro') {
+        console.log('🔄 Usando Kokoro TTS local')
+
+        endpoint = '/api/automations/generate-tts-kokoro'
+        baseRequestData = {
+          voice: voiceSettings.kokoro.voice,
+          kokoro_url: voiceSettings.kokoro.kokoro_url,
+          speed: voiceSettings.kokoro.speed,
+          language: voiceSettings.kokoro.language
+        }
       }
 
       // Gerar áudio para cada segmento
@@ -223,8 +240,8 @@ const TTSGenerator = ({ scriptData, isVisible, onClose }) => {
 
         const result = await response.json()
 
-        // Capturar job_id se disponível (apenas para Gemini)
-        if (result.job_id && currentProvider === 'gemini' && i === 0) {
+        // Capturar job_id se disponível (para Gemini e Kokoro)
+        if (result.job_id && (currentProvider === 'gemini' || currentProvider === 'kokoro') && i === 0) {
           setCurrentJobId(result.job_id)
           setCanCancel(true)
           console.log(`🎵 Job ID capturado: ${result.job_id}`)
@@ -389,7 +406,7 @@ const TTSGenerator = ({ scriptData, isVisible, onClose }) => {
                 <Settings className="w-5 h-5" />
                 Provedor de TTS
               </h3>
-              <div className="grid grid-cols-2 gap-4">
+              <div className="grid grid-cols-3 gap-4">
                 <button
                   onClick={() => setCurrentProvider('elevenlabs')}
                   className={`p-4 rounded-lg border-2 transition-all ${
@@ -406,12 +423,12 @@ const TTSGenerator = ({ scriptData, isVisible, onClose }) => {
                     </div>
                   </div>
                 </button>
-                
+
                 <button
                   onClick={() => setCurrentProvider('gemini')}
                   className={`p-4 rounded-lg border-2 transition-all ${
                     currentProvider === 'gemini'
-                      ? 'border-purple-500 bg-purple-50'
+                      ? 'border-blue-500 bg-blue-50'
                       : 'border-gray-200 hover:border-gray-300'
                   }`}
                 >
@@ -420,6 +437,23 @@ const TTSGenerator = ({ scriptData, isVisible, onClose }) => {
                     <div className="text-left">
                       <div className="font-semibold">Gemini TTS</div>
                       <div className="text-sm text-gray-600">Gratuito</div>
+                    </div>
+                  </div>
+                </button>
+
+                <button
+                  onClick={() => setCurrentProvider('kokoro')}
+                  className={`p-4 rounded-lg border-2 transition-all ${
+                    currentProvider === 'kokoro'
+                      ? 'border-green-500 bg-green-50'
+                      : 'border-gray-200 hover:border-gray-300'
+                  }`}
+                >
+                  <div className="flex items-center gap-3">
+                    <Zap className="w-5 h-5 text-green-600" />
+                    <div className="text-left">
+                      <div className="font-semibold">Kokoro TTS</div>
+                      <div className="text-sm text-gray-600">Local</div>
                     </div>
                   </div>
                 </button>
@@ -634,6 +668,120 @@ const TTSGenerator = ({ scriptData, isVisible, onClose }) => {
                         className="w-full"
                       />
                     </div>
+                  </div>
+                </div>
+              )}
+
+              {/* Kokoro TTS Settings */}
+              {currentProvider === 'kokoro' && (
+                <div className="space-y-4 p-4 bg-green-50 border border-green-200 rounded-lg">
+                  <h4 className="font-semibold text-green-800 flex items-center gap-2">
+                    <Zap className="w-4 h-4" />
+                    Configurações Kokoro TTS
+                  </h4>
+
+                  <div className="grid grid-cols-2 gap-4">
+                    <div>
+                      <label className="block text-sm font-medium mb-2">Idioma</label>
+                      <select
+                        value={voiceSettings.kokoro.language}
+                        onChange={(e) => {
+                          const newLanguage = e.target.value
+                          let defaultVoice = 'af_bella'
+                          if (newLanguage === 'pt') defaultVoice = 'pf_dora'
+                          else if (newLanguage === 'zh') defaultVoice = 'zf_xiaobei'
+                          else if (newLanguage === 'ja') defaultVoice = 'jf_alpha'
+
+                          setVoiceSettings(prev => ({
+                            ...prev,
+                            kokoro: {
+                              ...prev.kokoro,
+                              language: newLanguage,
+                              voice: defaultVoice
+                            }
+                          }))
+                        }}
+                        className="w-full p-2 border border-gray-300 rounded-lg"
+                      >
+                        <option value="en">🇺🇸 Inglês</option>
+                        <option value="pt">🇵🇹 Português</option>
+                        <option value="zh">🇨🇳 Chinês</option>
+                        <option value="ja">🇯🇵 Japonês</option>
+                      </select>
+                    </div>
+
+                    <div>
+                      <label className="block text-sm font-medium mb-2">Voz</label>
+                      <select
+                        value={voiceSettings.kokoro.voice}
+                        onChange={(e) => setVoiceSettings(prev => ({
+                          ...prev,
+                          kokoro: { ...prev.kokoro, voice: e.target.value }
+                        }))}
+                        className="w-full p-2 border border-gray-300 rounded-lg"
+                      >
+                        {voiceSettings.kokoro.language === 'pt' ? (
+                          <>
+                            <option value="pf_dora">🇵🇹 pf_dora - Feminina</option>
+                            <option value="pm_alex">🇵🇹 pm_alex - Masculina</option>
+                            <option value="pm_santa">🇵🇹 pm_santa - Masculina (Santa)</option>
+                          </>
+                        ) : voiceSettings.kokoro.language === 'zh' ? (
+                          <>
+                            <option value="zf_xiaobei">🇨🇳 zf_xiaobei - Feminina</option>
+                            <option value="zf_xiaoni">🇨🇳 zf_xiaoni - Feminina</option>
+                            <option value="zm_yunjian">🇨🇳 zm_yunjian - Masculina</option>
+                          </>
+                        ) : voiceSettings.kokoro.language === 'ja' ? (
+                          <>
+                            <option value="jf_alpha">🇯🇵 jf_alpha - Feminina</option>
+                            <option value="jf_gongitsune">🇯🇵 jf_gongitsune - Feminina</option>
+                            <option value="jm_kumo">🇯🇵 jm_kumo - Masculina</option>
+                          </>
+                        ) : (
+                          <>
+                            <option value="af_bella">af_bella - Feminina Americana</option>
+                            <option value="af_sarah">af_sarah - Feminina Americana</option>
+                            <option value="am_adam">am_adam - Masculina Americana</option>
+                            <option value="am_michael">am_michael - Masculina Americana</option>
+                            <option value="bf_emma">bf_emma - Feminina Britânica</option>
+                            <option value="bm_george">bm_george - Masculina Britânica</option>
+                          </>
+                        )}
+                      </select>
+                    </div>
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-medium mb-2">
+                      Velocidade: {voiceSettings.kokoro.speed}x
+                    </label>
+                    <input
+                      type="range"
+                      min="0.5"
+                      max="2.0"
+                      step="0.1"
+                      value={voiceSettings.kokoro.speed}
+                      onChange={(e) => setVoiceSettings(prev => ({
+                        ...prev,
+                        kokoro: { ...prev.kokoro, speed: parseFloat(e.target.value) }
+                      }))}
+                      className="w-full"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-medium mb-2">URL do Kokoro TTS</label>
+                    <input
+                      type="text"
+                      value={voiceSettings.kokoro.kokoro_url}
+                      onChange={(e) => setVoiceSettings(prev => ({
+                        ...prev,
+                        kokoro: { ...prev.kokoro, kokoro_url: e.target.value }
+                      }))}
+                      className="w-full p-2 border border-gray-300 rounded-lg"
+                      placeholder="http://localhost:8880"
+                    />
                   </div>
                 </div>
               )}
