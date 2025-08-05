@@ -18,13 +18,17 @@ import LoadingSpinner from './components/LoadingSpinner'
 import Dashboard from './pages/Dashboard'
 import Channels from './pages/Channels'
 import Automations from './pages/Automations'
+import AutomationsRoteirosTest from './pages/AutomationsRoteirosTest'
+import AutomationsOld from './pages/AutomationsOld'
+import AgentRoteirosSimples from './pages/AgentRoteirosSimples'
 import Pipeline from './pages/Pipeline'
 import Videos from './pages/Videos'
 import Settings from './pages/SettingsSimple'
 import SettingsTest from './pages/SettingsTest'
 import Analytics from './pages/Analytics'
 import Logs from './pages/Logs'
-import ApiTests from './pages/ApiTests'
+import ApiTests from './pages/ApiTests';
+import ImageGeneration from './pages/ImageGeneration';
 
 // Mock system status for demo
 const mockSystemStatus = {
@@ -149,6 +153,21 @@ function App() {
                 />
 
                 <Route
+                  path="/automations-old"
+                  element={
+                    <motion.div
+                      key="automations-old"
+                      initial={{ opacity: 0, y: 20 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      exit={{ opacity: 0, y: -20 }}
+                      transition={{ duration: 0.3 }}
+                    >
+                      <AutomationsOld />
+                    </motion.div>
+                  }
+                />
+
+                <Route
                   path="/automations"
                   element={
                     <motion.div
@@ -158,7 +177,37 @@ function App() {
                       exit={{ opacity: 0, y: -20 }}
                       transition={{ duration: 0.3 }}
                     >
-                      <Automations />
+                      <AutomationsRoteirosTest />
+                    </motion.div>
+                  }
+                />
+
+                <Route
+                  path="/automations-roteiros-test"
+                  element={
+                    <motion.div
+                      key="automations-roteiros-test"
+                      initial={{ opacity: 0, y: 20 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      exit={{ opacity: 0, y: -20 }}
+                      transition={{ duration: 0.3 }}
+                    >
+                      <AutomationsRoteirosTest />
+                    </motion.div>
+                  }
+                />
+
+                <Route
+                  path="/agente-roteiros"
+                  element={
+                    <motion.div
+                      key="agente-roteiros"
+                      initial={{ opacity: 0, y: 20 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      exit={{ opacity: 0, y: -20 }}
+                      transition={{ duration: 0.3 }}
+                    >
+                      <AgentRoteirosSimples />
                     </motion.div>
                   }
                 />
@@ -264,6 +313,21 @@ function App() {
                       transition={{ duration: 0.3 }}
                     >
                       <ApiTests />
+                    </motion.div>
+                  }
+                />
+
+                <Route
+                  path="/image-generation"
+                  element={
+                    <motion.div
+                      key="image-generation"
+                      initial={{ opacity: 0, y: 20 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      exit={{ opacity: 0, y: -20 }}
+                      transition={{ duration: 0.3 }}
+                    >
+                      <ImageGeneration />
                     </motion.div>
                   }
                 />

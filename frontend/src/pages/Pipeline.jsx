@@ -24,9 +24,12 @@ import {
   Activity
 } from 'lucide-react'
 
+import ImageGenerationStep from '../components/ImageGenerationStep';
+
 const Pipeline = () => {
   const [searchTerm, setSearchTerm] = useState('')
-  const [statusFilter, setStatusFilter] = useState('all')
+    const [statusFilter, setStatusFilter] = useState('all')
+  const [activePipeline, setActivePipeline] = useState(null)
 
   // Mock data
   const mockPipelines = [
@@ -41,7 +44,8 @@ const Pipeline = () => {
       estimated_completion: '2024-01-30T11:15:00',
       video_style: 'motivational',
       target_duration: 300,
-      logs_count: 12
+      logs_count: 12,
+      script: 'Roteiro sobre como ganhar dinheiro online...'
     },
     {
       id: '2',
@@ -54,7 +58,8 @@ const Pipeline = () => {
       estimated_completion: '2024-01-30T11:30:00',
       video_style: 'educational',
       target_duration: 420,
-      logs_count: 8
+      logs_count: 8,
+      script: 'Cena 1: Close-up em um gráfico de ações subindo. Narração: Você já se perguntou como os ricos ficam cada vez mais ricos? Cena 2: Uma pessoa sorrindo enquanto usa um laptop em um café. Narração: Não é sorte, é estratégia.'
     },
     {
       id: '3',
@@ -67,7 +72,8 @@ const Pipeline = () => {
       estimated_completion: '2024-01-30T11:45:00',
       video_style: 'story',
       target_duration: 360,
-      logs_count: 4
+      logs_count: 4,
+      script: 'Roteiro sobre uma história de transformação de vida...'
     }
   ]
 
@@ -266,7 +272,18 @@ const Pipeline = () => {
                       />
                     </div>
                   </div>
-                  
+
+                  {/* Etapa de Geração de Imagem */}
+                  {pipeline.status === 'generating_images' && (
+                    <div className="mt-4">
+                      <ImageGenerationStep
+                        script={pipeline.script}
+                        onComplete={(images) => console.log('Imagens geradas:', images)}
+                        onError={(error) => console.error('Erro na geração de imagens:', error)}
+                      />
+                    </div>
+                  )}
+
                   {/* Actions */}
                   <div className="flex items-center justify-between pt-3 border-t border-gray-600">
                     <div className="flex items-center space-x-4 text-sm text-gray-400">

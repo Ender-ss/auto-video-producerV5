@@ -38,6 +38,26 @@ def get_api_keys():
             'error': str(e)
         }), 500
 
+@settings_bp.route('/api-keys/<api_name>', methods=['GET'])
+def get_single_api_key(api_name):
+    """Obter uma chave de API específica."""
+    try:
+        config_path = os.path.join(os.path.dirname(__file__), '..', 'config', 'api_keys.json')
+        if os.path.exists(config_path):
+            with open(config_path, 'r') as f:
+                keys = json.load(f)
+            
+            key_value = keys.get(api_name)
+            
+            if key_value:
+                return jsonify({'success': True, 'api_key': key_value})
+            else:
+                return jsonify({'success': False, 'error': f'Chave para {api_name} não encontrada'}), 404
+        else:
+            return jsonify({'success': False, 'error': 'Arquivo de configuração não encontrado'}), 404
+    except Exception as e:
+        return jsonify({'success': False, 'error': str(e)}), 500
+
 @settings_bp.route('/apis', methods=['GET'])
 def get_api_configs():
     """Obter configurações de APIs"""
@@ -499,13 +519,6 @@ def save_api_keys_new():
 
     except Exception as e:
         logger.error(f"❌ Erro ao salvar chaves de API via nova rota: {str(e)}")
-        return jsonify({
-            'success': False,
-            'error': str(e)
-        }), 500
-
-    except Exception as e:
-        logger.error(f"Erro ao salvar chaves de API: {str(e)}")
         return jsonify({
             'success': False,
             'error': str(e)

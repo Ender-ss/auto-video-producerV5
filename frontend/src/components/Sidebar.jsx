@@ -40,10 +40,34 @@ const Sidebar = ({ onClose }) => {
       description: 'Gerenciar canais monitorados'
     },
     {
+      path: '/automations-old',
+      icon: Zap,
+      label: 'Automações (Antigo)',
+      description: 'Ferramentas de IA (Versão Antiga)'
+    },
+    {
       path: '/automations',
       icon: Zap,
       label: 'Automações',
-      description: 'Ferramentas de IA'
+      description: 'Workflow de Automações'
+    },
+    {
+      path: '/image-generation',
+      icon: Zap,
+      label: 'Geração de Imagens',
+      description: 'Criar imagens com IA'
+    },
+    {
+      path: '/automations-roteiros-test',
+      icon: Zap,
+      label: '🧪 Roteiros Teste',
+      description: 'Versão de teste para roteiros'
+    },
+    {
+      path: '/agente-roteiros',
+      icon: Zap,
+      label: '🤖 Agente Roteiros',
+      description: 'Agente IA personalizado'
     },
     {
       path: '/pipeline',

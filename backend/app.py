@@ -25,7 +25,7 @@ app.config['UPLOAD_FOLDER'] = 'uploads'
 app.config['MAX_CONTENT_LENGTH'] = 100 * 1024 * 1024  # 100MB max file size
 
 # Configurar CORS
-CORS(app, origins=['http://localhost:5173', 'http://127.0.0.1:5173'])
+CORS(app, origins=['http://localhost:5173', 'http://127.0.0.1:5173', 'http://localhost:5174'])
 
 # Inicializar banco de dados
 db = SQLAlchemy(app)
@@ -269,6 +269,7 @@ def register_blueprints():
         from routes.settings import settings_bp
         from routes.system import system_bp
         from routes.tests import tests_bp
+        from routes.images import images_bp
 
         app.register_blueprint(automations_bp, url_prefix='/api/automations')
         app.register_blueprint(premise_bp, url_prefix='/api/premise')
@@ -280,6 +281,7 @@ def register_blueprints():
         app.register_blueprint(settings_bp, url_prefix='/api/settings')
         app.register_blueprint(system_bp, url_prefix='/api/system')
         app.register_blueprint(tests_bp, url_prefix='/api/tests')
+        app.register_blueprint(images_bp, url_prefix='/api/images')
 
         logger.info("✅ Rotas registradas com sucesso!")
     except Exception as e:

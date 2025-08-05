@@ -363,3 +363,293 @@ def parse_premises_response(content, titles):
         ]
         print(f"🔍 DEBUG: Fallback criou {len(fallback_premises)} premissas")
         return fallback_premises
+
+# Funções auxiliares para geração em partes
+def create_inicio_prompt(title, premise, custom_prompt):
+    """Criar prompt limpo para a parte INÍCIO"""
+    return f"""## INFORMAÇÕES DO PROJETO:
+### TÍTULO: {title}
+### PREMISSA: {premise}
+### 🎭 Prompt Personalizado do Agente:
+{custom_prompt}
+
+## INSTRUÇÃO ESPECÍFICA:
+Gere a parte INICIAL do roteiro (aproximadamente 25% do roteiro total) seguindo EXATAMENTE o formato especificado no prompt personalizado acima. Esta é a PRIMEIRA parte de um roteiro maior."""
+
+def create_capitulo_prompt(title, premise, custom_prompt, capitulo_num, total_capitulos):
+    """Criar prompt limpo para um capítulo"""
+    return f"""## INFORMAÇÕES DO PROJETO:
+### TÍTULO: {title}
+### PREMISSA: {premise}
+### 🎭 Prompt Personalizado do Agente:
+{custom_prompt}
+
+## INSTRUÇÃO ESPECÍFICA:
+Gere o CAPÍTULO {capitulo_num} de {total_capitulos} do desenvolvimento do roteiro seguindo EXATAMENTE o formato especificado no prompt personalizado acima. Esta é uma parte INTERMEDIÁRIA de um roteiro maior."""
+
+def create_final_prompt(title, premise, custom_prompt):
+    """Criar prompt limpo para a parte FINAL"""
+    return f"""## INFORMAÇÕES DO PROJETO:
+### TÍTULO: {title}
+### PREMISSA: {premise}
+### 🎭 Prompt Personalizado do Agente:
+{custom_prompt}
+
+## INSTRUÇÃO ESPECÍFICA:
+Gere a parte FINAL do roteiro (aproximadamente 25% final do roteiro total) seguindo EXATAMENTE o formato especificado no prompt personalizado acima. Esta é a ÚLTIMA parte que finaliza todo o roteiro."""
+
+def generate_script_part(prompt, ai_provider, openrouter_model, api_keys, title_generator):
+    """Gerar uma parte específica do roteiro"""
+    try:
+        if ai_provider == 'openrouter':
+            if 'openrouter' not in api_keys:
+                raise Exception('Chave OpenRouter não fornecida')
+            return generate_script_openrouter(prompt, openrouter_model, api_keys['openrouter'])
+
+        elif ai_provider == 'openai':
+            if 'openai' not in api_keys:
+                raise Exception('Chave OpenAI não fornecida')
+            return generate_script_openai(prompt, title_generator)
+
+        else:  # gemini (padrão)
+            gemini_keys = [key for key in api_keys.keys() if key.startswith('gemini')]
+            if not gemini_keys:
+                raise Exception('Nenhuma chave Gemini encontrada')
+            return generate_script_gemini(prompt, title_generator)
+
+    except Exception as e:
+        print(f"❌ [AGENTE] Erro ao gerar parte: {e}")
+        return f"[ERRO NA GERAÇÃO DESTA PARTE: {str(e)}]"
+
+@premise_bp.route('/generate-agent-script', methods=['POST'])
+def generate_agent_script():
+    """
+    🎬 Endpoint específico para o Agente IA de Roteiros
+    Gera roteiros extensos baseados em título, premissa e prompt personalizado
+    """
+    try:
+        data = request.get_json()
+
+        # Validar dados obrigatórios
+        if not data:
+            return jsonify({
+                'success': False,
+                'error': 'Dados não fornecidos'
+            }), 400
+
+        title = data.get('title', '').strip()
+        premise = data.get('premise', '').strip()
+        custom_prompt = data.get('custom_prompt', '').strip()
+        ai_provider = data.get('ai_provider', 'gemini').lower()
+        openrouter_model = data.get('openrouter_model', 'auto')
+        api_keys = data.get('api_keys', {})
+        num_chapters = data.get('num_chapters', 3)  # Número de capítulos (1-8)
+
+        print(f"🎬 [AGENTE] Iniciando geração de roteiro extenso em partes...")
+        print(f"📝 [AGENTE] Título: {title[:100]}...")
+        print(f"🎯 [AGENTE] Premissa: {premise[:100]}...")
+        print(f"📄 [AGENTE] Prompt personalizado: {len(custom_prompt)} caracteres")
+        print(f"📚 [AGENTE] Número de capítulos: {num_chapters}")
+        print(f"🤖 [AGENTE] Provider: {ai_provider}")
+
+        if not title:
+            return jsonify({
+                'success': False,
+                'error': 'Título é obrigatório'
+            }), 400
+
+        if not premise:
+            return jsonify({
+                'success': False,
+                'error': 'Premissa é obrigatória'
+            }), 400
+
+        if not custom_prompt:
+            return jsonify({
+                'success': False,
+                'error': 'Prompt personalizado é obrigatório'
+            }), 400
+
+        # Gerar roteiro em partes para contornar limitações de tokens
+        print(f"🔄 [AGENTE] Iniciando geração em {2 + num_chapters} partes...")
+
+        script_parts = []
+        total_characters = 0
+
+        # Configurar TitleGenerator para usar as chaves fornecidas
+        title_generator = TitleGenerator()
+
+        # Configurar chaves de API individualmente
+        if api_keys:
+            if api_keys.get('openai'):
+                title_generator.configure_openai(api_keys['openai'])
+            if api_keys.get('openrouter'):
+                title_generator.configure_openrouter(api_keys['openrouter'])
+            # Configurar Gemini (tentar todas as chaves disponíveis)
+            gemini_keys = [key for key in api_keys.keys() if key.startswith('gemini')]
+            for gemini_key in gemini_keys:
+                if title_generator.configure_gemini(api_keys[gemini_key]):
+                    break  # Usar a primeira chave que funcionar
+
+        # PARTE 1: INÍCIO (Abertura + Introdução)
+        print(f"📝 [AGENTE] Gerando PARTE 1: INÍCIO...")
+        inicio_prompt = create_inicio_prompt(title, premise, custom_prompt)
+        inicio_content = generate_script_part(inicio_prompt, ai_provider, openrouter_model, api_keys, title_generator)
+        script_parts.append({
+            'part': 'INÍCIO',
+            'content': inicio_content,
+            'characters': len(inicio_content)
+        })
+        total_characters += len(inicio_content)
+        print(f"✅ [AGENTE] INÍCIO gerado: {len(inicio_content)} caracteres")
+
+        # PARTES 2 a N: CAPÍTULOS
+        for i in range(1, num_chapters + 1):
+            print(f"📖 [AGENTE] Gerando CAPÍTULO {i}/{num_chapters}...")
+            capitulo_prompt = create_capitulo_prompt(title, premise, custom_prompt, i, num_chapters)
+            capitulo_content = generate_script_part(capitulo_prompt, ai_provider, openrouter_model, api_keys, title_generator)
+            script_parts.append({
+                'part': f'CAPÍTULO {i}',
+                'content': capitulo_content,
+                'characters': len(capitulo_content)
+            })
+            total_characters += len(capitulo_content)
+            print(f"✅ [AGENTE] CAPÍTULO {i} gerado: {len(capitulo_content)} caracteres")
+
+        # PARTE FINAL: CONCLUSÃO
+        print(f"🏁 [AGENTE] Gerando PARTE FINAL: CONCLUSÃO...")
+        final_prompt = create_final_prompt(title, premise, custom_prompt)
+        final_content = generate_script_part(final_prompt, ai_provider, openrouter_model, api_keys, title_generator)
+        script_parts.append({
+            'part': 'CONCLUSÃO',
+            'content': final_content,
+            'characters': len(final_content)
+        })
+        total_characters += len(final_content)
+        print(f"✅ [AGENTE] CONCLUSÃO gerada: {len(final_content)} caracteres")
+
+        # CONCATENAR TODAS AS PARTES
+        print(f"🔗 [AGENTE] Concatenando {len(script_parts)} partes...")
+        full_script = "\n\n".join([part['content'] for part in script_parts])
+
+        print(f"🎉 [AGENTE] ROTEIRO COMPLETO GERADO!")
+        print(f"📊 [AGENTE] Estatísticas finais:")
+        print(f"  - Total de partes: {len(script_parts)}")
+        print(f"  - Caracteres totais: {len(full_script)}")
+        print(f"  - Palavras estimadas: {len(full_script.split())}")
+        print(f"  - Duração estimada: {len(full_script) // 200} minutos")
+
+        for part in script_parts:
+            print(f"    • {part['part']}: {part['characters']} chars")
+
+        return jsonify({
+            'success': True,
+            'script': {
+                'title': title,
+                'premise': premise,
+                'content': full_script,
+                'character_count': len(full_script),
+                'word_count': len(full_script.split()),
+                'estimated_duration_minutes': len(full_script) // 200,
+                'parts': script_parts,
+                'num_chapters': num_chapters
+            },
+            'provider_used': ai_provider,
+            'generation_method': 'multi_part'
+        })
+
+    except Exception as e:
+        print(f"❌ [AGENTE] Erro na geração do roteiro: {e}")
+        return jsonify({
+            'success': False,
+            'error': f'Erro na geração do roteiro: {str(e)}'
+        }), 500
+
+
+
+def generate_script_openrouter(prompt, model, api_key):
+    """Gerar roteiro extenso usando OpenRouter"""
+    try:
+        if model == 'auto':
+            model = 'anthropic/claude-3.5-sonnet'
+
+        headers = {
+            'Authorization': f'Bearer {api_key}',
+            'Content-Type': 'application/json',
+            'HTTP-Referer': 'http://localhost:5173',
+            'X-Title': 'Auto Video Producer - Agent Script Generator'
+        }
+
+        response = requests.post(
+            'https://openrouter.ai/api/v1/chat/completions',
+            headers=headers,
+            json={
+                'model': model,
+                'messages': [
+                    {
+                        'role': 'system',
+                        'content': 'Você é um roteirista profissional especializado em seguir EXATAMENTE as instruções de formato fornecidas pelo usuário. Você NUNCA inventa seu próprio formato - sempre segue precisamente o que foi solicitado. Sua especialidade é criar roteiros extensos e detalhados seguindo rigorosamente as especificações fornecidas.'
+                    },
+                    {
+                        'role': 'user',
+                        'content': prompt
+                    }
+                ],
+                'max_tokens': 8000,  # Máximo para roteiros extensos
+                'temperature': 0.3  # Menor temperatura para seguir instruções mais fielmente
+            },
+            timeout=120  # Timeout maior para roteiros extensos
+        )
+
+        if response.status_code != 200:
+            raise Exception(f'OpenRouter API error: {response.status_code} - {response.text}')
+
+        data = response.json()
+        content = data['choices'][0]['message']['content']
+
+        print(f"🔍 [AGENTE] OpenRouter gerou {len(content)} caracteres")
+        return content
+
+    except Exception as e:
+        raise Exception(f'Erro OpenRouter: {str(e)}')
+
+def generate_script_gemini(prompt, title_generator):
+    """Gerar roteiro extenso usando Gemini"""
+    try:
+        if not title_generator.gemini_model:
+            raise Exception('Gemini não configurado')
+
+        print(f"🔍 [AGENTE] Enviando prompt para Gemini ({len(prompt)} chars)...")
+
+        response = title_generator.gemini_model.generate_content(prompt)
+        content = response.text
+
+        print(f"🔍 [AGENTE] Gemini gerou {len(content)} caracteres")
+        return content
+
+    except Exception as e:
+        raise Exception(f'Erro Gemini: {str(e)}')
+
+def generate_script_openai(prompt, title_generator):
+    """Gerar roteiro extenso usando OpenAI"""
+    try:
+        if not title_generator.openai_client:
+            raise Exception('OpenAI não configurado')
+
+        response = title_generator.openai_client.chat.completions.create(
+            model="gpt-4",  # Usar GPT-4 para roteiros mais extensos
+            messages=[
+                {"role": "system", "content": "Você é um roteirista profissional especializado em seguir EXATAMENTE as instruções de formato fornecidas pelo usuário. Você NUNCA inventa seu próprio formato - sempre segue precisamente o que foi solicitado. Sua especialidade é criar roteiros extensos e detalhados seguindo rigorosamente as especificações fornecidas."},
+                {"role": "user", "content": prompt}
+            ],
+            max_tokens=8000,  # Máximo para roteiros extensos
+            temperature=0.3  # Menor temperatura para seguir instruções mais fielmente
+        )
+
+        content = response.choices[0].message.content
+
+        print(f"🔍 [AGENTE] OpenAI gerou {len(content)} caracteres")
+        return content
+
+    except Exception as e:
+        raise Exception(f'Erro OpenAI: {str(e)}')
