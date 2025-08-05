@@ -567,27 +567,55 @@ def test_api_endpoint():
 
 def test_rapidapi_connection(api_key):
     """Testar RapidAPI YouTube V2"""
+    import time
+    
     try:
         headers = {
             "X-RapidAPI-Key": api_key,
             "X-RapidAPI-Host": "youtube-v2.p.rapidapi.com"
         }
 
-        # Testar com canal conhecido - usar timeout maior e retry
+        # Testar com canal conhecido - usar timeout maior e retry com rate limiting mais agressivo
         max_retries = 3
+        base_delay = 10  # Delay inicial maior: 10 segundos
+        
         for attempt in range(max_retries):
             try:
+                # Adicionar delay entre tentativas para evitar rate limiting
+                if attempt > 0:
+                    delay = base_delay * (3 ** (attempt - 1))  # Backoff mais agressivo (3x)
+                    print(f"⏳ Aguardando {delay}s antes da tentativa {attempt + 1}...")
+                    time.sleep(delay)
+                else:
+                    # Delay inicial mesmo na primeira tentativa
+                    print(f"⏳ Aguardando {base_delay}s para evitar rate limiting...")
+                    time.sleep(base_delay)
+                    
                 response = requests.get(
                     "https://youtube-v2.p.rapidapi.com/channel/details",
                     headers=headers,
                     params={"channel_id": "UCX6OQ3DkcsbYNE6H8uQQuVA"},  # MrBeast
                     timeout=30  # Aumentar timeout para 30 segundos
                 )
-                break  # Se chegou aqui, a requisição foi bem-sucedida
+                
+                # Verificar se é erro 429 (Too Many Requests)
+                if response.status_code == 429:
+                    if attempt == max_retries - 1:
+                        return {
+                            'success': False,
+                            'message': 'Limite de requisições excedido (429). Aguarde alguns minutos e tente novamente.'
+                        }
+                    print(f"⚠️ Rate limit atingido (429), tentando novamente...")
+                    continue
+                    
+                # Se chegou aqui com status 200, sair do loop
+                if response.status_code == 200:
+                    break
+                    
             except requests.exceptions.Timeout:
                 if attempt == max_retries - 1:  # Última tentativa
                     raise
-                print(f"🔄 Tentativa {attempt + 1} falhou, tentando novamente...")
+                print(f"🔄 Tentativa {attempt + 1} falhou (timeout), tentando novamente...")
                 continue
 
         if response.status_code == 200:

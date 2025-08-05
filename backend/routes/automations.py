@@ -38,6 +38,14 @@ GEMINI_KEYS_ROTATION = {
     'last_reset': datetime.now().date()
 }
 
+# Sistema de rotação de chaves RapidAPI
+RAPIDAPI_KEYS_ROTATION = {
+    'keys': [],
+    'current_index': 0,
+    'failed_keys': set(),  # Chaves que falharam por quota excedida
+    'last_reset': datetime.now().date()
+}
+
 # Sistema de controle de jobs TTS
 TTS_JOBS = {}
 TTS_JOB_COUNTER = 0
@@ -109,6 +117,34 @@ def load_gemini_keys():
 
     return GEMINI_KEYS_ROTATION['keys']
 
+def load_rapidapi_keys():
+    """Carregar chaves RapidAPI do arquivo de configuração"""
+    try:
+        config_path = os.path.join(os.path.dirname(__file__), '..', 'config', 'api_keys.json')
+        if os.path.exists(config_path):
+            with open(config_path, 'r') as f:
+                keys = json.load(f)
+
+            # Carregar array de chaves RapidAPI
+            rapidapi_keys = keys.get('rapidapi_keys', [])
+            
+            # Se não houver array, usar a chave única como fallback
+            if not rapidapi_keys and keys.get('rapidapi'):
+                rapidapi_keys = [keys.get('rapidapi')]
+
+            # Filtrar chaves válidas
+            valid_keys = [key for key in rapidapi_keys if key and len(key) > 10]
+            
+            RAPIDAPI_KEYS_ROTATION['keys'] = valid_keys
+            RAPIDAPI_KEYS_ROTATION['failed_keys'] = set()  # Reset das chaves falhadas
+            print(f"🔑 Carregadas {len(valid_keys)} chaves RapidAPI para rotação")
+            return valid_keys
+    except Exception as e:
+        print(f"❌ Erro ao carregar chaves RapidAPI: {e}")
+        RAPIDAPI_KEYS_ROTATION['keys'] = []
+
+    return RAPIDAPI_KEYS_ROTATION['keys']
+
 def get_next_gemini_key():
     """Obter próxima chave Gemini na rotação"""
     # Carregar chaves se não estiverem carregadas
@@ -156,6 +192,102 @@ def get_next_gemini_key():
 
     return selected_key
 
+def get_next_rapidapi_key():
+    """Obter próxima chave RapidAPI na rotação, evitando chaves que falharam por quota"""
+    if not RAPIDAPI_KEYS_ROTATION['keys']:
+        load_rapidapi_keys()
+    
+    if not RAPIDAPI_KEYS_ROTATION['keys']:
+        return None
+    
+    # Reset diário das chaves falhadas
+    today = datetime.now().date()
+    if RAPIDAPI_KEYS_ROTATION['last_reset'] != today:
+        RAPIDAPI_KEYS_ROTATION['failed_keys'] = set()
+        RAPIDAPI_KEYS_ROTATION['last_reset'] = today
+        print("🔄 Reset diário: chaves RapidAPI falhadas foram limpas")
+        add_real_time_log("🔄 Reset diário: chaves RapidAPI falhadas foram limpas", "info", "rapidapi-rotation")
+    
+    # Filtrar chaves disponíveis (não falhadas)
+    available_keys = [key for key in RAPIDAPI_KEYS_ROTATION['keys'] if key not in RAPIDAPI_KEYS_ROTATION['failed_keys']]
+    
+    if not available_keys:
+        print("⚠️ Todas as chaves RapidAPI excederam a quota. Aguarde reset diário.")
+        add_real_time_log("⚠️ Todas as chaves RapidAPI excederam a quota. Aguarde reset diário.", "warning", "rapidapi-rotation")
+        return None
+    
+    # Usar índice circular apenas nas chaves disponíveis
+    if RAPIDAPI_KEYS_ROTATION['current_index'] >= len(available_keys):
+        RAPIDAPI_KEYS_ROTATION['current_index'] = 0
+    
+    current_key = available_keys[RAPIDAPI_KEYS_ROTATION['current_index']]
+    
+    # Avançar para próxima chave disponível
+    RAPIDAPI_KEYS_ROTATION['current_index'] = (RAPIDAPI_KEYS_ROTATION['current_index'] + 1) % len(available_keys)
+    
+    print(f"🔑 Usando chave RapidAPI ({len(available_keys)} disponíveis): {current_key[:20]}...")
+    add_real_time_log(f"🔑 Usando chave RapidAPI ({len(available_keys)} disponíveis): {current_key[:20]}...", "info", "rapidapi-rotation")
+    
+    return current_key
+
+def mark_rapidapi_key_failed(api_key):
+    """Marcar uma chave RapidAPI como falhada por quota excedida"""
+    if api_key:
+        RAPIDAPI_KEYS_ROTATION['failed_keys'].add(api_key)
+        print(f"❌ Chave RapidAPI marcada como falhada: {api_key[:20]}...")
+        add_real_time_log(f"❌ Chave RapidAPI marcada como falhada: {api_key[:20]}...", "error", "rapidapi-rotation")
+        print(f"📊 Chaves falhadas: {len(RAPIDAPI_KEYS_ROTATION['failed_keys'])}/{len(RAPIDAPI_KEYS_ROTATION['keys'])}")
+        add_real_time_log(f"📊 Chaves falhadas: {len(RAPIDAPI_KEYS_ROTATION['failed_keys'])}/{len(RAPIDAPI_KEYS_ROTATION['keys'])}", "info", "rapidapi-rotation")
+        
+        # Se todas as chaves falharam, informar
+        if len(RAPIDAPI_KEYS_ROTATION['failed_keys']) >= len(RAPIDAPI_KEYS_ROTATION['keys']):
+            print("⚠️ ATENÇÃO: Todas as chaves RapidAPI excederam a quota mensal!")
+            add_real_time_log("⚠️ ATENÇÃO: Todas as chaves RapidAPI excederam a quota mensal!", "error", "rapidapi-rotation")
+            return False
+    return True
+
+# ================================
+# 🧪 CACHE PARA RAPIDAPI
+# ================================
+
+# Cache simples para evitar chamadas desnecessárias
+RAPIDAPI_CACHE = {}
+CACHE_DURATION = 300  # 5 minutos em segundos
+
+def get_cache_key(endpoint, params):
+    """Gerar chave única para cache"""
+    import hashlib
+    key_string = f"{endpoint}_{str(sorted(params.items()))}"
+    return hashlib.md5(key_string.encode()).hexdigest()
+
+def is_cache_valid(cache_entry):
+    """Verificar se entrada do cache ainda é válida"""
+    import time
+    return time.time() - cache_entry['timestamp'] < CACHE_DURATION
+
+def get_from_cache(endpoint, params):
+    """Obter dados do cache se disponível e válido"""
+    cache_key = get_cache_key(endpoint, params)
+    if cache_key in RAPIDAPI_CACHE:
+        cache_entry = RAPIDAPI_CACHE[cache_key]
+        if is_cache_valid(cache_entry):
+            print(f"📋 Cache hit para {endpoint} - evitando chamada à API")
+            return cache_entry['data']
+        else:
+            # Cache expirado, remover
+            del RAPIDAPI_CACHE[cache_key]
+    return None
+
+def save_to_cache(endpoint, params, data):
+    """Salvar dados no cache"""
+    import time
+    cache_key = get_cache_key(endpoint, params)
+    RAPIDAPI_CACHE[cache_key] = {
+        'data': data,
+        'timestamp': time.time()
+    }
+    print(f"💾 Dados salvos no cache para {endpoint}")
+
 # ================================
 # 🧪 TESTE RAPIDAPI
 # ================================
@@ -163,6 +295,8 @@ def get_next_gemini_key():
 @automations_bp.route('/test-rapidapi', methods=['POST'])
 def test_rapidapi():
     """Testar conexão com RapidAPI YouTube V2"""
+    import time
+    
     try:
         data = request.get_json()
         api_key = data.get('api_key', '').strip()
@@ -181,13 +315,37 @@ def test_rapidapi():
             "X-RapidAPI-Host": "youtube-v2.p.rapidapi.com"
         }
 
-        # Testar endpoint de detalhes do canal
-        response = requests.get(
-            "https://youtube-v2.p.rapidapi.com/channel/details",
-            headers=headers,
-            params={"channel_id": test_channel},
-            timeout=10
-        )
+        # Testar endpoint de detalhes do canal com rate limiting mais agressivo
+        max_retries = 3
+        base_delay = 10  # Delay inicial maior: 10 segundos
+        
+        for attempt in range(max_retries):
+            if attempt > 0:
+                delay = base_delay * (3 ** (attempt - 1))  # Backoff mais agressivo (3x)
+                print(f"⏳ Aguardando {delay}s antes da tentativa {attempt + 1}...")
+                time.sleep(delay)
+            else:
+                # Delay inicial mesmo na primeira tentativa
+                print(f"⏳ Aguardando {base_delay}s para evitar rate limiting...")
+                time.sleep(base_delay)
+                
+            response = requests.get(
+                "https://youtube-v2.p.rapidapi.com/channel/details",
+                headers=headers,
+                params={"channel_id": test_channel},
+                timeout=30
+            )
+            
+            if response.status_code == 429:
+                if attempt == max_retries - 1:
+                    return jsonify({
+                        'success': False,
+                        'error': 'Limite de requisições excedido (429). Aguarde alguns minutos e tente novamente.'
+                    })
+                print(f"⚠️ Rate limit atingido (429), tentando novamente...")
+                continue
+            elif response.status_code == 200:
+                break
 
         return jsonify({
             'success': True,
@@ -881,12 +1039,23 @@ def extract_channel_name_or_id(input_str):
     return None
 
 def get_channel_id_rapidapi(channel_name, api_key):
-    """Obter ID do canal usando RapidAPI YouTube V2"""
+    """Obter ID do canal usando RapidAPI YouTube V2 com rotação de chaves"""
     try:
         url = "https://youtube-v2.p.rapidapi.com/channel/id"
 
+        # Carregar chaves RapidAPI para rotação
+        load_rapidapi_keys()
+        
+        # Usar chave fornecida ou obter da rotação
+        current_api_key = api_key
+        if not current_api_key or len(RAPIDAPI_KEYS_ROTATION['keys']) > 1:
+            rotation_key = get_next_rapidapi_key()
+            if rotation_key:
+                current_api_key = rotation_key
+                print(f"🔄 Usando chave da rotação: {current_api_key[:20]}...")
+
         headers = {
-            "X-RapidAPI-Key": api_key,
+            "X-RapidAPI-Key": current_api_key,
             "X-RapidAPI-Host": "youtube-v2.p.rapidapi.com"
         }
 
@@ -896,13 +1065,56 @@ def get_channel_id_rapidapi(channel_name, api_key):
         print(f"🔍 DEBUG: URL: {url}")
         print(f"🔍 DEBUG: Params: {params}")
 
-        # Tentar com retry em caso de timeout
+        # Tentar com retry e backoff exponencial mais agressivo para rate limiting
         max_retries = 3
+        base_delay = 10  # Delay inicial maior: 10 segundos
+        
         for attempt in range(max_retries):
             try:
+                # Adicionar delay entre tentativas para evitar rate limiting
+                if attempt > 0:
+                    delay = base_delay * (3 ** (attempt - 1))  # Backoff mais agressivo (3x)
+                    print(f"⏳ Aguardando {delay}s antes da tentativa {attempt + 1}...")
+                    time.sleep(delay)
+                else:
+                    # Delay inicial mesmo na primeira tentativa
+                    print(f"⏳ Aguardando {base_delay}s para evitar rate limiting...")
+                    time.sleep(base_delay)
+                    
                 response = requests.get(url, headers=headers, params=params, timeout=30)
                 print(f"🔍 DEBUG: Status da resposta: {response.status_code}")
-                break  # Se chegou aqui, a requisição foi bem-sucedida
+                
+                # Verificar se é erro 429 (Too Many Requests)
+                if response.status_code == 429:
+                    # Verificar se a resposta contém informação sobre quota excedida
+                    try:
+                        error_data = response.json()
+                        if 'quota' in str(error_data).lower() or 'monthly' in str(error_data).lower():
+                            print(f"📊 Quota mensal excedida para chave: {current_api_key[:20]}...")
+                            mark_rapidapi_key_failed(current_api_key)
+                            
+                            # Tentar obter nova chave da rotação
+                            new_key = get_next_rapidapi_key()
+                            if new_key and new_key != current_api_key:
+                                current_api_key = new_key
+                                headers["X-RapidAPI-Key"] = current_api_key
+                                print(f"🔄 Tentando com nova chave: {current_api_key[:20]}...")
+                                continue
+                    except:
+                        pass
+                    
+                    if attempt == max_retries - 1:
+                        return {
+                            'success': False,
+                            'error': 'Limite de requisições excedido (429). Tente novamente em alguns minutos.'
+                        }
+                    print(f"⚠️ Rate limit atingido (429), tentando novamente...")
+                    continue
+                    
+                # Se chegou aqui com status 200, sair do loop
+                if response.status_code == 200:
+                    break
+                    
             except requests.exceptions.Timeout:
                 if attempt == max_retries - 1:  # Última tentativa
                     raise
@@ -911,9 +1123,22 @@ def get_channel_id_rapidapi(channel_name, api_key):
 
         if response.status_code != 200:
             print(f"🔍 DEBUG: Erro na resposta: {response.text}")
+            
+            # Tratamento específico para diferentes códigos de erro
+            if response.status_code == 429:
+                error_msg = 'Limite de requisições excedido. Aguarde alguns minutos e tente novamente.'
+            elif response.status_code == 401:
+                error_msg = 'Chave de API inválida ou expirada.'
+            elif response.status_code == 403:
+                error_msg = 'Acesso negado. Verifique suas permissões da API.'
+            elif response.status_code == 404:
+                error_msg = 'Canal não encontrado. Verifique o nome do canal.'
+            else:
+                error_msg = f'Erro na API: {response.status_code} - {response.text}'
+                
             return {
                 'success': False,
-                'error': f'Erro na API RapidAPI: {response.status_code} - {response.text}'
+                'error': error_msg
             }
 
         data = response.json()
@@ -940,23 +1165,89 @@ def get_channel_id_rapidapi(channel_name, api_key):
         }
 
 def get_channel_details_rapidapi(channel_id, api_key):
-    """Obter detalhes do canal usando RapidAPI YouTube V2"""
+    """Obter detalhes do canal usando RapidAPI YouTube V2 com rate limiting e rotação de chaves"""
+    import time
+    
     try:
         url = "https://youtube-v2.p.rapidapi.com/channel/details"
 
+        # Carregar chaves RapidAPI para rotação
+        load_rapidapi_keys()
+        
+        # Usar chave fornecida ou obter da rotação
+        current_api_key = api_key
+        if not current_api_key or len(RAPIDAPI_KEYS_ROTATION['keys']) > 1:
+            rotation_key = get_next_rapidapi_key()
+            if rotation_key:
+                current_api_key = rotation_key
+                print(f"🔄 Usando chave da rotação: {current_api_key[:20]}...")
+
         headers = {
-            "X-RapidAPI-Key": api_key,
+            "X-RapidAPI-Key": current_api_key,
             "X-RapidAPI-Host": "youtube-v2.p.rapidapi.com"
         }
 
         params = {"channel_id": channel_id}
 
-        response = requests.get(url, headers=headers, params=params, timeout=10)
+        # Retry com backoff exponencial mais agressivo
+        max_retries = 3
+        base_delay = 10  # Delay inicial maior: 10 segundos
+        
+        for attempt in range(max_retries):
+            if attempt > 0:
+                delay = base_delay * (3 ** (attempt - 1))  # Backoff mais agressivo (3x)
+                print(f"⏳ Aguardando {delay}s antes da tentativa {attempt + 1}...")
+                time.sleep(delay)
+            else:
+                # Delay inicial mesmo na primeira tentativa
+                print(f"⏳ Aguardando {base_delay}s para evitar rate limiting...")
+                time.sleep(base_delay)
+                
+            response = requests.get(url, headers=headers, params=params, timeout=30)
+            
+            if response.status_code == 429:
+                # Verificar se a resposta contém informação sobre quota excedida
+                try:
+                    error_data = response.json()
+                    if 'quota' in str(error_data).lower() or 'monthly' in str(error_data).lower():
+                        print(f"📊 Quota mensal excedida para chave: {current_api_key[:20]}...")
+                        mark_rapidapi_key_failed(current_api_key)
+                        
+                        # Tentar obter nova chave da rotação
+                        new_key = get_next_rapidapi_key()
+                        if new_key and new_key != current_api_key:
+                            current_api_key = new_key
+                            headers["X-RapidAPI-Key"] = current_api_key
+                            print(f"🔄 Tentando com nova chave: {current_api_key[:20]}...")
+                            continue
+                except:
+                    pass
+                
+                if attempt == max_retries - 1:
+                    return {
+                        'success': False,
+                        'error': 'Limite de requisições excedido. Aguarde alguns minutos e tente novamente.'
+                    }
+                print(f"⚠️ Rate limit atingido (429), tentando novamente...")
+                continue
+            elif response.status_code == 200:
+                break
 
         if response.status_code != 200:
+            if response.status_code == 429:
+                error_msg = 'Limite de requisições excedido. Aguarde alguns minutos e tente novamente.'
+            elif response.status_code == 401:
+                error_msg = 'Chave de API inválida ou expirada.'
+            elif response.status_code == 403:
+                error_msg = 'Acesso negado. Verifique suas permissões da API.'
+            elif response.status_code == 404:
+                error_msg = 'Canal não encontrado. Verifique o ID do canal.'
+            else:
+                error_msg = f'Erro na API: {response.status_code}'
+                
             return {
                 'success': False,
-                'error': f'Erro ao buscar detalhes do canal: {response.status_code}'
+                'error': error_msg
             }
 
         data = response.json()
@@ -978,33 +1269,95 @@ def get_channel_details_rapidapi(channel_id, api_key):
         }
 
 def get_channel_videos_rapidapi(channel_id, api_key, max_results=50):
-    """Obter vídeos do canal usando RapidAPI YouTube V2"""
+    """Obter vídeos do canal usando RapidAPI YouTube V2 com rate limiting, cache e rotação de chaves"""
+    import time
+    
     try:
-        url = "https://youtube-v2.p.rapidapi.com/channel/videos"
-        print(f"🔍 DEBUG: Fazendo requisição para: {url}")
-        print(f"🔍 DEBUG: Channel ID: {channel_id}")
-
-        headers = {
-            "X-RapidAPI-Key": api_key,
-            "X-RapidAPI-Host": "youtube-v2.p.rapidapi.com"
-        }
-
+        endpoint = "channel/videos"
         params = {
             "channel_id": channel_id,
             "max_results": min(max_results, 50)  # Limite da API
         }
-        print(f"🔍 DEBUG: Parâmetros: {params}")
-        print(f"🔍 DEBUG: Headers: {headers}")
-        print(f"🔍 DEBUG: API Key presente: {'Sim' if api_key else 'Não'}")
-        print(f"🔍 DEBUG: API Key length: {len(api_key) if api_key else 0}")
+        
+        # Verificar cache primeiro
+        cached_data = get_from_cache(endpoint, params)
+        if cached_data:
+            return cached_data
+        
+        url = "https://youtube-v2.p.rapidapi.com/channel/videos"
+        print(f"🔍 DEBUG: Fazendo requisição para: {url}")
+        print(f"🔍 DEBUG: Channel ID: {channel_id}")
 
-        # Tentar com retry em caso de timeout
-        max_retries = 3
+        # Carregar chaves RapidAPI para rotação
+        load_rapidapi_keys()
+        
+        # Usar chave fornecida ou obter da rotação
+        current_api_key = api_key
+        if not current_api_key or len(RAPIDAPI_KEYS_ROTATION['keys']) > 1:
+            rotation_key = get_next_rapidapi_key()
+            if rotation_key:
+                current_api_key = rotation_key
+                print(f"🔄 Usando chave da rotação: {current_api_key[:20]}...")
+
+        headers = {
+            "X-RapidAPI-Key": current_api_key,
+            "X-RapidAPI-Host": "youtube-v2.p.rapidapi.com"
+        }
+
+        print(f"🔍 DEBUG: Parâmetros: {params}")
+        print(f"🔍 DEBUG: API Key presente: {'Sim' if current_api_key else 'Não'}")
+        print(f"🔍 DEBUG: API Key length: {len(current_api_key) if current_api_key else 0}")
+
+        # Tentar com retry e backoff exponencial mais agressivo para rate limiting
+        max_retries = 3  # Reduzir tentativas para evitar spam
+        base_delay = 10  # Delay inicial maior: 10 segundos
+        
         for attempt in range(max_retries):
             try:
+                # Adicionar delay entre tentativas para evitar rate limiting
+                if attempt > 0:
+                    delay = base_delay * (3 ** (attempt - 1))  # Backoff mais agressivo (3x)
+                    print(f"⏳ Aguardando {delay}s antes da tentativa {attempt + 1}...")
+                    time.sleep(delay)
+                else:
+                    # Delay inicial mesmo na primeira tentativa
+                    print(f"⏳ Aguardando {base_delay}s para evitar rate limiting...")
+                    time.sleep(base_delay)
+                
                 response = requests.get(url, headers=headers, params=params, timeout=30)
                 print(f"🔍 DEBUG: Status da resposta: {response.status_code}")
-                break  # Se chegou aqui, a requisição foi bem-sucedida
+                
+                # Verificar se é erro 429 (Too Many Requests)
+                if response.status_code == 429:
+                    # Verificar se a resposta contém informação sobre quota excedida
+                    try:
+                        error_data = response.json()
+                        if 'quota' in str(error_data).lower() or 'monthly' in str(error_data).lower():
+                            print(f"📊 Quota mensal excedida para chave: {current_api_key[:20]}...")
+                            mark_rapidapi_key_failed(current_api_key)
+                            
+                            # Tentar obter nova chave da rotação
+                            new_key = get_next_rapidapi_key()
+                            if new_key and new_key != current_api_key:
+                                current_api_key = new_key
+                                headers["X-RapidAPI-Key"] = current_api_key
+                                print(f"🔄 Tentando com nova chave: {current_api_key[:20]}...")
+                                continue
+                    except:
+                        pass
+                    
+                    if attempt == max_retries - 1:
+                        return {
+                            'success': False,
+                            'error': 'Limite de requisições excedido (429). Tente novamente em alguns minutos.'
+                        }
+                    print(f"⚠️ Rate limit atingido (429), tentando novamente em {base_delay * (3 ** attempt)}s...")
+                    continue
+                
+                # Se chegou aqui com status 200, sair do loop
+                if response.status_code == 200:
+                    break
+                    
             except requests.exceptions.Timeout:
                 if attempt == max_retries - 1:  # Última tentativa
                     print(f"🔍 DEBUG: Timeout após {max_retries} tentativas")
@@ -1014,9 +1367,22 @@ def get_channel_videos_rapidapi(channel_id, api_key, max_results=50):
 
         if response.status_code != 200:
             print(f"🔍 DEBUG: Erro na resposta: {response.text}")
+            
+            # Tratamento específico para diferentes códigos de erro
+            if response.status_code == 429:
+                error_msg = 'Limite de requisições excedido. Aguarde alguns minutos e tente novamente.'
+            elif response.status_code == 401:
+                error_msg = 'Chave de API inválida ou expirada.'
+            elif response.status_code == 403:
+                error_msg = 'Acesso negado. Verifique suas permissões da API.'
+            elif response.status_code == 404:
+                error_msg = 'Canal não encontrado. Verifique o ID do canal.'
+            else:
+                error_msg = f'Erro na API: {response.status_code}'
+                
             return {
                 'success': False,
-                'error': f'Erro ao buscar vídeos do canal: {response.status_code}'
+                'error': error_msg
             }
 
         data = response.json()
@@ -1061,7 +1427,7 @@ def get_channel_videos_rapidapi(channel_id, api_key, max_results=50):
             if i < 3:  # Log apenas os primeiros 3 vídeos processados
                 print(f"🔍 DEBUG: Vídeo processado {i+1}: views={processed_video['views']}, title={processed_video['title'][:50]}...")
 
-        return {
+        result = {
             'success': True,
             'data': {
                 'videos': videos,
@@ -1070,6 +1436,11 @@ def get_channel_videos_rapidapi(channel_id, api_key, max_results=50):
                 'message': f'✅ {len(videos)} títulos extraídos com sucesso!'
             }
         }
+        
+        # Salvar no cache para evitar chamadas futuras
+        save_to_cache(endpoint, params, result)
+        
+        return result
 
     except Exception as e:
         return {

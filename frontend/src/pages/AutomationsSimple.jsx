@@ -123,6 +123,9 @@ const AutomationsSimple = () => {
     setIsProcessing(true)
     setResults(null)
     
+    // Informar sobre o sistema de rate limiting
+    alert('ℹ️ Iniciando extração... O sistema agora inclui delays automáticos para evitar erros de rate limiting da API.')
+    
     try {
       const controller = new AbortController()
       const timeoutId = setTimeout(() => controller.abort(), 120000)

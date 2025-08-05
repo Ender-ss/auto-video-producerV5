@@ -43,11 +43,15 @@ import {
   AlertTriangle,
   Languages,
   BookOpen,
-  Hash
+  Hash,
+  Edit3
 } from 'lucide-react'
 
 const Automations = () => {
-  const [currentStep, setCurrentStep] = useState(0)
+  const [currentStep, setCurrentStep] = useState(5)
+  
+  // Debug: verificar se estamos no passo correto
+  console.log('Current step:', currentStep)
   const [workflowData, setWorkflowData] = useState({
     originalScript: '',
     translatedScript: '',
@@ -175,6 +179,40 @@ Você é um especialista em preparar roteiros para narração por voz. Adapte o 
   const [showPromptEditor, setShowPromptEditor] = useState(false)
   const [editingPrompt, setEditingPrompt] = useState('')
   const [logs, setLogs] = useState([])
+
+  // Estados para TTS integrado
+  const [ttsProvider, setTtsProvider] = useState('elevenlabs')
+  const [isGeneratingTTS, setIsGeneratingTTS] = useState(false)
+  const [ttsSegments, setTtsSegments] = useState([])
+  const [finalTTSAudio, setFinalTTSAudio] = useState(null)
+  const [ttsError, setTtsError] = useState('')
+  const [segmentAudio, setSegmentAudio] = useState(true)
+  const [maxCharsPerSegment, setMaxCharsPerSegment] = useState(2000)
+  const [isJoiningAudio, setIsJoiningAudio] = useState(false)
+
+  const [ttsSettings, setTtsSettings] = useState({
+    elevenlabs: {
+      voice_id: 'default',
+      model_id: 'eleven_multilingual_v2',
+      stability: 0.5,
+      similarity_boost: 0.5,
+      style: 0.0,
+      use_speaker_boost: true
+    },
+    gemini: {
+      voice_name: 'Aoede',
+      model: 'gemini-2.5-flash-preview-tts',
+      speed: 1.0,
+      pitch: 0.0,
+      volume_gain_db: 0.0
+    },
+    kokoro: {
+      voice: 'af_bella',
+      kokoro_url: 'http://localhost:8880',
+      speed: 1.0,
+      language: 'en'
+    }
+  })
   
   // Estados para configuração de automação
   const [automationConfig, setAutomationConfig] = useState({
@@ -362,6 +400,213 @@ Você é um especialista em preparar roteiros para narração por voz. Adapte o 
     setLogs([])
   }
 
+  // Função para segmentar texto
+  const segmentText = (text, maxChars = 4000) => {
+    const segments = []
+    const sentences = text.split(/[.!?]+/).filter(s => s.trim())
+
+    let currentSegment = ''
+
+    for (const sentence of sentences) {
+      const trimmedSentence = sentence.trim()
+      if (!trimmedSentence) continue
+
+      const potentialSegment = currentSegment + (currentSegment ? '. ' : '') + trimmedSentence
+
+      if (potentialSegment.length <= maxChars) {
+        currentSegment = potentialSegment
+      } else {
+        if (currentSegment) {
+          segments.push(currentSegment + '.')
+          currentSegment = trimmedSentence
+        } else {
+          // Frase muito longa, dividir por palavras
+          const words = trimmedSentence.split(' ')
+          let wordSegment = ''
+
+          for (const word of words) {
+            const potentialWordSegment = wordSegment + (wordSegment ? ' ' : '') + word
+            if (potentialWordSegment.length <= maxChars) {
+              wordSegment = potentialWordSegment
+            } else {
+              if (wordSegment) {
+                segments.push(wordSegment)
+                wordSegment = word
+              } else {
+                segments.push(word)
+              }
+            }
+          }
+
+          if (wordSegment) {
+            currentSegment = wordSegment
+          }
+        }
+      }
+    }
+
+    if (currentSegment) {
+      segments.push(currentSegment + '.')
+    }
+
+    return segments.filter(s => s.trim())
+  }
+
+  // Função para gerar TTS
+  const generateTTSAudio = async () => {
+    if (!workflowData.finalScript && !workflowData.rewrittenScript) {
+      setTtsError('Nenhum roteiro encontrado para gerar áudio')
+      return
+    }
+
+    setIsGeneratingTTS(true)
+    setTtsError('')
+    setTtsSegments([])
+    setFinalTTSAudio(null)
+
+    try {
+      // Obter chaves de API
+      let apiKeys = JSON.parse(localStorage.getItem('api_keys') || '{}')
+      
+      const hasElevenLabs = !!apiKeys.elevenlabs
+      const hasGemini = !!(apiKeys.gemini_1 || apiKeys.gemini)
+
+      // Preparar texto do roteiro
+      let fullText = workflowData.finalScript || workflowData.rewrittenScript || workflowData.originalScript
+
+      if (!fullText.trim()) {
+        throw new Error('Nenhum texto encontrado para gerar áudio')
+      }
+
+      // Segmentar texto se necessário
+      const textSegments = segmentAudio ? segmentText(fullText, maxCharsPerSegment) : [fullText]
+
+      console.log(`🎵 Gerando ${textSegments.length} segmentos de áudio...`)
+
+      // Determinar configurações baseado no provider
+      let endpoint, apiKey, baseRequestData
+
+      if (ttsProvider === 'elevenlabs') {
+        if (!apiKeys.elevenlabs) {
+          throw new Error('Chave da API ElevenLabs não configurada')
+        }
+
+        endpoint = '/api/automations/generate-tts-elevenlabs'
+        apiKey = apiKeys.elevenlabs
+        baseRequestData = {
+          api_key: apiKey,
+          voice_id: ttsSettings.elevenlabs.voice_id,
+          model_id: ttsSettings.elevenlabs.model_id,
+          stability: ttsSettings.elevenlabs.stability,
+          similarity_boost: ttsSettings.elevenlabs.similarity_boost,
+          style: ttsSettings.elevenlabs.style,
+          use_speaker_boost: ttsSettings.elevenlabs.use_speaker_boost
+        }
+      } else if (ttsProvider === 'gemini') {
+        endpoint = '/api/automations/generate-tts'
+        baseRequestData = {
+          voice_name: ttsSettings.gemini.voice_name,
+          model: ttsSettings.gemini.model,
+          speed: ttsSettings.gemini.speed,
+          pitch: ttsSettings.gemini.pitch,
+          volume_gain_db: ttsSettings.gemini.volume_gain_db
+        }
+      } else if (ttsProvider === 'kokoro') {
+        endpoint = '/api/automations/generate-tts-kokoro'
+        baseRequestData = {
+          voice: ttsSettings.kokoro.voice,
+          kokoro_url: ttsSettings.kokoro.kokoro_url,
+          speed: ttsSettings.kokoro.speed,
+          language: ttsSettings.kokoro.language
+        }
+      }
+
+      // Gerar áudio para cada segmento
+      const segments = []
+      for (let i = 0; i < textSegments.length; i++) {
+        const segment = textSegments[i]
+
+        console.log(`🎵 Gerando segmento ${i + 1}/${textSegments.length}...`)
+
+        const requestData = {
+          ...baseRequestData,
+          text: segment
+        }
+
+        const response = await fetch(endpoint, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify(requestData)
+        })
+
+        const result = await response.json()
+
+        if (result.success) {
+          segments.push({
+            index: i + 1,
+            text: segment.substring(0, 100) + (segment.length > 100 ? '...' : ''),
+            filename: result.data.filename,
+            audio_url: result.data.audio_url,
+            duration: result.data.duration,
+            size: result.data.size
+          })
+        } else {
+          throw new Error(`Erro no segmento ${i + 1}: ${result.error}`)
+        }
+      }
+
+      setTtsSegments(segments)
+      addLog(`✅ ${segments.length} segmentos de áudio gerados com sucesso!`, 'success')
+
+    } catch (error) {
+      console.error('❌ Erro na geração de TTS:', error)
+      setTtsError(error.message)
+      addLog(`❌ Erro na geração de TTS: ${error.message}`, 'error')
+    } finally {
+      setIsGeneratingTTS(false)
+    }
+  }
+
+  // Função para juntar áudios
+  const joinTTSAudio = async () => {
+    if (ttsSegments.length === 0) return
+
+    setIsJoiningAudio(true)
+    setTtsError('')
+
+    try {
+      const response = await fetch('/api/automations/join-audio', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          segments: ttsSegments.map(seg => ({
+            filename: seg.filename,
+            audio_url: seg.audio_url
+          }))
+        })
+      })
+
+      const result = await response.json()
+
+      if (result.success) {
+        setFinalTTSAudio(result.data)
+        addLog('✅ Áudios unidos com sucesso!', 'success')
+      } else {
+        throw new Error(result.error)
+      }
+    } catch (error) {
+      console.error('❌ Erro ao unir áudios:', error)
+      setTtsError(error.message)
+      addLog(`❌ Erro ao unir áudios: ${error.message}`, 'error')
+    } finally {
+      setIsJoiningAudio(false)
+    }
+  }
+
   return (
     <div className="min-h-screen bg-gray-900 text-white p-6">
       <div className="max-w-6xl mx-auto space-y-6">
@@ -529,21 +774,148 @@ Você é um especialista em preparar roteiros para narração por voz. Adapte o 
                 </div>
               )}
               {currentStep === 5 && (
-                <div>
-                  <h4 className="font-semibold text-blue-400 mb-2">Áudio Gerado</h4>
-                  {workflowData.generatedAudio ? (
-                    <div>
-                      <audio controls className="w-full mb-4">
-                        <source src={workflowData.generatedAudio} type="audio/mp3" />
-                        Seu navegador não suporta o elemento de áudio.
-                      </audio>
-                      <button className="px-3 py-1 bg-blue-600 text-white rounded hover:bg-blue-700 text-sm flex items-center">
-                        <Download size={14} className="mr-1" />
-                        Baixar Áudio
-                      </button>
+                <div className="space-y-4">
+                  <h4 className="font-semibold text-blue-400 mb-2">📊 Resultados do TTS</h4>
+                  
+                  {/* Erro de TTS */}
+                  {ttsError && (
+                    <div className="p-4 bg-red-900/30 border border-red-600 rounded-lg">
+                      <span className="text-red-200">{ttsError}</span>
                     </div>
-                  ) : (
-                    <p className="text-gray-400">Nenhum áudio gerado ainda. Execute este passo para gerar.</p>
+                  )}
+
+                  {/* Segmentos gerados */}
+                  {ttsSegments.length > 0 && (
+                    <div className="space-y-3">
+                      <div className="p-4 bg-green-900/30 border border-green-600 rounded-lg">
+                        <div className="flex items-center space-x-2 text-green-200">
+                          <CheckCircle className="w-5 h-5" />
+                          <span>{ttsSegments.length} segmentos gerados com sucesso!</span>
+                        </div>
+                      </div>
+
+                      {ttsSegments.length > 1 && (
+                        <button
+                          onClick={joinTTSAudio}
+                          disabled={isJoiningAudio}
+                          className="w-full px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 flex items-center justify-center space-x-2"
+                        >
+                          {isJoiningAudio ? (
+                            <>
+                              <Loader2 className="w-4 h-4 animate-spin" />
+                              <span>Unindo Áudios...</span>
+                            </>
+                          ) : (
+                            <>
+                              <Volume2 className="w-4 h-4" />
+                              <span>Unir Todos os Segmentos</span>
+                            </>
+                          )}
+                        </button>
+                      )}
+
+                      {/* Lista de segmentos */}
+                      <div className="space-y-2 max-h-64 overflow-y-auto">
+                        {ttsSegments.map((segment, index) => (
+                          <div key={index} className="p-3 bg-gray-700 rounded-lg">
+                            <div className="flex items-center justify-between">
+                              <div className="flex-1">
+                                <div className="flex items-center space-x-2 mb-1">
+                                  <span className="text-sm font-medium text-white">Segmento {segment.index}</span>
+                                  <span className="text-xs text-gray-400">({segment.duration || 'N/A'}s)</span>
+                                </div>
+                                <p className="text-xs text-gray-300 truncate">{segment.text}</p>
+                              </div>
+                              <div className="flex items-center space-x-2">
+                                <button
+                                  onClick={() => {
+                                    const audio = new Audio(segment.audio_url)
+                                    audio.play()
+                                  }}
+                                  className="p-2 bg-green-600 text-white rounded hover:bg-green-700"
+                                >
+                                  <Play className="w-4 h-4" />
+                                </button>
+                                <a
+                                  href={`/api/automations/download/${segment.filename}`}
+                                  download={segment.filename}
+                                  className="p-2 bg-blue-600 text-white rounded hover:bg-blue-700"
+                                >
+                                  <Download className="w-4 h-4" />
+                                </a>
+                              </div>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Áudio final */}
+                  {finalTTSAudio && (
+                    <div className="p-4 bg-green-900/30 border border-green-600 rounded-lg">
+                      <h5 className="text-lg font-medium text-green-200 mb-3">🎵 Áudio Final Gerado</h5>
+                      <div className="grid grid-cols-2 gap-4 text-sm">
+                        <div>
+                          <span className="text-gray-400">Tamanho:</span>
+                          <span className="ml-2 text-white">{finalTTSAudio.size ? `${(finalTTSAudio.size / 1024 / 1024).toFixed(1)} MB` : 'N/A'}</span>
+                        </div>
+                        <div>
+                          <span className="text-gray-400">Duração:</span>
+                          <span className="ml-2 text-white">{finalTTSAudio.duration ? `${Math.floor(finalTTSAudio.duration / 60)}:${Math.floor(finalTTSAudio.duration % 60).toString().padStart(2, '0')}` : 'N/A'}</span>
+                        </div>
+                        <div>
+                          <span className="text-gray-400">Segmentos:</span>
+                          <span className="ml-2 text-white">{finalTTSAudio.segments_count} segmentos</span>
+                        </div>
+                        <div>
+                          <span className="text-gray-400">Provedor:</span>
+                          <span className="ml-2 text-white">{ttsProvider}</span>
+                        </div>
+                      </div>
+                      <div className="flex space-x-3 mt-4">
+                        <button
+                          onClick={() => {
+                            const audio = new Audio(`/api/automations/audio/${finalTTSAudio.filename}`)
+                            audio.play()
+                          }}
+                          className="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 flex items-center space-x-2"
+                        >
+                          <Play className="w-4 h-4" />
+                          <span>Reproduzir</span>
+                        </button>
+                        <a
+                          href={`/api/automations/download/${finalTTSAudio.filename}`}
+                          download={finalTTSAudio.filename}
+                          className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 flex items-center space-x-2"
+                        >
+                          <Download className="w-4 h-4" />
+                          <span>Download</span>
+                        </a>
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Fallback para áudio gerado pelo workflow */}
+                  {!ttsSegments.length && !finalTTSAudio && workflowData.generatedAudio && (
+                    <div>
+                      <h4 className="font-semibold text-blue-400 mb-2">Áudio Gerado</h4>
+                      <div>
+                        <audio controls className="w-full mb-4">
+                          <source src={workflowData.generatedAudio} type="audio/mp3" />
+                          Seu navegador não suporta o elemento de áudio.
+                        </audio>
+                        <button className="px-3 py-1 bg-blue-600 text-white rounded hover:bg-blue-700 text-sm flex items-center">
+                          <Download size={14} className="mr-1" />
+                          Baixar Áudio
+                        </button>
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Mensagem quando nenhum áudio foi gerado */}
+                  {!ttsSegments.length && !finalTTSAudio && !workflowData.generatedAudio && (
+                    <p className="text-gray-400">Nenhum áudio gerado ainda. Use as configurações ao lado para gerar áudio TTS.</p>
                   )}
                 </div>
               )}
@@ -575,28 +947,412 @@ Você é um especialista em preparar roteiros para narração por voz. Adapte o 
           )}
         </div>
 
-        {/* Prompt Editor Area */}
+        {/* Prompt Editor Area / TTS Configuration */}
         <div className="bg-gray-800 rounded-lg p-6">
-          <div className="flex items-center justify-between mb-4">
-            <h3 className="text-lg font-semibold flex items-center">
-              <Settings className="mr-2" size={20} />
-              Prompt Personalizado
-            </h3>
-            {currentStep > 0 && (
-              <button
-                onClick={() => openPromptEditor(workflowSteps[currentStep].id)}
-                className="px-3 py-1 bg-blue-600 text-white rounded hover:bg-blue-700 text-sm"
-              >
-                Editar Prompt
-              </button>
-            )}
-          </div>
-          
-          {currentStep > 0 && (
-            <div className="bg-gray-700 p-4 rounded-lg h-64 overflow-y-auto">
-              <pre className="whitespace-pre-wrap text-sm">
-                {prompts[workflowSteps[currentStep].id]}
-              </pre>
+          {currentStep === 5 ? (
+            /* TTS Configuration */
+            <div>
+              <h3 className="text-lg font-semibold text-white mb-4 flex items-center space-x-2">
+                <Mic size={20} />
+                <span>Configurações de TTS</span>
+              </h3>
+              
+              <div className="space-y-4">
+                {/* Provedor de TTS */}
+                <div>
+                  <label className="block text-sm font-medium text-gray-300 mb-2">
+                    Provedor de TTS
+                  </label>
+                  <div className="grid grid-cols-3 gap-3">
+                    <div
+                      onClick={() => setTtsProvider('elevenlabs')}
+                      className={`bg-gray-700 border rounded-lg p-3 cursor-pointer transition-colors ${
+                        ttsProvider === 'elevenlabs'
+                          ? 'border-purple-500 bg-purple-900/30'
+                          : 'border-gray-600 hover:border-purple-500'
+                      }`}
+                    >
+                      <div className="flex items-center space-x-2">
+                        <Mic className="w-4 h-4 text-purple-400" />
+                        <span className="text-white font-medium">ElevenLabs</span>
+                      </div>
+                      <p className="text-xs text-gray-400 mt-1">Melhor qualidade</p>
+                    </div>
+                    <div
+                      onClick={() => setTtsProvider('gemini')}
+                      className={`bg-gray-700 border rounded-lg p-3 cursor-pointer transition-colors ${
+                        ttsProvider === 'gemini'
+                          ? 'border-blue-500 bg-blue-900/30'
+                          : 'border-gray-600 hover:border-blue-500'
+                      }`}
+                    >
+                      <div className="flex items-center space-x-2">
+                        <Bot className="w-4 h-4 text-blue-400" />
+                        <span className="text-white font-medium">Gemini TTS</span>
+                      </div>
+                      <p className="text-xs text-gray-400 mt-1">Gratuito</p>
+                    </div>
+                    <div
+                      onClick={() => setTtsProvider('kokoro')}
+                      className={`bg-gray-700 border rounded-lg p-3 cursor-pointer transition-colors ${
+                        ttsProvider === 'kokoro'
+                          ? 'border-green-500 bg-green-900/30'
+                          : 'border-gray-600 hover:border-green-500'
+                      }`}
+                    >
+                      <div className="flex items-center space-x-2">
+                        <Zap className="w-4 h-4 text-green-400" />
+                        <span className="text-white font-medium">Kokoro TTS</span>
+                      </div>
+                      <p className="text-xs text-gray-400 mt-1">Local/Rápido</p>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Configurações de Segmentação */}
+                <div className="space-y-3">
+                  <div className="flex items-center space-x-3 p-3 bg-blue-900/30 border border-blue-600 rounded-lg">
+                    <input
+                      type="checkbox"
+                      id="segmentAudio"
+                      checked={segmentAudio}
+                      onChange={(e) => setSegmentAudio(e.target.checked)}
+                      className="w-4 h-4 text-blue-600 bg-gray-100 border-gray-300 rounded focus:ring-blue-500"
+                    />
+                    <label htmlFor="segmentAudio" className="text-sm font-medium text-blue-200">
+                      Segmentar áudio (recomendado para textos longos)
+                    </label>
+                  </div>
+
+                  {segmentAudio && (
+                    <div>
+                      <label className="block text-sm font-medium text-gray-300 mb-2">
+                        Máximo de caracteres por segmento
+                      </label>
+                      <select
+                        value={maxCharsPerSegment}
+                        onChange={(e) => setMaxCharsPerSegment(parseInt(e.target.value))}
+                        className="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
+                      >
+                        <option value={2000}>2.000 caracteres (mais seguro)</option>
+                        <option value={3000}>3.000 caracteres (balanceado)</option>
+                        <option value={4000}>4.000 caracteres (máximo recomendado)</option>
+                        <option value={5000}>5.000 caracteres (pode dar erro)</option>
+                      </select>
+                      <p className="text-xs text-gray-400 mt-1">
+                        Textos muito longos podem causar erro nas APIs. Segmentar é mais seguro.
+                      </p>
+                    </div>
+                  )}
+                </div>
+
+                {/* Configurações específicas do provedor */}
+                {ttsProvider === 'elevenlabs' && (
+                  <div className="space-y-3">
+                    <h5 className="text-md font-medium text-white">🎤 Configurações ElevenLabs</h5>
+
+                    <div>
+                      <label className="block text-sm font-medium text-gray-300 mb-2">Voz</label>
+                      <select
+                        value={ttsSettings.elevenlabs.voice_id}
+                        onChange={(e) => setTtsSettings(prev => ({
+                          ...prev,
+                          elevenlabs: { ...prev.elevenlabs, voice_id: e.target.value }
+                        }))}
+                        className="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-purple-500"
+                      >
+                        <option value="default">Rachel (Padrão)</option>
+                        <option value="21m00Tcm4TlvDq8ikWAM">Rachel - Feminina Americana</option>
+                        <option value="AZnzlk1XvdvUeBnXmlld">Domi - Feminina Jovem</option>
+                        <option value="EXAVITQu4vr4xnSDxMaL">Bella - Feminina Suave</option>
+                        <option value="ErXwobaYiN019PkySvjV">Antoni - Masculina Americana</option>
+                        <option value="VR6AewLTigWG4xSOukaG">Arnold - Masculina Grave</option>
+                        <option value="pNInz6obpgDQGcFmaJgB">Adam - Masculina Profunda</option>
+                      </select>
+                    </div>
+
+                    <div className="grid grid-cols-2 gap-3">
+                      <div>
+                        <label className="block text-sm font-medium text-gray-300 mb-2">
+                          Estabilidade: {ttsSettings.elevenlabs.stability}
+                        </label>
+                        <input
+                          type="range"
+                          min="0"
+                          max="1"
+                          step="0.1"
+                          value={ttsSettings.elevenlabs.stability}
+                          onChange={(e) => setTtsSettings(prev => ({
+                            ...prev,
+                            elevenlabs: { ...prev.elevenlabs, stability: parseFloat(e.target.value) }
+                          }))}
+                          className="w-full h-2 bg-gray-700 rounded-lg appearance-none cursor-pointer"
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-sm font-medium text-gray-300 mb-2">
+                          Similaridade: {ttsSettings.elevenlabs.similarity_boost}
+                        </label>
+                        <input
+                          type="range"
+                          min="0"
+                          max="1"
+                          step="0.1"
+                          value={ttsSettings.elevenlabs.similarity_boost}
+                          onChange={(e) => setTtsSettings(prev => ({
+                            ...prev,
+                            elevenlabs: { ...prev.elevenlabs, similarity_boost: parseFloat(e.target.value) }
+                          }))}
+                          className="w-full h-2 bg-gray-700 rounded-lg appearance-none cursor-pointer"
+                        />
+                      </div>
+                    </div>
+                  </div>
+                )}
+
+                {ttsProvider === 'gemini' && (
+                  <div className="space-y-3">
+                    <h5 className="text-md font-medium text-white">🤖 Configurações Gemini TTS</h5>
+
+                    <div>
+                      <label className="block text-sm font-medium text-gray-300 mb-2">Voz</label>
+                      <select
+                        value={ttsSettings.gemini.voice_name}
+                        onChange={(e) => setTtsSettings(prev => ({
+                          ...prev,
+                          gemini: { ...prev.gemini, voice_name: e.target.value }
+                        }))}
+                        className="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
+                      >
+                        <option value="Aoede">Aoede - Feminina Suave</option>
+                        <option value="Charon">Charon - Masculina Grave</option>
+                        <option value="Fenrir">Fenrir - Masculina Forte</option>
+                        <option value="Kore">Kore - Feminina Jovem</option>
+                        <option value="Puck">Puck - Masculina Alegre</option>
+                        <option value="Sage">Sage - Feminina Sábia</option>
+                      </select>
+                    </div>
+
+                    <div className="grid grid-cols-3 gap-3">
+                      <div>
+                        <label className="block text-sm font-medium text-gray-300 mb-2">
+                          Velocidade: {ttsSettings.gemini.speed}x
+                        </label>
+                        <input
+                          type="range"
+                          min="0.5"
+                          max="2.0"
+                          step="0.1"
+                          value={ttsSettings.gemini.speed}
+                          onChange={(e) => setTtsSettings(prev => ({
+                            ...prev,
+                            gemini: { ...prev.gemini, speed: parseFloat(e.target.value) }
+                          }))}
+                          className="w-full h-2 bg-gray-700 rounded-lg appearance-none cursor-pointer"
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-sm font-medium text-gray-300 mb-2">
+                          Tom: {ttsSettings.gemini.pitch > 0 ? '+' : ''}{ttsSettings.gemini.pitch}
+                        </label>
+                        <input
+                          type="range"
+                          min="-20"
+                          max="20"
+                          step="1"
+                          value={ttsSettings.gemini.pitch}
+                          onChange={(e) => setTtsSettings(prev => ({
+                            ...prev,
+                            gemini: { ...prev.gemini, pitch: parseFloat(e.target.value) }
+                          }))}
+                          className="w-full h-2 bg-gray-700 rounded-lg appearance-none cursor-pointer"
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-sm font-medium text-gray-300 mb-2">
+                          Volume: {ttsSettings.gemini.volume_gain_db > 0 ? '+' : ''}{ttsSettings.gemini.volume_gain_db}dB
+                        </label>
+                        <input
+                          type="range"
+                          min="-96"
+                          max="16"
+                          step="1"
+                          value={ttsSettings.gemini.volume_gain_db}
+                          onChange={(e) => setTtsSettings(prev => ({
+                            ...prev,
+                            gemini: { ...prev.gemini, volume_gain_db: parseFloat(e.target.value) }
+                          }))}
+                          className="w-full h-2 bg-gray-700 rounded-lg appearance-none cursor-pointer"
+                        />
+                      </div>
+                    </div>
+                  </div>
+                )}
+
+                {ttsProvider === 'kokoro' && (
+                  <div className="space-y-3">
+                    <h5 className="text-md font-medium text-white">⚡ Configurações Kokoro TTS</h5>
+
+                    <div>
+                      <label className="block text-sm font-medium text-gray-300 mb-2">URL do Servidor Kokoro</label>
+                      <input
+                        type="text"
+                        value={ttsSettings.kokoro.kokoro_url}
+                        onChange={(e) => setTtsSettings(prev => ({
+                          ...prev,
+                          kokoro: { ...prev.kokoro, kokoro_url: e.target.value }
+                        }))}
+                        placeholder="http://localhost:8880"
+                        className="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-green-500"
+                      />
+                      <p className="text-xs text-gray-400 mt-1">URL onde o servidor Kokoro FastAPI está rodando</p>
+                    </div>
+
+                    <div>
+                      <label className="block text-sm font-medium text-gray-300 mb-2">Idioma</label>
+                      <select
+                        value={ttsSettings.kokoro.language}
+                        onChange={(e) => {
+                          const newLanguage = e.target.value
+                          let defaultVoice = 'af_bella'
+                          if (newLanguage === 'pt') defaultVoice = 'pf_dora'
+                          else if (newLanguage === 'zh') defaultVoice = 'zf_xiaobei'
+                          else if (newLanguage === 'ja') defaultVoice = 'jf_alpha'
+
+                          setTtsSettings(prev => ({
+                            ...prev,
+                            kokoro: {
+                              ...prev.kokoro,
+                              language: newLanguage,
+                              voice: defaultVoice
+                            }
+                          }))
+                        }}
+                        className="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-green-500"
+                      >
+                        <option value="en">🇺🇸 Inglês (English)</option>
+                        <option value="pt">🇵🇹 Português (Portuguese)</option>
+                        <option value="zh">🇨🇳 Chinês (Chinese)</option>
+                        <option value="ja">🇯🇵 Japonês (Japanese)</option>
+                      </select>
+                    </div>
+
+                    <div>
+                      <label className="block text-sm font-medium text-gray-300 mb-2">Voz</label>
+                      <select
+                        value={ttsSettings.kokoro.voice}
+                        onChange={(e) => setTtsSettings(prev => ({
+                          ...prev,
+                          kokoro: { ...prev.kokoro, voice: e.target.value }
+                        }))}
+                        className="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-green-500"
+                      >
+                        {ttsSettings.kokoro.language === 'pt' ? (
+                          <>
+                            <option value="pf_dora">🇵🇹 pf_dora - Feminina Portuguesa</option>
+                            <option value="pm_alex">🇵🇹 pm_alex - Masculina Portuguesa</option>
+                            <option value="pm_santa">🇵🇹 pm_santa - Masculina Portuguesa (Santa)</option>
+                          </>
+                        ) : ttsSettings.kokoro.language === 'zh' ? (
+                          <>
+                            <option value="zf_xiaobei">🇨🇳 zf_xiaobei - Feminina Chinesa</option>
+                            <option value="zf_xiaoni">🇨🇳 zf_xiaoni - Feminina Chinesa</option>
+                            <option value="zf_xiaoxiao">🇨🇳 zf_xiaoxiao - Feminina Chinesa</option>
+                            <option value="zm_yunjian">🇨🇳 zm_yunjian - Masculina Chinesa</option>
+                            <option value="zm_yunxi">🇨🇳 zm_yunxi - Masculina Chinesa</option>
+                          </>
+                        ) : ttsSettings.kokoro.language === 'ja' ? (
+                          <>
+                            <option value="jf_alpha">🇯🇵 jf_alpha - Feminina Japonesa</option>
+                            <option value="jf_gongitsune">🇯🇵 jf_gongitsune - Feminina Japonesa</option>
+                            <option value="jf_nezumi">🇯🇵 jf_nezumi - Feminina Japonesa</option>
+                            <option value="jm_kumo">🇯🇵 jm_kumo - Masculina Japonesa</option>
+                          </>
+                        ) : (
+                          <>
+                            <option value="af_bella">af_bella - Feminina Americana</option>
+                            <option value="af_sarah">af_sarah - Feminina Americana</option>
+                            <option value="af_nicole">af_nicole - Feminina Americana</option>
+                            <option value="af_sky">af_sky - Feminina Americana</option>
+                            <option value="af_heart">af_heart - Feminina Americana</option>
+                            <option value="am_adam">am_adam - Masculina Americana</option>
+                            <option value="am_michael">am_michael - Masculina Americana</option>
+                            <option value="bf_emma">bf_emma - Feminina Britânica</option>
+                            <option value="bf_isabella">bf_isabella - Feminina Britânica</option>
+                            <option value="bm_george">bm_george - Masculina Britânica</option>
+                            <option value="bm_lewis">bm_lewis - Masculina Britânica</option>
+                          </>
+                        )}
+                      </select>
+                    </div>
+
+                    <div>
+                      <label className="block text-sm font-medium text-gray-300 mb-2">
+                        Velocidade: {ttsSettings.kokoro.speed}x
+                      </label>
+                      <input
+                        type="range"
+                        min="0.5"
+                        max="2.0"
+                        step="0.1"
+                        value={ttsSettings.kokoro.speed}
+                        onChange={(e) => setTtsSettings(prev => ({
+                          ...prev,
+                          kokoro: { ...prev.kokoro, speed: parseFloat(e.target.value) }
+                        }))}
+                        className="w-full h-2 bg-gray-700 rounded-lg appearance-none cursor-pointer"
+                      />
+                    </div>
+                  </div>
+                )}
+
+                {/* Botão para gerar TTS */}
+                <div className="mt-6">
+                  <button
+                    onClick={generateTTSAudio}
+                    disabled={isGeneratingTTS}
+                    className="w-full px-4 py-3 bg-gradient-to-r from-purple-600 to-blue-600 text-white rounded-lg hover:from-purple-700 hover:to-blue-700 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center space-x-2"
+                  >
+                    {isGeneratingTTS ? (
+                      <>
+                        <Loader2 className="w-5 h-5 animate-spin" />
+                        <span>Gerando Áudio...</span>
+                      </>
+                    ) : (
+                      <>
+                        <Volume2 className="w-5 h-5" />
+                        <span>Gerar Áudio TTS</span>
+                      </>
+                    )}
+                  </button>
+                </div>
+              </div>
+            </div>
+          ) : (
+            /* Prompt Editor */
+            <div>
+              <div className="flex items-center justify-between mb-4">
+                <h3 className="text-lg font-semibold flex items-center">
+                  <Settings className="mr-2" size={20} />
+                  Prompt Personalizado
+                </h3>
+                {currentStep > 0 && (
+                  <button
+                    onClick={() => openPromptEditor(workflowSteps[currentStep].id)}
+                    className="px-3 py-1 bg-blue-600 text-white rounded hover:bg-blue-700 text-sm"
+                  >
+                    Editar Prompt
+                  </button>
+                )}
+              </div>
+              
+              {currentStep > 0 && (
+                <div className="bg-gray-700 p-4 rounded-lg h-64 overflow-y-auto">
+                  <pre className="whitespace-pre-wrap text-sm">
+                    {prompts[workflowSteps[currentStep].id]}
+                  </pre>
+                </div>
+              )}
             </div>
           )}
         </div>
