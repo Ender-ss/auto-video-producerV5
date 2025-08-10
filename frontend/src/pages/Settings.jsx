@@ -41,7 +41,17 @@ const Settings = () => {
     openrouter: '',
     elevenlabs: '',
     together: '',
-    rapidapi: ''
+    rapidapi: '',
+    rapidapi_1: '',
+    rapidapi_2: '',
+    rapidapi_3: '',
+    rapidapi_4: '',
+    rapidapi_5: '',
+    rapidapi_6: '',
+    rapidapi_7: '',
+    rapidapi_8: '',
+    rapidapi_9: '',
+    rapidapi_10: ''
   })
   const [apiStatus, setApiStatus] = useState({
     openai: 'unknown',
@@ -58,7 +68,17 @@ const Settings = () => {
     openrouter: 'unknown',
     elevenlabs: 'unknown',
     together: 'unknown',
-    rapidapi: 'unknown'
+    rapidapi: 'unknown',
+    rapidapi_1: 'unknown',
+    rapidapi_2: 'unknown',
+    rapidapi_3: 'unknown',
+    rapidapi_4: 'unknown',
+    rapidapi_5: 'unknown',
+    rapidapi_6: 'unknown',
+    rapidapi_7: 'unknown',
+    rapidapi_8: 'unknown',
+    rapidapi_9: 'unknown',
+    rapidapi_10: 'unknown'
   })
   const [showPasswords, setShowPasswords] = useState({})
   const [testingApi, setTestingApi] = useState(null)
@@ -161,10 +181,27 @@ const Settings = () => {
 
   const apiSections = [
     {
-      title: 'Extração de Conteúdo',
+      title: 'Extração de Conteúdo (Chave Principal)',
       icon: Youtube,
       apis: [
-        { key: 'rapidapi', name: 'RapidAPI YouTube V2', description: 'Extração de títulos e dados do YouTube', required: true }
+        { key: 'rapidapi', name: 'RapidAPI YouTube V2 (Principal)', description: 'Chave principal para extração de dados do YouTube', required: true }
+      ]
+    },
+    {
+      title: 'RapidAPI (Rotação de Chaves)',
+      icon: Youtube,
+      description: '🔄 Configure múltiplas chaves RapidAPI para evitar rate limiting (erro 429). O sistema rotacionará automaticamente.',
+      apis: [
+        { key: 'rapidapi_1', name: 'RapidAPI Chave 1', description: 'Primeira chave RapidAPI para rotação' },
+        { key: 'rapidapi_2', name: 'RapidAPI Chave 2', description: 'Segunda chave para rotação' },
+        { key: 'rapidapi_3', name: 'RapidAPI Chave 3', description: 'Terceira chave para rotação' },
+        { key: 'rapidapi_4', name: 'RapidAPI Chave 4', description: 'Quarta chave para rotação' },
+        { key: 'rapidapi_5', name: 'RapidAPI Chave 5', description: 'Quinta chave para rotação' },
+        { key: 'rapidapi_6', name: 'RapidAPI Chave 6', description: 'Sexta chave para rotação' },
+        { key: 'rapidapi_7', name: 'RapidAPI Chave 7', description: 'Sétima chave para rotação' },
+        { key: 'rapidapi_8', name: 'RapidAPI Chave 8', description: 'Oitava chave para rotação' },
+        { key: 'rapidapi_9', name: 'RapidAPI Chave 9', description: 'Nona chave para rotação' },
+        { key: 'rapidapi_10', name: 'RapidAPI Chave 10', description: 'Décima chave para rotação' }
       ]
     },
     {

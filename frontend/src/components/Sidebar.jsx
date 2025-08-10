@@ -88,16 +88,10 @@ const Sidebar = ({ onClose }) => {
       description: 'APIs e preferências'
     },
     {
-      path: '/automations-old',
+      path: '/automations-dev',
       icon: Zap,
-      label: '🔧 DEV: Automações v1',
-      description: 'Versão antiga (desenvolvimento)'
-    },
-    {
-      path: '/automations-roteiros-test',
-      icon: Zap,
-      label: '🧪 DEV: Roteiros Test',
-      description: 'Versão de teste (desenvolvimento)'
+      label: '🔧 DEV: Automações',
+      description: 'Versão de desenvolvimento'
     },
     {
       path: '/agente-roteiros',

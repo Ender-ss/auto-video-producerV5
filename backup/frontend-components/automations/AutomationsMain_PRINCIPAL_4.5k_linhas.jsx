@@ -48,7 +48,7 @@ import {
 } from 'lucide-react'
 import AutomationResults from '../components/AutomationResults'
 
-const AutomationsMain = () => {
+const AutomationsRoteirosTest = () => {
   const [activeTab, setActiveTab] = useState('youtube')
   const [isProcessing, setIsProcessing] = useState(false)
   const [results, setResults] = useState(null)
@@ -5069,4 +5069,4 @@ ${agentGeneratedScript.model !== 'auto' ? `Modelo: ${agentGeneratedScript.model}
   )
 }
 
-export default AutomationsMain
+export default AutomationsRoteirosTest

@@ -17,9 +17,8 @@ import LoadingSpinner from './components/LoadingSpinner'
 // Pages
 import Dashboard from './pages/Dashboard'
 import Channels from './pages/Channels'
-import AutomationsOldV1 from './pages/AutomationsOldV1'
 import AutomationsMain from './pages/AutomationsMain'
-import AutomationsOldV2 from './pages/AutomationsOldV2'
+import AutomationsDev from './pages/AutomationsDev'
 import AgentRoteirosSimples from './pages/AgentRoteirosSimples'
 import Pipeline from './pages/Pipeline'
 import Videos from './pages/Videos'
@@ -153,16 +152,16 @@ function App() {
                 />
 
                 <Route
-                  path="/automations-old"
+                  path="/automations-dev"
                   element={
                     <motion.div
-                      key="automations-old"
+                      key="automations-dev"
                       initial={{ opacity: 0, y: 20 }}
                       animate={{ opacity: 1, y: 0 }}
                       exit={{ opacity: 0, y: -20 }}
                       transition={{ duration: 0.3 }}
                     >
-                      <AutomationsOldV1 />
+                      <AutomationsDev />
                     </motion.div>
                   }
                 />
@@ -172,21 +171,6 @@ function App() {
                   element={
                     <motion.div
                       key="automations"
-                      initial={{ opacity: 0, y: 20 }}
-                      animate={{ opacity: 1, y: 0 }}
-                      exit={{ opacity: 0, y: -20 }}
-                      transition={{ duration: 0.3 }}
-                    >
-                      <AutomationsMain />
-                    </motion.div>
-                  }
-                />
-
-                <Route
-                  path="/automations-roteiros-test"
-                  element={
-                    <motion.div
-                      key="automations-roteiros-test"
                       initial={{ opacity: 0, y: 20 }}
                       animate={{ opacity: 1, y: 0 }}
                       exit={{ opacity: 0, y: -20 }}
