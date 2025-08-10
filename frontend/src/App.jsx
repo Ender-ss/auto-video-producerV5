@@ -17,9 +17,9 @@ import LoadingSpinner from './components/LoadingSpinner'
 // Pages
 import Dashboard from './pages/Dashboard'
 import Channels from './pages/Channels'
-import Automations from './pages/Automations'
-import AutomationsRoteirosTest from './pages/AutomationsRoteirosTest'
-import AutomationsOld from './pages/AutomationsOld'
+import AutomationsOldV1 from './pages/AutomationsOldV1'
+import AutomationsMain from './pages/AutomationsMain'
+import AutomationsOldV2 from './pages/AutomationsOldV2'
 import AgentRoteirosSimples from './pages/AgentRoteirosSimples'
 import Pipeline from './pages/Pipeline'
 import Videos from './pages/Videos'
@@ -162,7 +162,7 @@ function App() {
                       exit={{ opacity: 0, y: -20 }}
                       transition={{ duration: 0.3 }}
                     >
-                      <AutomationsOld />
+                      <AutomationsOldV1 />
                     </motion.div>
                   }
                 />
@@ -177,7 +177,7 @@ function App() {
                       exit={{ opacity: 0, y: -20 }}
                       transition={{ duration: 0.3 }}
                     >
-                      <AutomationsRoteirosTest />
+                      <AutomationsMain />
                     </motion.div>
                   }
                 />
@@ -192,7 +192,7 @@ function App() {
                       exit={{ opacity: 0, y: -20 }}
                       transition={{ duration: 0.3 }}
                     >
-                      <AutomationsRoteirosTest />
+                      <AutomationsMain />
                     </motion.div>
                   }
                 />

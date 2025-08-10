@@ -40,34 +40,16 @@ const Sidebar = ({ onClose }) => {
       description: 'Gerenciar canais monitorados'
     },
     {
-      path: '/automations-old',
-      icon: Zap,
-      label: 'Automações (Antigo)',
-      description: 'Ferramentas de IA (Versão Antiga)'
-    },
-    {
       path: '/automations',
       icon: Zap,
       label: 'Automações',
-      description: 'Workflow de Automações'
+      description: 'Sistema principal de automações'
     },
     {
       path: '/image-generation',
       icon: Zap,
       label: 'Geração de Imagens',
       description: 'Criar imagens com IA'
-    },
-    {
-      path: '/automations-roteiros-test',
-      icon: Zap,
-      label: '🧪 Roteiros Teste',
-      description: 'Versão de teste para roteiros'
-    },
-    {
-      path: '/agente-roteiros',
-      icon: Zap,
-      label: '🤖 Agente Roteiros',
-      description: 'Agente IA personalizado'
     },
     {
       path: '/pipeline',
@@ -104,6 +86,24 @@ const Sidebar = ({ onClose }) => {
       icon: Settings,
       label: 'Configurações',
       description: 'APIs e preferências'
+    },
+    {
+      path: '/automations-old',
+      icon: Zap,
+      label: '🔧 DEV: Automações v1',
+      description: 'Versão antiga (desenvolvimento)'
+    },
+    {
+      path: '/automations-roteiros-test',
+      icon: Zap,
+      label: '🧪 DEV: Roteiros Test',
+      description: 'Versão de teste (desenvolvimento)'
+    },
+    {
+      path: '/agente-roteiros',
+      icon: Zap,
+      label: '🤖 DEV: Agente Simples',
+      description: 'Agente simplificado (desenvolvimento)'
     }
   ]
 
