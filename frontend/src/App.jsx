@@ -22,8 +22,9 @@ import AutomationsDev from './pages/AutomationsDev'
 import AgentRoteirosSimples from './pages/AgentRoteirosSimples'
 import Pipeline from './pages/Pipeline'
 import Videos from './pages/Videos'
-import Settings from './pages/SettingsSimple'
+import Settings from './pages/Settings'
 import SettingsTest from './pages/SettingsTest'
+import SettingsDebug from './pages/SettingsDebug'
 import Analytics from './pages/Analytics'
 import Logs from './pages/Logs'
 import ApiTests from './pages/ApiTests';
@@ -267,6 +268,21 @@ function App() {
                       transition={{ duration: 0.3 }}
                     >
                       <SettingsTest />
+                    </motion.div>
+                  }
+                />
+
+                <Route
+                  path="/settings-debug"
+                  element={
+                    <motion.div
+                      key="settings-debug"
+                      initial={{ opacity: 0, y: 20 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      exit={{ opacity: 0, y: -20 }}
+                      transition={{ duration: 0.3 }}
+                    >
+                      <SettingsDebug />
                     </motion.div>
                   }
                 />

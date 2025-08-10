@@ -53,6 +53,10 @@ const Settings = () => {
     rapidapi_9: '',
     rapidapi_10: ''
   })
+
+  // Estado para monitoramento da rotação RapidAPI
+  const [rapidApiStatus, setRapidApiStatus] = useState(null)
+  const [isLoadingRapidApiStatus, setIsLoadingRapidApiStatus] = useState(false)
   const [apiStatus, setApiStatus] = useState({
     openai: 'unknown',
     gemini_1: 'unknown',
@@ -99,6 +103,16 @@ const Settings = () => {
     }
   }, [])
 
+  // Carregar status RapidAPI quando a aba APIs for aberta
+  useEffect(() => {
+    if (activeTab === 'apis') {
+      fetchRapidApiStatus()
+      // Atualizar status a cada 30 segundos
+      const interval = setInterval(fetchRapidApiStatus, 30000)
+      return () => clearInterval(interval)
+    }
+  }, [activeTab])
+
   const testApiConnection = async (apiName, showAlert = true) => {
     if (!apiKeys[apiName]) {
       if (showAlert) alert('Por favor, insira a chave da API primeiro')
@@ -134,6 +148,64 @@ const Settings = () => {
       if (showAlert) alert(`❌ Erro de conexão: ${error.message}`)
     } finally {
       setTestingApi(null)
+    }
+  }
+
+  // Função para buscar status da rotação RapidAPI
+  const fetchRapidApiStatus = async () => {
+    setIsLoadingRapidApiStatus(true)
+    try {
+      const response = await fetch('http://localhost:5000/api/automations/rapidapi/status')
+      const data = await response.json()
+      console.log('🔍 RapidAPI Status Response:', data)
+      setRapidApiStatus(data)
+    } catch (error) {
+      console.error('Erro ao buscar status RapidAPI:', error)
+      setRapidApiStatus(null)
+    } finally {
+      setIsLoadingRapidApiStatus(false)
+    }
+  }
+
+  // Função para testar rotação RapidAPI
+  const testRapidApiRotation = async () => {
+    try {
+      const response = await fetch('http://localhost:5000/api/automations/test-rapidapi', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          api_key: apiKeys.rapidapi || apiKeys.rapidapi_1
+        })
+      })
+      const data = await response.json()
+      if (data.success) {
+        alert('✅ Teste de rotação RapidAPI bem-sucedido!')
+        fetchRapidApiStatus() // Atualizar status após teste
+      } else {
+        alert('❌ Erro no teste: ' + data.error)
+      }
+    } catch (error) {
+      alert('❌ Erro ao testar rotação: ' + error.message)
+    }
+  }
+
+  // Função para resetar throttling RapidAPI
+  const resetRapidApiThrottle = async () => {
+    try {
+      const response = await fetch('http://localhost:5000/api/automations/rapidapi/throttle/reset', {
+        method: 'POST'
+      })
+      const data = await response.json()
+      if (data.success) {
+        alert('✅ Throttling RapidAPI resetado com sucesso!')
+        fetchRapidApiStatus() // Atualizar status após reset
+      } else {
+        alert('❌ Erro ao resetar throttling')
+      }
+    } catch (error) {
+      alert('❌ Erro ao resetar throttling: ' + error.message)
     }
   }
 
@@ -188,9 +260,9 @@ const Settings = () => {
       ]
     },
     {
-      title: 'RapidAPI (Rotação de Chaves)',
+      title: 'RapidAPI (Rotação de Chaves) 🔑 NOVA SEÇÃO!',
       icon: Youtube,
-      description: '🔄 Configure múltiplas chaves RapidAPI para evitar rate limiting (erro 429). O sistema rotacionará automaticamente.',
+      description: '🔄 Configure múltiplas chaves RapidAPI para evitar rate limiting (erro 429). O sistema rotacionará automaticamente. ⚡ IGUAL AO GEMINI!',
       apis: [
         { key: 'rapidapi_1', name: 'RapidAPI Chave 1', description: 'Primeira chave RapidAPI para rotação' },
         { key: 'rapidapi_2', name: 'RapidAPI Chave 2', description: 'Segunda chave para rotação' },
@@ -322,18 +394,24 @@ const Settings = () => {
           {activeTab === 'apis' && (
             <div>
               <div className="mb-6">
-                <h2 className="text-2xl font-bold text-white mb-2">🔧 Configuração de APIs - ATUALIZADO</h2>
+                <h2 className="text-2xl font-bold text-white mb-2">🔧 Configuração de APIs - ATUALIZADO ✅</h2>
                 <p className="text-gray-400">
                   Configure suas chaves de API para habilitar todas as funcionalidades.
                   <span className="text-yellow-400">🔄 Agora com suporte para múltiplas chaves Gemini!</span>
+                  <span className="text-green-400"> 🔑 E RAPIDAPI!</span>
                 </p>
               </div>
               
-              {/* DEBUG: Mostrando total de seções */}
-              <div className="mb-4 p-3 bg-yellow-900 border border-yellow-600 rounded">
-                <p className="text-yellow-200">🔍 DEBUG: Total de seções: {apiSections.length}</p>
-                <p className="text-yellow-200">📝 Seções: {apiSections.map(s => s.title).join(', ')}</p>
+              {/* TESTE DE RENDERIZAÇÃO - SEÇÕES RAPIDAPI */}
+              <div className="mb-4 p-3 bg-green-800 border border-green-600 rounded-lg">
+                <p className="text-green-200 text-sm">
+                  ✅ <strong>TESTE:</strong> Se você está vendo esta mensagem, o componente está renderizando corretamente!
+                  <br />📊 Total de seções API: {apiSections.length}
+                  <br />🔑 Seções RapidAPI encontradas: {apiSections.filter(s => s.title.includes('RapidAPI')).length}
+                </p>
               </div>
+              
+
 
               {apiSections.map((section, index) => (
                 <div key={section.title} className="mb-8">
@@ -437,6 +515,180 @@ const Settings = () => {
                   💡 <strong>Dica:</strong> Configure pelo menos 3-5 chaves para evitar limites de cota durante uso intenso.
                 </div>
               </div>
+
+
+
+              {/* Status da Rotação de Chaves RapidAPI - SEMPRE VISÍVEL */}
+              <div className="mt-8 bg-gray-700 rounded-lg p-4 border border-gray-600">
+                <div className="flex items-center justify-between mb-4">
+                  <div className="flex items-center space-x-2">
+                    <Zap size={20} className="text-yellow-400" />
+                    <h3 className="text-lg font-semibold text-white">Status da Rotação RapidAPI</h3>
+                  </div>
+                  <div className="flex space-x-2">
+                    <button
+                      onClick={fetchRapidApiStatus}
+                      disabled={isLoadingRapidApiStatus}
+                      className="px-3 py-1 bg-blue-600 text-white rounded text-sm hover:bg-blue-700 disabled:opacity-50 flex items-center space-x-1"
+                    >
+                      <RefreshCw size={14} className={isLoadingRapidApiStatus ? 'animate-spin' : ''} />
+                      <span>Atualizar</span>
+                    </button>
+                    <button
+                      onClick={testRapidApiRotation}
+                      className="px-3 py-1 bg-green-600 text-white rounded text-sm hover:bg-green-700 flex items-center space-x-1"
+                    >
+                      <TestTube size={14} />
+                      <span>Testar</span>
+                    </button>
+                    <button
+                      onClick={resetRapidApiThrottle}
+                      className="px-3 py-1 bg-orange-600 text-white rounded text-sm hover:bg-orange-700 flex items-center space-x-1"
+                    >
+                      <RefreshCw size={14} />
+                      <span>Reset</span>
+                    </button>
+                  </div>
+                </div>
+
+                {isLoadingRapidApiStatus ? (
+                  <div className="text-center py-4">
+                    <RefreshCw size={24} className="text-blue-400 animate-spin mx-auto mb-2" />
+                    <p className="text-gray-400">Carregando status...</p>
+                  </div>
+                ) : (
+                  <div>
+                    {rapidApiStatus ? (
+                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                    {/* Status Geral */}
+                    <div className="bg-gray-800 rounded p-3">
+                      <h4 className="text-sm font-medium text-gray-300 mb-2">Status Geral</h4>
+                      <div className="space-y-1 text-xs">
+                        <div className="flex items-center space-x-2">
+                          {rapidApiStatus.rotation_enabled ? (
+                            <CheckCircle size={12} className="text-green-400" />
+                          ) : (
+                            <XCircle size={12} className="text-red-400" />
+                          )}
+                          <span className={rapidApiStatus.rotation_enabled ? 'text-green-300' : 'text-red-300'}>
+                            Rotação: {rapidApiStatus.rotation_enabled ? 'Ativa' : 'Inativa'}
+                          </span>
+                        </div>
+                        <div className="flex items-center space-x-2">
+                          <span className="text-gray-400">Chave atual:</span>
+                          <span className="text-white font-mono">{rapidApiStatus.current_key_index || 0}</span>
+                        </div>
+                        <div className="flex items-center space-x-2">
+                          <span className="text-gray-400">Total de chaves:</span>
+                          <span className="text-white">{rapidApiStatus.total_keys || 0}</span>
+                        </div>
+                        <div className="flex items-center space-x-2">
+                          <span className="text-gray-400">Chaves ativas:</span>
+                          <span className="text-green-300">{rapidApiStatus.active_keys || 0}</span>
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Throttling e Cache */}
+                    <div className="bg-gray-800 rounded p-3">
+                      <h4 className="text-sm font-medium text-gray-300 mb-2">Throttling & Cache</h4>
+                      <div className="space-y-1 text-xs">
+                        <div className="flex items-center space-x-2">
+                          <span className="text-gray-400">Throttling ativo:</span>
+                          <span className={rapidApiStatus.throttling_active ? 'text-yellow-300' : 'text-green-300'}>
+                            {rapidApiStatus.throttling_active ? 'Sim' : 'Não'}
+                          </span>
+                        </div>
+                        <div className="flex items-center space-x-2">
+                          <span className="text-gray-400">Itens em cache:</span>
+                          <span className="text-blue-300">{rapidApiStatus.cache_size || 0}</span>
+                        </div>
+                        <div className="flex items-center space-x-2">
+                          <span className="text-gray-400">Último reset:</span>
+                          <span className="text-white">
+                            {rapidApiStatus.last_reset ? new Date(rapidApiStatus.last_reset).toLocaleString('pt-BR') : 'N/A'}
+                          </span>
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Estatísticas */}
+                    <div className="bg-gray-800 rounded p-3">
+                      <h4 className="text-sm font-medium text-gray-300 mb-2">Estatísticas</h4>
+                      <div className="space-y-1 text-xs">
+                        <div className="flex items-center space-x-2">
+                          <span className="text-gray-400">Requisições hoje:</span>
+                          <span className="text-blue-300">{rapidApiStatus.requests_today || 0}</span>
+                        </div>
+                        <div className="flex items-center space-x-2">
+                          <span className="text-gray-400">Erros 429:</span>
+                          <span className="text-red-300">{rapidApiStatus.rate_limit_errors || 0}</span>
+                        </div>
+                        <div className="flex items-center space-x-2">
+                          <span className="text-gray-400">Cache hits:</span>
+                          <span className="text-green-300">{rapidApiStatus.cache_hits || 0}</span>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                    ) : (
+                      <div className="text-center py-4">
+                        <AlertCircle size={24} className="text-yellow-400 mx-auto mb-2" />
+                        <p className="text-gray-400">Não foi possível carregar o status da rotação RapidAPI</p>
+                        <button
+                          onClick={fetchRapidApiStatus}
+                          className="mt-2 px-3 py-1 bg-blue-600 text-white rounded text-sm hover:bg-blue-700"
+                        >
+                          Tentar novamente
+                        </button>
+                      </div>
+                    )}
+                  </div>
+                )}
+
+                {/* Chaves Configuradas */}
+                <div className="mt-4 bg-gray-800 rounded p-3">
+                  <h4 className="text-sm font-medium text-gray-300 mb-2">Chaves Configuradas</h4>
+                    <div className="grid grid-cols-2 md:grid-cols-5 gap-2">
+                      {[0,1,2,3,4,5,6,7,8,9,10].map(num => {
+                        const key = num === 0 ? 'rapidapi' : `rapidapi_${num}`
+                        const hasKey = apiKeys[key] && apiKeys[key].length > 10
+                        const isActive = rapidApiStatus?.current_key_index === num
+                        const isFailed = rapidApiStatus?.failed_keys && rapidApiStatus.failed_keys.includes(num)
+                        return (
+                          <div key={key} className={`flex items-center space-x-2 text-xs p-2 rounded ${
+                            isActive ? 'bg-blue-900 border border-blue-600' : 
+                            isFailed ? 'bg-red-900 border border-red-600' :
+                            hasKey ? 'bg-green-900 border border-green-600' : 'bg-gray-700'
+                          }`}>
+                            {hasKey ? (
+                              isActive ? (
+                                <Zap size={12} className="text-blue-400" />
+                              ) : isFailed ? (
+                                <XCircle size={12} className="text-red-400" />
+                              ) : (
+                                <CheckCircle size={12} className="text-green-400" />
+                              )
+                            ) : (
+                              <XCircle size={12} className="text-gray-500" />
+                            )}
+                            <span className={`${
+                              isActive ? 'text-blue-300 font-semibold' :
+                              isFailed ? 'text-red-300' :
+                              hasKey ? 'text-green-300' : 'text-gray-500'
+                            }`}>
+                              {num === 0 ? 'Principal' : `Chave ${num}`}
+                            </span>
+                          </div>
+                        )
+                      })}
+                    </div>
+                  </div>
+
+                <div className="mt-3 text-xs text-gray-400">
+                  💡 <strong>Dica:</strong> Configure múltiplas chaves RapidAPI para evitar limites de rate. O sistema rotaciona automaticamente quando uma chave atinge o limite.
+                </div>
+              </div>
             </div>
           )}
 
@@ -478,6 +730,9 @@ const Settings = () => {
           )}
         </div>
       </div>
+      
+
+    </div>
     </div>
   )
 }

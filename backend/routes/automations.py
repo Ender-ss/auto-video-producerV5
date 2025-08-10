@@ -2501,44 +2501,70 @@ def join_audio_files(segments):
 def get_rapidapi_status():
     """Obter status do throttling e cache da RapidAPI"""
     try:
-        with RAPIDAPI_THROTTLE['lock']:
-            throttle_status = {
-                'last_request_time': RAPIDAPI_THROTTLE['last_request_time'],
-                'min_delay': RAPIDAPI_THROTTLE['min_delay'],
-                'adaptive_delay': RAPIDAPI_THROTTLE['adaptive_delay'],
-                'consecutive_429s': RAPIDAPI_THROTTLE['consecutive_429s'],
-                'time_since_last_request': time.time() - RAPIDAPI_THROTTLE['last_request_time'] if RAPIDAPI_THROTTLE['last_request_time'] > 0 else 0
-            }
+        # Carregar chaves RapidAPI se não estiverem carregadas
+        if not RAPIDAPI_KEYS_ROTATION['keys']:
+            load_rapidapi_keys()
         
-        with RAPIDAPI_CACHE['lock']:
-            cache_status = {
-                'total_entries': len(RAPIDAPI_CACHE['data']),
-                'ttl': RAPIDAPI_CACHE['ttl'],
-                'entries': []
-            }
-            
-            current_time = time.time()
-            for cache_key, timestamp in RAPIDAPI_CACHE['timestamps'].items():
-                age = current_time - timestamp
-                remaining_ttl = max(0, RAPIDAPI_CACHE['ttl'] - age)
-                cache_status['entries'].append({
-                    'key': cache_key[:16] + '...',  # Mostrar apenas parte da chave
-                    'age_seconds': round(age, 2),
-                    'remaining_ttl': round(remaining_ttl, 2),
-                    'expired': remaining_ttl <= 0
-                })
+        # Status do throttling
+        throttle_status = {
+            'last_request_time': RAPIDAPI_THROTTLE.get('last_request_time', 0),
+            'min_delay': RAPIDAPI_THROTTLE.get('min_delay', 2.0),
+            'adaptive_delay': RAPIDAPI_THROTTLE.get('adaptive_delay', 2.0),
+            'consecutive_429s': RAPIDAPI_THROTTLE.get('consecutive_429s', 0),
+            'time_since_last_request': time.time() - RAPIDAPI_THROTTLE.get('last_request_time', 0) if RAPIDAPI_THROTTLE.get('last_request_time', 0) > 0 else 0,
+            'throttling_active': RAPIDAPI_THROTTLE.get('consecutive_429s', 0) > 0
+        }
+        
+        # Status do cache
+        cache_status = {
+            'total_entries': len(RAPIDAPI_CACHE.get('data', {})),
+            'ttl': RAPIDAPI_CACHE.get('ttl', 300),
+            'cache_size': len(RAPIDAPI_CACHE.get('data', {})),
+            'entries': []
+        }
+        
+        current_time = time.time()
+        for cache_key, timestamp in RAPIDAPI_CACHE.get('timestamps', {}).items():
+            age = current_time - timestamp
+            remaining_ttl = max(0, RAPIDAPI_CACHE.get('ttl', 300) - age)
+            cache_status['entries'].append({
+                'key': cache_key[:16] + '...',  # Mostrar apenas parte da chave
+                'age_seconds': round(age, 2),
+                'remaining_ttl': round(remaining_ttl, 2),
+                'expired': remaining_ttl <= 0
+            })
         
         # Status das chaves RapidAPI
         keys_status = {
             'total_keys': len(RAPIDAPI_KEYS_ROTATION['keys']),
-            'failed_keys': len(RAPIDAPI_KEYS_ROTATION['failed_keys']),
-            'current_index': RAPIDAPI_KEYS_ROTATION['current_index'],
-            'last_reset': RAPIDAPI_KEYS_ROTATION['last_reset']
+            'active_keys': len(RAPIDAPI_KEYS_ROTATION['keys']) - len(RAPIDAPI_KEYS_ROTATION['failed_keys']),
+            'failed_keys': list(RAPIDAPI_KEYS_ROTATION['failed_keys']),
+            'current_key_index': RAPIDAPI_KEYS_ROTATION['current_index'],
+            'last_reset': RAPIDAPI_KEYS_ROTATION['last_reset'].isoformat() if hasattr(RAPIDAPI_KEYS_ROTATION['last_reset'], 'isoformat') else str(RAPIDAPI_KEYS_ROTATION['last_reset']),
+            'rotation_enabled': len(RAPIDAPI_KEYS_ROTATION['keys']) > 0
+        }
+        
+        # Estatísticas adicionais
+        stats = {
+            'requests_today': 0,  # Placeholder - pode ser implementado com contador
+            'rate_limit_errors': RAPIDAPI_THROTTLE.get('consecutive_429s', 0),
+            'cache_hits': len(RAPIDAPI_CACHE.get('data', {}))  # Aproximação
         }
         
         return jsonify({
             'success': True,
-            'data': {
+            'rotation_enabled': keys_status['rotation_enabled'],
+            'current_key_index': keys_status['current_key_index'],
+            'total_keys': keys_status['total_keys'],
+            'active_keys': keys_status['active_keys'],
+            'failed_keys': keys_status['failed_keys'],
+            'throttling_active': throttle_status['throttling_active'],
+            'cache_size': cache_status['cache_size'],
+            'last_reset': keys_status['last_reset'],
+            'requests_today': stats['requests_today'],
+            'rate_limit_errors': stats['rate_limit_errors'],
+            'cache_hits': stats['cache_hits'],
+            'detailed_data': {
                 'throttling': throttle_status,
                 'cache': cache_status,
                 'keys_rotation': keys_status,

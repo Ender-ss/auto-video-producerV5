@@ -552,11 +552,12 @@ def test_api_endpoint():
 
         logger.info(f"🧪 Testando API: {api_name}")
 
-        if api_name == 'rapidapi':
+        # Tratar todas as chaves RapidAPI (rapidapi, rapidapi_1, rapidapi_2, etc.)
+        if api_name == 'rapidapi' or api_name.startswith('rapidapi_'):
             result = test_rapidapi_connection(api_key)
         elif api_name == 'openai':
             result = test_openai_connection(api_key)
-        elif api_name == 'gemini_1':
+        elif api_name.startswith('gemini_'):
             result = test_gemini_connection(api_key)
         elif api_name == 'elevenlabs':
             result = test_elevenlabs_connection(api_key)
