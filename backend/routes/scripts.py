@@ -38,8 +38,9 @@ def generate_scripts():
                 title_generator.configure_openai(api_keys['openai'])
         
         if ai_provider == 'gemini' or ai_provider == 'auto':
-            if api_keys.get('gemini'):
-                title_generator.configure_gemini(api_keys['gemini'])
+            gemini_key = api_keys.get('gemini') or api_keys.get('gemini_1')
+            if gemini_key:
+                title_generator.configure_gemini(gemini_key)
         
         if ai_provider == 'openrouter' or ai_provider == 'auto':
             if api_keys.get('openrouter'):

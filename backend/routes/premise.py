@@ -37,8 +37,9 @@ def generate_premises():
                 title_generator.configure_openai(api_keys['openai'])
         
         if ai_provider == 'gemini' or ai_provider == 'auto':
-            if api_keys.get('gemini'):
-                title_generator.configure_gemini(api_keys['gemini'])
+            gemini_key = api_keys.get('gemini') or api_keys.get('gemini_1')
+            if gemini_key:
+                title_generator.configure_gemini(gemini_key)
         
         if ai_provider == 'openrouter' or ai_provider == 'auto':
             if api_keys.get('openrouter'):
@@ -58,7 +59,7 @@ def generate_premises():
                         premises = generate_premises_openrouter(titles, prompt, openrouter_model, api_keys['openrouter'])
                         success = True
                         break
-                    elif provider == 'gemini' and api_keys.get('gemini'):
+                    elif provider == 'gemini' and (api_keys.get('gemini') or api_keys.get('gemini_1')):
                         premises = generate_premises_gemini(titles, prompt, title_generator)
                         success = True
                         break
@@ -85,7 +86,8 @@ def generate_premises():
             premises = generate_premises_openrouter(titles, prompt, openrouter_model, api_keys['openrouter'])
             
         elif ai_provider == 'gemini':
-            if not api_keys.get('gemini'):
+            gemini_key = api_keys.get('gemini') or api_keys.get('gemini_1')
+            if not gemini_key:
                 return jsonify({
                     'success': False,
                     'error': 'Chave da API Gemini não configurada'
@@ -412,9 +414,13 @@ def generate_script_part(prompt, ai_provider, openrouter_model, api_keys, title_
             return generate_script_openai(prompt, title_generator)
 
         else:  # gemini (padrão)
-            gemini_keys = [key for key in api_keys.keys() if key.startswith('gemini')]
-            if not gemini_keys:
-                raise Exception('Nenhuma chave Gemini encontrada')
+            # Verificar se o Gemini foi configurado corretamente
+            if not title_generator.gemini_model:
+                gemini_keys = [key for key in api_keys.keys() if key.startswith('gemini')]
+                if not gemini_keys:
+                    raise Exception('Nenhuma chave Gemini encontrada')
+                else:
+                    raise Exception('Gemini não foi configurado corretamente')
             return generate_script_gemini(prompt, title_generator)
 
     except Exception as e:

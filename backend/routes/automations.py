@@ -370,47 +370,7 @@ def clear_expired_cache():
             return False
     return True
 
-# ================================
-# 🧪 CACHE PARA RAPIDAPI
-# ================================
 
-# Cache simples para evitar chamadas desnecessárias
-RAPIDAPI_CACHE = {}
-CACHE_DURATION = 300  # 5 minutos em segundos
-
-def get_cache_key(endpoint, params):
-    """Gerar chave única para cache"""
-    import hashlib
-    key_string = f"{endpoint}_{str(sorted(params.items()))}"
-    return hashlib.md5(key_string.encode()).hexdigest()
-
-def is_cache_valid(cache_entry):
-    """Verificar se entrada do cache ainda é válida"""
-    import time
-    return time.time() - cache_entry['timestamp'] < CACHE_DURATION
-
-def get_from_cache(endpoint, params):
-    """Obter dados do cache se disponível e válido"""
-    cache_key = get_cache_key(endpoint, params)
-    if cache_key in RAPIDAPI_CACHE:
-        cache_entry = RAPIDAPI_CACHE[cache_key]
-        if is_cache_valid(cache_entry):
-            print(f"📋 Cache hit para {endpoint} - evitando chamada à API")
-            return cache_entry['data']
-        else:
-            # Cache expirado, remover
-            del RAPIDAPI_CACHE[cache_key]
-    return None
-
-def save_to_cache(endpoint, params, data):
-    """Salvar dados no cache"""
-    import time
-    cache_key = get_cache_key(endpoint, params)
-    RAPIDAPI_CACHE[cache_key] = {
-        'data': data,
-        'timestamp': time.time()
-    }
-    print(f"💾 Dados salvos no cache para {endpoint}")
 
 # ================================
 # 🧪 TESTE RAPIDAPI
@@ -1464,6 +1424,11 @@ def get_channel_videos_rapidapi(channel_id, api_key, max_results=50):
             "X-RapidAPI-Host": "youtube-v2.p.rapidapi.com"
         }
 
+        params = {
+            "channel_id": channel_id,
+            "max_results": min(max_results, 50)
+        }
+
         print(f"🔍 DEBUG: Parâmetros: {params}")
         print(f"🔍 DEBUG: API Key presente: {'Sim' if current_api_key else 'Não'}")
         print(f"🔍 DEBUG: API Key length: {len(current_api_key) if current_api_key else 0}")
@@ -1759,8 +1724,9 @@ def generate_titles():
         if api_keys.get('openai'):
             openai_configured = title_generator.configure_openai(api_keys['openai'])
 
-        if api_keys.get('gemini'):
-            gemini_configured = title_generator.configure_gemini(api_keys['gemini'])
+        gemini_key = api_keys.get('gemini') or api_keys.get('gemini_1')
+        if gemini_key:
+            gemini_configured = title_generator.configure_gemini(gemini_key)
 
         if api_keys.get('openrouter'):
             openrouter_configured = title_generator.configure_openrouter(api_keys['openrouter'])

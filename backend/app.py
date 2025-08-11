@@ -28,7 +28,8 @@ app.config['MAX_CONTENT_LENGTH'] = 100 * 1024 * 1024  # 100MB max file size
 CORS(app, origins=['http://localhost:5173', 'http://127.0.0.1:5173', 'http://localhost:5174'])
 
 # Inicializar banco de dados
-db = SQLAlchemy(app)
+from database import db, ImageQueue, ScriptPrompt
+db.init_app(app)
 
 # Criar diretórios necessários
 os.makedirs('uploads', exist_ok=True)
@@ -174,6 +175,8 @@ class AutomationLog(db.Model):
             'error_message': self.error_message
         }
 
+# Modelos ImageQueue e ScriptPrompt movidos para database.py
+
 # ================================
 # 🏠 ROTAS PRINCIPAIS
 # ================================
@@ -191,7 +194,9 @@ def index():
             'pipelines': '/api/pipelines',
             'videos': '/api/videos',
             'automations': '/api/automations',
-            'settings': '/api/settings'
+            'settings': '/api/settings',
+            'images': '/api/images',
+            'image_queue': '/api/image-queue'
         }
     })
 
@@ -270,6 +275,7 @@ def register_blueprints():
         from routes.system import system_bp
         from routes.tests import tests_bp
         from routes.images import images_bp
+        from routes.image_queue import image_queue_bp
 
         app.register_blueprint(automations_bp, url_prefix='/api/automations')
         app.register_blueprint(premise_bp, url_prefix='/api/premise')
@@ -282,6 +288,7 @@ def register_blueprints():
         app.register_blueprint(system_bp, url_prefix='/api/system')
         app.register_blueprint(tests_bp, url_prefix='/api/tests')
         app.register_blueprint(images_bp, url_prefix='/api/images')
+        app.register_blueprint(image_queue_bp, url_prefix='/api/image-queue')
 
         logger.info("✅ Rotas registradas com sucesso!")
     except Exception as e:
