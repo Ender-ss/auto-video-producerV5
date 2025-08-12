@@ -52,6 +52,12 @@ const Sidebar = ({ onClose }) => {
       description: 'Criar imagens com IA'
     },
     {
+      path: '/image-queue',
+      icon: Clock,
+      label: 'Fila de Imagens',
+      description: 'Geração em lote e prompts automáticos'
+    },
+    {
       path: '/pipeline',
       icon: Clapperboard,
       label: 'Pipeline',
@@ -150,7 +156,7 @@ const Sidebar = ({ onClose }) => {
               key={item.path}
               to={item.path}
               className={({ isActive }) =>
-                `flex items-center space-x-3 px-4 py-3 rounded-lg transition-all duration-200 group ${
+                `group flex items-center space-x-3 px-3 py-2.5 rounded-lg transition-all duration-200 ${
                   isActive
                     ? 'bg-blue-600 text-white shadow-lg'
                     : 'text-gray-300 hover:bg-gray-700 hover:text-white'
@@ -158,19 +164,27 @@ const Sidebar = ({ onClose }) => {
               }
             >
               <Icon 
-                size={20} 
-                className={`${
+                size={18} 
+                className={`flex-shrink-0 ${
                   isActive ? 'text-white' : 'text-gray-400 group-hover:text-white'
                 }`} 
               />
-              <div className="flex-1">
-                <div className="font-medium">{item.label}</div>
-                <div className={`text-xs ${
-                  isActive ? 'text-blue-100' : 'text-gray-500 group-hover:text-gray-400'
-                }`}>
+              <div className="flex-1 min-w-0">
+                <div className="text-sm font-medium truncate">
+                  {item.label}
+                </div>
+                <div className="text-xs opacity-75 truncate">
                   {item.description}
                 </div>
               </div>
+              {isActive && (
+                <motion.div
+                  layoutId="activeIndicator"
+                  className="w-1 h-6 bg-white rounded-full"
+                  initial={false}
+                  transition={{ type: "spring", stiffness: 500, damping: 30 }}
+                />
+              )}
             </NavLink>
           )
         })}
@@ -178,10 +192,10 @@ const Sidebar = ({ onClose }) => {
 
       {/* Quick Stats */}
       <div className="p-4 border-t border-gray-700">
-        <h3 className="text-sm font-semibold text-gray-400 mb-3">
+        <h3 className="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-3">
           Status Rápido
         </h3>
-        <div className="grid grid-cols-2 gap-3">
+        <div className="grid grid-cols-2 gap-2">
           {quickStats.map((stat, index) => {
             const Icon = stat.icon
             return (
@@ -190,7 +204,7 @@ const Sidebar = ({ onClose }) => {
                 initial={{ opacity: 0, y: 10 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ delay: index * 0.1 }}
-                className="bg-gray-700 rounded-lg p-3 text-center"
+                className="bg-gray-700 rounded-lg p-3 text-center hover:bg-gray-600 transition-colors cursor-pointer"
               >
                 <Icon size={16} className="text-blue-400 mx-auto mb-1" />
                 <div className="text-lg font-bold text-white">{stat.value}</div>

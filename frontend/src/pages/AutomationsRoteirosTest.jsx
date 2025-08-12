@@ -48,7 +48,7 @@ import {
 } from 'lucide-react'
 import AutomationResults from '../components/AutomationResults'
 
-const AutomationsDev = () => {
+const AutomationsRoteirosTest = () => {
   const [activeTab, setActiveTab] = useState('youtube')
   const [isProcessing, setIsProcessing] = useState(false)
   const [results, setResults] = useState(null)
@@ -107,14 +107,6 @@ const AutomationsDev = () => {
   const [scriptOpenRouterModel, setScriptOpenRouterModel] = useState('auto')
   const [numberOfChapters, setNumberOfChapters] = useState(8)
   const [scriptProgress, setScriptProgress] = useState({ current: 0, total: 0, stage: '' })
-
-  // Estados para geração de imagens
-  const [isGeneratingImages, setIsGeneratingImages] = useState(false)
-  const [generatedImages, setGeneratedImages] = useState([])
-  const [imageGenerationScript, setImageGenerationScript] = useState('')
-  const [imageStyle, setImageStyle] = useState('cinematic, high detail, 4k')
-  const [togetherApiKey, setTogetherApiKey] = useState('')
-  const [imageGenerationError, setImageGenerationError] = useState('')
 
   // Estados para o Agente IA Personalizado
   const [agentPrompt, setAgentPrompt] = useState('')
@@ -284,46 +276,6 @@ const AutomationsDev = () => {
       }, 100)
     }
   }, [activeTab])
-
-  // Carregar dados quando a aba de imagens for selecionada
-  useEffect(() => {
-    if (activeTab === 'images') {
-      console.log('🖼️ DEBUG: Carregando dados para aba de imagens...')
-
-      // Carregar chave da API Together
-      const loadTogetherApiKey = async () => {
-        try {
-          const response = await fetch('/api/settings/api-keys/together')
-          if (response.ok) {
-            const data = await response.json()
-            if (data.success && data.api_key) {
-              setTogetherApiKey(data.api_key)
-            }
-          }
-        } catch (error) {
-          console.error('Erro ao carregar chave Together API:', error)
-        }
-      }
-
-      loadTogetherApiKey()
-
-      // Carregar roteiros gerados se não existirem
-      if (!generatedScripts) {
-        const savedScripts = localStorage.getItem('generated_scripts')
-        if (savedScripts) {
-          const parsed = JSON.parse(savedScripts)
-          console.log('📝 Roteiros carregados para imagens:', parsed)
-          setGeneratedScripts(parsed)
-        }
-      }
-
-      // Definir script para geração de imagens baseado nos roteiros disponíveis
-      if (generatedScripts && generatedScripts.chapters) {
-        const scriptText = generatedScripts.chapters.map(chapter => chapter.content).join('\n\n')
-        setImageGenerationScript(scriptText)
-      }
-    }
-  }, [activeTab, generatedScripts])
 
   // Escutar evento customizado para mudança de aba
   useEffect(() => {
@@ -1415,7 +1367,6 @@ ${agentGeneratedScript.model !== 'auto' ? `Modelo: ${agentGeneratedScript.model}
     { id: 'premise', label: 'Premissas', icon: Target, color: 'purple' },
     { id: 'scripts', label: 'Roteiros IA', icon: FileText, color: 'green' },
     { id: 'tts', label: 'Text-to-Speech', icon: Mic, color: 'yellow' },
-    { id: 'images', label: 'Geração de Imagens', icon: Image, color: 'emerald' },
     { id: 'video-edit', label: 'Editar Vídeo', icon: Video, color: 'pink' },
     { id: 'workflow', label: 'Fluxos Completos', icon: Workflow, color: 'indigo' },
     { id: 'api-tests', label: 'Testes de API', icon: Settings, color: 'cyan' }
@@ -4766,223 +4717,6 @@ ${agentGeneratedScript.model !== 'auto' ? `Modelo: ${agentGeneratedScript.model}
     </div>
   )
 
-  // Função para gerar imagens a partir do roteiro
-  const handleGenerateImages = async () => {
-    if (!togetherApiKey) {
-      setImageGenerationError('A chave da API do Together.ai não está configurada. Vá em Configurações e salve sua chave.')
-      return
-    }
-
-    const scriptText = imageGenerationScript?.trim() || (() => {
-      if (!generatedScripts) return ''
-      if (typeof generatedScripts === 'string') {
-        try { return JSON.parse(generatedScripts) } catch { return '' }
-      }
-      if (generatedScripts?.chapters?.length) {
-        return generatedScripts.chapters.map(ch => ch.content).join('\n\n')
-      }
-      if (generatedScripts?.final_script) return generatedScripts.final_script
-      return ''
-    })()
-
-    if (!scriptText) {
-      setImageGenerationError('Não há roteiro disponível para gerar imagens.')
-      return
-    }
-
-    setIsGeneratingImages(true)
-    setImageGenerationError('')
-    setGeneratedImages([])
-
-    try {
-      const response = await fetch('/api/images/generate', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          script: scriptText,
-          api_key: togetherApiKey,
-          style: imageStyle
-        })
-      })
-
-      const data = await response.json()
-      if (!data.success) {
-        throw new Error(data.error || 'Falha ao gerar imagens')
-      }
-
-      setGeneratedImages(data.image_urls || [])
-    } catch (err) {
-      setImageGenerationError(err.message)
-    } finally {
-      setIsGeneratingImages(false)
-    }
-  }
-
-  // UI da aba de geração de imagens
-  const renderImageGeneration = () => (
-    <div className="space-y-6">
-      <div className="bg-gray-800 rounded-lg border border-gray-700 p-6">
-        <h3 className="text-xl font-semibold text-white mb-4 flex items-center space-x-2">
-          <Image size={24} className="text-emerald-400" />
-          <span>Geração de Imagens</span>
-        </h3>
-
-        {/* Status dos Pré-requisitos */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
-          <div className="bg-gray-700 rounded-lg p-4">
-            <div className="flex items-center justify-between mb-2">
-              <h4 className="font-medium text-white">Roteiros</h4>
-              {generatedScripts ? (
-                <CheckCircle className="w-5 h-5 text-green-400" />
-              ) : (
-                <AlertCircle className="w-5 h-5 text-red-400" />
-              )}
-            </div>
-            <p className="text-sm text-gray-400">
-              {generatedScripts ? 'Disponíveis' : 'Obrigatórios'}
-            </p>
-          </div>
-          <div className="bg-gray-700 rounded-lg p-4">
-            <div className="flex items-center justify-between mb-2">
-              <h4 className="font-medium text-white">Chave Together.ai</h4>
-              {togetherApiKey ? (
-                <CheckCircle className="w-5 h-5 text-green-400" />
-              ) : (
-                <AlertCircle className="w-5 h-5 text-gray-400" />
-              )}
-            </div>
-            <p className="text-sm text-gray-400">
-              {togetherApiKey ? 'Configurada' : 'Necessária'}
-            </p>
-          </div>
-          <div className="bg-gray-700 rounded-lg p-4">
-            <div className="flex items-center justify-between mb-2">
-              <h4 className="font-medium text-white">Estilo</h4>
-              <CheckCircle className="w-5 h-5 text-green-400" />
-            </div>
-            <p className="text-sm text-gray-400">{imageStyle}</p>
-          </div>
-        </div>
-
-        {/* Editor de Script e Estilo */}
-        <div className="space-y-4">
-          <div>
-            <label className="block text-sm font-medium text-gray-300 mb-2">
-              Estilo de imagem (aplicado em cada cena)
-            </label>
-            <input
-              type="text"
-              value={imageStyle}
-              onChange={(e) => setImageStyle(e.target.value)}
-              className="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-emerald-500"
-              placeholder="ex: cinematic, high detail, 4k, dramatic lighting"
-            />
-          </div>
-          <div>
-            <label className="block text-sm font-medium text-gray-300 mb-2">
-              Roteiro para gerar imagens (um parágrafo por cena)
-            </label>
-            <textarea
-              rows={10}
-              value={imageGenerationScript}
-              onChange={(e) => setImageGenerationScript(e.target.value)}
-              className="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-emerald-500"
-              placeholder="Cole aqui o roteiro completo ou edite as cenas..."
-            />
-            <p className="text-xs text-gray-400 mt-1">As cenas são separadas por uma linha em branco.</p>
-          </div>
-        </div>
-
-        {imageGenerationError && (
-          <div className="mt-4 p-3 bg-red-900 border border-red-600 rounded text-red-200 text-sm">
-            {imageGenerationError}
-          </div>
-        )}
-
-        <div className="mt-6 flex items-center gap-3">
-          <button
-            onClick={handleGenerateImages}
-            disabled={isGeneratingImages}
-            className={`flex items-center gap-2 px-4 py-2 rounded-lg text-white transition-colors ${
-              isGeneratingImages ? 'bg-emerald-700 opacity-70' : 'bg-emerald-600 hover:bg-emerald-700'
-            }`}
-          >
-            {isGeneratingImages ? (
-              <>
-                <Loader2 className="w-4 h-4 animate-spin" />
-                Gerando imagens...
-              </>
-            ) : (
-              <>
-                <Play className="w-4 h-4" />
-                Gerar Imagens
-              </>
-            )}
-          </button>
-          <button
-            onClick={async () => {
-              // Recarregar chave Together
-              try {
-                const resp = await fetch('/api/settings/api-keys/together')
-                const data = await resp.json()
-                if (data.success && data.api_key) {
-                  setTogetherApiKey(data.api_key)
-                  alert('✅ Chave Together sincronizada!')
-                } else {
-                  alert('❌ Não foi possível carregar a chave Together.')
-                }
-              } catch (e) {
-                alert('❌ Erro ao sincronizar chave Together: ' + e.message)
-              }
-            }}
-            className="px-4 py-2 bg-gray-700 text-white rounded-lg hover:bg-gray-600 transition-colors"
-          >
-            Sincronizar Chave
-          </button>
-        </div>
-
-        {/* Galeria de imagens */}
-        {generatedImages && generatedImages.length > 0 && (
-          <div className="mt-8">
-            <h4 className="text-lg font-semibold text-white mb-3">Imagens geradas ({generatedImages.length})</h4>
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-              {generatedImages.map((url, idx) => (
-                <div key={idx} className="bg-gray-700 rounded-lg overflow-hidden border border-gray-600">
-                  <div className="aspect-square bg-gray-800">
-                    <img src={url} alt={`Cena ${idx+1}`} className="w-full h-full object-cover" />
-                  </div>
-                  <div className="p-3 flex justify-between items-center">
-                    <span className="text-sm text-gray-300">Cena {idx+1}</span>
-                    <a href={url} download className="text-xs text-emerald-400 hover:text-emerald-300">Baixar</a>
-                  </div>
-                </div>
-              ))}
-            </div>
-          </div>
-        )}
-
-        {!generatedScripts && (
-          <div className="text-center py-12">
-            <Image size={48} className="mx-auto mb-4 text-gray-500 opacity-50" />
-            <h3 className="text-lg font-medium text-white mb-2">🖼️ Geração de Imagens</h3>
-            <p className="text-gray-400 text-sm mb-4">Primeiro gere um roteiro para usar como base das cenas</p>
-            <div className="text-xs text-gray-500 space-y-1">
-              <p>1. 📺 Extraia títulos do YouTube</p>
-              <p>2. 🎯 Gere novos títulos</p>
-              <p>3. 💡 Crie premissas</p>
-              <p>4. 📝 Gere roteiros</p>
-              <p>5. 🖼️ Gere imagens das cenas</p>
-            </div>
-            <div className="mt-6 flex justify-center space-x-3">
-              <button onClick={() => setActiveTab('youtube')} className="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors text-sm">Começar Extração</button>
-              <button onClick={() => setActiveTab('workflow')} className="px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition-colors text-sm">Automação Completa</button>
-            </div>
-          </div>
-        )}
-      </div>
-    </div>
-  )
-
   const renderVideoEditor = () => (
     <div className="space-y-6">
       <div className="bg-gray-800 rounded-lg border border-gray-700 p-6">
@@ -5266,7 +5000,6 @@ ${agentGeneratedScript.model !== 'auto' ? `Modelo: ${agentGeneratedScript.model}
           {activeTab === 'premise' && renderPremiseGeneration()}
           {activeTab === 'scripts' && renderScriptGeneration()}
           {activeTab === 'tts' && renderTTSGeneration()}
-          {activeTab === 'images' && renderImageGeneration()}
           {activeTab === 'video-edit' && renderVideoEditor()}
           {activeTab === 'workflow' && renderCompleteWorkflow()}
           {activeTab === 'api-tests' && renderAPITests()}
@@ -5336,4 +5069,4 @@ ${agentGeneratedScript.model !== 'auto' ? `Modelo: ${agentGeneratedScript.model}
   )
 }
 
-export default AutomationsDev
+export default AutomationsRoteirosTest

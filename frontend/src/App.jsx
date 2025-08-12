@@ -29,6 +29,7 @@ import Analytics from './pages/Analytics'
 import Logs from './pages/Logs'
 import ApiTests from './pages/ApiTests';
 import ImageGeneration from './pages/ImageGeneration';
+import ImageQueue from './pages/ImageQueue';
 
 // Mock system status for demo
 const mockSystemStatus = {
@@ -328,6 +329,21 @@ function App() {
                       transition={{ duration: 0.3 }}
                     >
                       <ImageGeneration />
+                    </motion.div>
+                  }
+                />
+
+                <Route
+                  path="/image-queue"
+                  element={
+                    <motion.div
+                      key="image-queue"
+                      initial={{ opacity: 0, y: 20 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      exit={{ opacity: 0, y: -20 }}
+                      transition={{ duration: 0.3 }}
+                    >
+                      <ImageQueue />
                     </motion.div>
                   }
                 />
