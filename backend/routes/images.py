@@ -18,21 +18,35 @@ os.makedirs(OUTPUT_DIR, exist_ok=True)
 @images_bp.route('/generate', methods=['POST'])
 def generate_images_route():
     """
-    Gera imagens a partir de um roteiro usando uma API de IA (Together.ai ou Gemini).
+    Gera imagens a partir de um roteiro usando uma API de IA com suporte a IA Agent e processamento em fila.
     """
     try:
         data = request.get_json()
+        
+        # Parâmetros básicos
         script = data.get('script', '').strip()
         api_key = data.get('api_key', '').strip()
-        provider = data.get('provider', 'together')  # together, gemini ou pollinations
+        provider = data.get('provider', 'pollinations')  # pollinations, together, gemini
         model = data.get('model', 'black-forest-labs/FLUX.1-krea-dev')
         style_prompt = data.get('style', 'cinematic, high detail, 4k')
         format_size = data.get('format', '1024x1024')
         quality = data.get('quality', 'standard')
         pollinations_model = data.get('pollinations_model', 'flux')  # flux ou gpt
-
-        if not script:
-            return jsonify({'success': False, 'error': 'Roteiro é obrigatório'}), 400
+        
+        # Novos parâmetros
+        use_ai_agent = data.get('use_ai_agent', False)
+        ai_agent_prompt = data.get('ai_agent_prompt', '')
+        use_custom_prompt = data.get('use_custom_prompt', False)
+        custom_prompt = data.get('custom_prompt', '').strip()
+        image_count = data.get('image_count', 1)
+        
+        # Validações
+        if use_custom_prompt:
+            if not custom_prompt:
+                return jsonify({'success': False, 'error': 'Prompt personalizado é obrigatório quando selecionado'}), 400
+        else:
+            if not script:
+                return jsonify({'success': False, 'error': 'Roteiro é obrigatório'}), 400
 
         # Pollinations.ai não requer chave de API (é gratuito)
         if not api_key and provider != 'pollinations':
@@ -44,52 +58,151 @@ def generate_images_route():
         except ValueError:
             width, height = 1024, 1024
 
-        # 1. Dividir o roteiro em cenas/parágrafos
-        scenes = [scene.strip() for scene in script.split('\n\n') if scene.strip()]
-        
-        if not scenes:
-            return jsonify({'success': False, 'error': 'Não foi possível encontrar cenas no roteiro'}), 400
-
         generated_images = []
+        prompts_to_generate = []
 
-        # 2. Gerar uma imagem para cada cena
-        for i, scene_text in enumerate(scenes):
-            # Etapa futura: Usar um LLM para criar um prompt melhor a partir da cena
-            # Por agora, usamos o texto da cena diretamente com um prompt de estilo
-            
-            prompt = f"{scene_text}, {style_prompt}"
-            
-            # Gerar imagem baseado no provedor
-            if provider == 'gemini':
-                image_bytes = generate_image_gemini(prompt, api_key, width, height, quality)
-            elif provider == 'pollinations':
-                image_bytes = generate_image_pollinations(prompt, width, height, quality, pollinations_model)
-            else:  # together
-                image_bytes = generate_image_together(prompt, api_key, width, height, quality, model)
-            
-            if image_bytes is None:
-                return jsonify({'success': False, 'error': f'Erro ao gerar imagem para cena {i+1}'}), 500
+        # Determinar prompts baseado no modo selecionado
+        if use_custom_prompt:
+            # Modo: Prompt personalizado
+            for i in range(image_count):
+                final_prompt = f"{custom_prompt}, {style_prompt}"
+                prompts_to_generate.append(final_prompt)
+        else:
+            # Modo: Baseado em roteiro
+            if use_ai_agent and ai_agent_prompt:
+                # Usar IA Agent para criar prompts específicos
+                scene_prompts = generate_scene_prompts_with_ai(script, ai_agent_prompt, api_key, provider, image_count)
+                if not scene_prompts:
+                    return jsonify({'success': False, 'error': 'Erro ao gerar prompts com IA Agent'}), 500
+                
+                for scene_prompt in scene_prompts:
+                    final_prompt = f"{scene_prompt}, {style_prompt}"
+                    prompts_to_generate.append(final_prompt)
+            else:
+                # Dividir roteiro em cenas/parágrafos (modo tradicional)
+                scenes = [scene.strip() for scene in script.split('\n\n') if scene.strip()]
+                
+                if not scenes:
+                    return jsonify({'success': False, 'error': 'Não foi possível encontrar cenas no roteiro'}), 400
+                
+                # Limitar ao número de imagens solicitado
+                scenes_to_use = scenes[:image_count] if image_count <= len(scenes) else scenes
+                
+                for scene_text in scenes_to_use:
+                    final_prompt = f"{scene_text}, {style_prompt}"
+                    prompts_to_generate.append(final_prompt)
 
-            # Salvar a imagem
-            timestamp = int(time.time() * 1000)
-            filename = f"image_{timestamp}_{i+1}.png"
-            filepath = os.path.join(OUTPUT_DIR, filename)
+        # Gerar imagens para cada prompt
+        for i, prompt in enumerate(prompts_to_generate):
+            try:
+                # Gerar imagem baseado no provedor
+                if provider == 'gemini':
+                    image_bytes = generate_image_gemini(prompt, api_key, width, height, quality)
+                elif provider == 'pollinations':
+                    image_bytes = generate_image_pollinations(prompt, width, height, quality, pollinations_model)
+                else:  # together
+                    image_bytes = generate_image_together(prompt, api_key, width, height, quality, model)
+                
+                if image_bytes is None:
+                    print(f"Erro ao gerar imagem {i+1}: {prompt[:50]}...")
+                    continue
 
-            with open(filepath, 'wb') as f:
-                f.write(image_bytes)
+                # Salvar a imagem
+                timestamp = int(time.time() * 1000)
+                filename = f"image_{timestamp}_{i+1}.png"
+                filepath = os.path.join(OUTPUT_DIR, filename)
 
-            # URL para acessar a imagem
-            image_url = f"/api/images/view/{filename}"
-            generated_images.append(image_url)
+                with open(filepath, 'wb') as f:
+                    f.write(image_bytes)
+
+                # URL para acessar a imagem
+                image_url = f"/api/images/view/{filename}"
+                generated_images.append(image_url)
+                
+                # Delay entre gerações para respeitar limites de taxa
+                if i < len(prompts_to_generate) - 1:  # Não aguardar após a última imagem
+                    if provider == 'pollinations':
+                        time.sleep(5)  # 5 segundos para Pollinations
+                    else:
+                        time.sleep(2)  # 2 segundos para outras APIs
+                        
+            except Exception as e:
+                print(f"Erro ao processar imagem {i+1}: {str(e)}")
+                continue
+
+        if not generated_images:
+            return jsonify({'success': False, 'error': 'Não foi possível gerar nenhuma imagem'}), 500
 
         return jsonify({
             'success': True,
             'message': f'{len(generated_images)} imagens geradas com sucesso!',
-            'image_urls': generated_images
+            'image_urls': generated_images,
+            'total_requested': len(prompts_to_generate),
+            'total_generated': len(generated_images)
         })
 
     except Exception as e:
         return jsonify({'success': False, 'error': f'Erro interno: {str(e)}'}), 500
+
+def generate_scene_prompts_with_ai(script, ai_agent_prompt, api_key, provider, image_count):
+    """
+    Usa IA para gerar prompts específicos de imagem baseados no roteiro.
+    """
+    try:
+        # Prompt para o IA Agent
+        system_prompt = f"""
+{ai_agent_prompt}
+
+Roteiro:
+{script}
+
+Gere exatamente {image_count} prompts de imagem baseados neste roteiro. Cada prompt deve:
+1. Descrever uma cena visual específica
+2. Ser detalhado e cinematográfico
+3. Incluir elementos visuais importantes
+4. Ser adequado para geração de imagem por IA
+
+Retorne apenas os prompts, um por linha, sem numeração ou formatação extra.
+        """
+        
+        if provider == 'together' and api_key:
+            # Usar Together.ai para gerar os prompts
+            import requests
+            
+            headers = {
+                "Authorization": f"Bearer {api_key}",
+                "Content-Type": "application/json"
+            }
+            
+            payload = {
+                "model": "meta-llama/Llama-3.2-11B-Vision-Instruct-Turbo",
+                "messages": [
+                    {"role": "system", "content": "Você é um especialista em criação de prompts para geração de imagens por IA."},
+                    {"role": "user", "content": system_prompt}
+                ],
+                "max_tokens": 1000,
+                "temperature": 0.7
+            }
+            
+            response = requests.post("https://api.together.xyz/v1/chat/completions", headers=headers, json=payload, timeout=60)
+            
+            if response.status_code == 200:
+                response_data = response.json()
+                if 'choices' in response_data and len(response_data['choices']) > 0:
+                    content = response_data['choices'][0]['message']['content']
+                    # Dividir em linhas e limpar
+                    prompts = [line.strip() for line in content.split('\n') if line.strip()]
+                    return prompts[:image_count]  # Garantir que não exceda o número solicitado
+        
+        # Fallback: dividir roteiro em partes
+        scenes = [scene.strip() for scene in script.split('\n\n') if scene.strip()]
+        return scenes[:image_count] if scenes else [script]
+        
+    except Exception as e:
+        print(f"Erro ao gerar prompts com IA Agent: {str(e)}")
+        # Fallback: dividir roteiro em partes
+        scenes = [scene.strip() for scene in script.split('\n\n') if scene.strip()]
+        return scenes[:image_count] if scenes else [script]
 
 @images_bp.route('/view/<filename>')
 def serve_image(filename):

@@ -115,6 +115,18 @@ const AutomationsDev = () => {
   const [imageStyle, setImageStyle] = useState('cinematic, high detail, 4k')
   const [togetherApiKey, setTogetherApiKey] = useState('')
   const [imageGenerationError, setImageGenerationError] = useState('')
+  
+  // Novos estados para o sistema expandido
+  const [useAiAgent, setUseAiAgent] = useState(true)
+  const [imageCount, setImageCount] = useState(5)
+  const [imageProvider, setImageProvider] = useState('pollinations')
+  const [imageFormat, setImageFormat] = useState('1024x1024')
+  const [imageQuality, setImageQuality] = useState('standard')
+  const [pollinationsModel, setPollinationsModel] = useState('flux')
+  const [aiAgentPrompt, setAiAgentPrompt] = useState('Você é um especialista em criação de prompts visuais para IA. Analise o roteiro fornecido e crie prompts detalhados e específicos para gerar imagens que representem as principais cenas e momentos do conteúdo. Cada prompt deve ser descritivo, incluindo detalhes sobre cenário, personagens, emoções, iluminação e estilo visual. Retorne apenas os prompts separados por quebras de linha duplas.')
+  const [aiAgentProvider, setAiAgentProvider] = useState('openai')
+  const [imageQueue, setImageQueue] = useState([])
+  const [queueStatus, setQueueStatus] = useState('idle') // idle, processing, completed, error
 
   // Estados para o Agente IA Personalizado
   const [agentPrompt, setAgentPrompt] = useState('')
@@ -408,12 +420,18 @@ Você é um roteirista profissional especializado em criar roteiros envolventes 
 
       const data = await response.json()
 
-      setApiStatus(prev => ({
-        ...prev,
-        rapidapi: data.success ? 'connected' : 'error'
-      }))
+      if (data.success) {
+        setApiStatus(prev => ({ ...prev, rapidapi: 'connected' }))
+      } else {
+        setApiStatus(prev => ({ ...prev, rapidapi: 'error' }))
+        // Se for erro de quota, mostrar mensagem específica
+        if (data.error && (data.error.includes('quota') || data.error.includes('limit') || data.error.includes('429') || data.error.includes('Too Many Requests'))) {
+          console.warn('🚫 RapidAPI: Limite de quota excedido -', data.error)
+        }
+      }
     } catch (error) {
       setApiStatus(prev => ({ ...prev, rapidapi: 'error' }))
+      console.error('❌ Erro ao verificar status RapidAPI:', error)
     }
   }
 
@@ -603,13 +621,23 @@ Você é um roteirista profissional especializado em criar roteiros envolventes 
           alert(`✅ Extração concluída! ${data.data.videos.length} vídeos encontrados.\n\n🎯 Títulos prontos para remodelagem na aba "Geração de Títulos"!`)
         }
       } else {
-        alert(`❌ Erro: ${data.error}`)
+        // Verificar se é erro de quota/limite da API
+        if (data.error && (data.error.includes('quota') || data.error.includes('limit') || data.error.includes('429') || data.error.includes('Too Many Requests'))) {
+          alert(`🚫 Limite de Quota Excedido!\n\n❌ ${data.error}\n\n💡 Soluções:\n• Configure múltiplas chaves RapidAPI nas Configurações\n• Aguarde o reset diário da quota\n• Verifique o status das chaves na aba Configurações`)
+        } else {
+          alert(`❌ Erro: ${data.error}`)
+        }
       }
     } catch (error) {
       if (error.name === 'AbortError') {
         alert('⏱️ Operação cancelada por timeout. A API está demorando muito para responder.')
       } else {
-        alert(`❌ Erro de conexão: ${error.message}`)
+        // Verificar se é erro relacionado a quota/limite
+        if (error.message && (error.message.includes('400') || error.message.includes('BAD REQUEST'))) {
+          alert(`🚫 Erro de Quota da API!\n\n❌ A API RapidAPI retornou erro 400 (BAD REQUEST)\n\n💡 Isso geralmente indica:\n• Limite de quota mensal excedido\n• Chave de API inválida ou expirada\n• Muitas requisições em pouco tempo\n\n🔧 Soluções:\n• Configure múltiplas chaves RapidAPI nas Configurações\n• Verifique o status das suas chaves\n• Aguarde o reset da quota (geralmente mensal)`)
+        } else {
+          alert(`❌ Erro de conexão: ${error.message}`)
+        }
       }
     } finally {
       setIsProcessing(false)
@@ -634,7 +662,10 @@ Você é um roteirista profissional especializado em criar roteiros envolventes 
 
   // Função para selecionar um canal salvo
   const handleSelectChannel = (channel) => {
-    setChannelUrl(channel.url)
+    setFormData(prev => ({
+      ...prev,
+      url: channel.url
+    }))
     setShowChannelsManager(false)
 
     // Também atualizar o canal do workflow se estiver na aba de fluxos completos
@@ -1456,9 +1487,18 @@ ${agentGeneratedScript.model !== 'auto' ? `Modelo: ${agentGeneratedScript.model}
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
           <div className="space-y-4">
             <div>
-              <label className="block text-sm font-medium text-gray-300 mb-2">
-                Canal do YouTube
-              </label>
+              <div className="flex items-center justify-between mb-2">
+                <label className="block text-sm font-medium text-gray-300">
+                  Canal do YouTube
+                </label>
+                <button
+                  onClick={() => setShowChannelsManager(true)}
+                  className="px-3 py-1 bg-blue-600 text-white rounded text-xs hover:bg-blue-700 transition-colors flex items-center space-x-1"
+                >
+                  <Youtube size={12} />
+                  <span>Canais Salvos</span>
+                </button>
+              </div>
               <input
                 type="text"
                 value={formData.url}
@@ -4768,51 +4808,171 @@ ${agentGeneratedScript.model !== 'auto' ? `Modelo: ${agentGeneratedScript.model}
 
   // Função para gerar imagens a partir do roteiro
   const handleGenerateImages = async () => {
-    if (!togetherApiKey) {
-      setImageGenerationError('A chave da API do Together.ai não está configurada. Vá em Configurações e salve sua chave.')
+    // Validações iniciais
+    if (imageProvider !== 'pollinations' && !togetherApiKey) {
+      setImageGenerationError(`A chave da API do ${imageProvider === 'gemini' ? 'Gemini' : 'Together.ai'} não está configurada. Vá em Configurações e salve sua chave.`)
       return
     }
 
-    const scriptText = imageGenerationScript?.trim() || (() => {
-      if (!generatedScripts) return ''
-      if (typeof generatedScripts === 'string') {
-        try { return JSON.parse(generatedScripts) } catch { return '' }
+    let contentToProcess = ''
+    
+    if (useCustomPrompt && customPrompt.trim()) {
+      contentToProcess = customPrompt.trim()
+    } else {
+      const scriptText = imageGenerationScript?.trim() || (() => {
+        if (!generatedScripts) return ''
+        if (typeof generatedScripts === 'string') {
+          try { return JSON.parse(generatedScripts) } catch { return '' }
+        }
+        if (generatedScripts?.chapters?.length) {
+          return generatedScripts.chapters.map(ch => ch.content).join('\n\n')
+        }
+        if (generatedScripts?.final_script) return generatedScripts.final_script
+        return ''
+      })()
+      
+      if (!scriptText) {
+        setImageGenerationError('Não há roteiro disponível para gerar imagens.')
+        return
       }
-      if (generatedScripts?.chapters?.length) {
-        return generatedScripts.chapters.map(ch => ch.content).join('\n\n')
-      }
-      if (generatedScripts?.final_script) return generatedScripts.final_script
-      return ''
-    })()
-
-    if (!scriptText) {
-      setImageGenerationError('Não há roteiro disponível para gerar imagens.')
-      return
+      
+      contentToProcess = scriptText
     }
 
     setIsGeneratingImages(true)
     setImageGenerationError('')
     setGeneratedImages([])
+    setImageQueue([])
+    setQueueStatus('processing')
 
     try {
-      const response = await fetch('/api/images/generate', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          script: scriptText,
-          api_key: togetherApiKey,
-          style: imageStyle
+      let prompts = []
+      
+      if (useAiAgent && !useCustomPrompt) {
+        // Usar IA Agent para criar prompts baseados no roteiro
+        const agentResponse = await fetch('/api/premise/generate-agent-script', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            title: 'Geração de Prompts para Imagens',
+            premise: contentToProcess,
+            custom_prompt: aiAgentPrompt,
+            ai_provider: aiAgentProvider || 'openai',
+            openrouter_model: 'auto',
+            num_chapters: 1,
+            api_keys: apiKeys
+          })
         })
-      })
-
-      const data = await response.json()
-      if (!data.success) {
-        throw new Error(data.error || 'Falha ao gerar imagens')
+        
+        const agentData = await agentResponse.json()
+        if (!agentData.success) {
+          throw new Error(agentData.error || 'Falha ao processar roteiro com IA Agent')
+        }
+        
+        // Extrair o conteúdo do script corretamente
+        let agentResult = ''
+        if (agentData.script && typeof agentData.script === 'object') {
+          agentResult = agentData.script.content || ''
+        } else if (typeof agentData.script === 'string') {
+          agentResult = agentData.script
+        } else if (agentData.final_script) {
+          agentResult = agentData.final_script
+        }
+        
+        // Verificar se agentResult é uma string antes de usar split
+        if (typeof agentResult !== 'string' || !agentResult.trim()) {
+          throw new Error('IA Agent não retornou conteúdo de texto válido')
+        }
+        
+        prompts = agentResult.split('\n\n').filter(p => p.trim()).slice(0, imageCount)
+        
+        if (prompts.length === 0) {
+          throw new Error('IA Agent não conseguiu gerar prompts válidos')
+        }
+      } else {
+        // Usar prompt customizado ou dividir roteiro em cenas
+        if (useCustomPrompt) {
+          prompts = [contentToProcess]
+        } else {
+          prompts = contentToProcess.split('\n\n').filter(p => p.trim()).slice(0, imageCount)
+        }
       }
-
-      setGeneratedImages(data.image_urls || [])
+      
+      // Adicionar estilo aos prompts se especificado
+      if (imageStyle.trim()) {
+        prompts = prompts.map(prompt => `${prompt}, ${imageStyle}`)
+      }
+      
+      // Criar fila de imagens
+      const queue = prompts.map((prompt, index) => ({
+        id: `img_${Date.now()}_${index}`,
+        prompt,
+        status: 'pending',
+        url: null,
+        error: null
+      }))
+      
+      setImageQueue(queue)
+      
+      // Processar fila com delay para respeitar rate limits
+      const generatedUrls = []
+      const delay = imageProvider === 'pollinations' ? 5000 : 2000 // 5s para Pollinations, 2s para outros
+      
+      for (let i = 0; i < queue.length; i++) {
+        const item = queue[i]
+        
+        // Atualizar status para processando
+        setImageQueue(prev => prev.map(q => 
+          q.id === item.id ? { ...q, status: 'processing' } : q
+        ))
+        
+        try {
+          const response = await fetch('/api/images/generate', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              script: item.prompt,
+              api_key: togetherApiKey,
+              style: '',
+              provider: imageProvider,
+              format: imageFormat,
+              quality: imageQuality,
+              pollinations_model: pollinationsModel
+            })
+          })
+          
+          const data = await response.json()
+          
+          if (data.success && data.image_urls?.length > 0) {
+            const imageUrl = data.image_urls[0]
+            generatedUrls.push(imageUrl)
+            
+            // Atualizar status para concluído
+            setImageQueue(prev => prev.map(q => 
+              q.id === item.id ? { ...q, status: 'completed', url: imageUrl } : q
+            ))
+          } else {
+            throw new Error(data.error || 'Falha ao gerar imagem')
+          }
+        } catch (err) {
+          // Atualizar status para erro
+          setImageQueue(prev => prev.map(q => 
+            q.id === item.id ? { ...q, status: 'error', error: err.message } : q
+          ))
+        }
+        
+        // Delay entre requisições (exceto na última)
+        if (i < queue.length - 1) {
+          await new Promise(resolve => setTimeout(resolve, delay))
+        }
+      }
+      
+      setGeneratedImages(generatedUrls)
+      setQueueStatus('completed')
+      
     } catch (err) {
       setImageGenerationError(err.message)
+      setQueueStatus('error')
     } finally {
       setIsGeneratingImages(false)
     }
@@ -4823,102 +4983,287 @@ ${agentGeneratedScript.model !== 'auto' ? `Modelo: ${agentGeneratedScript.model}
     <div className="space-y-6">
       <div className="bg-gray-800 rounded-lg border border-gray-700 p-6">
         <h3 className="text-xl font-semibold text-white mb-4 flex items-center space-x-2">
-          <Image size={24} className="text-emerald-400" />
-          <span>Geração de Imagens</span>
+          <Image size={24} className="text-purple-400" />
+          <span>Geração de Imagens com IA Agent</span>
         </h3>
 
         {/* Status dos Pré-requisitos */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
+        <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
           <div className="bg-gray-700 rounded-lg p-4">
             <div className="flex items-center justify-between mb-2">
               <h4 className="font-medium text-white">Roteiros</h4>
               {generatedScripts ? (
                 <CheckCircle className="w-5 h-5 text-green-400" />
               ) : (
-                <AlertCircle className="w-5 h-5 text-red-400" />
+                <Clock className="w-5 h-5 text-yellow-400" />
               )}
             </div>
             <p className="text-sm text-gray-400">
-              {generatedScripts ? 'Disponíveis' : 'Obrigatórios'}
+              {generatedScripts ? 'Roteiros disponíveis' : 'Gere roteiros primeiro'}
             </p>
           </div>
+
           <div className="bg-gray-700 rounded-lg p-4">
             <div className="flex items-center justify-between mb-2">
-              <h4 className="font-medium text-white">Chave Together.ai</h4>
-              {togetherApiKey ? (
+              <h4 className="font-medium text-white">API</h4>
+              {(imageProvider === 'pollinations' || togetherApiKey) ? (
                 <CheckCircle className="w-5 h-5 text-green-400" />
               ) : (
-                <AlertCircle className="w-5 h-5 text-gray-400" />
+                <Clock className="w-5 h-5 text-yellow-400" />
               )}
             </div>
             <p className="text-sm text-gray-400">
-              {togetherApiKey ? 'Configurada' : 'Necessária'}
+              {imageProvider === 'pollinations' ? 'Pollinations (gratuito)' : 
+               togetherApiKey ? 'API configurada' : 'Configure a chave da API'}
             </p>
           </div>
+
           <div className="bg-gray-700 rounded-lg p-4">
             <div className="flex items-center justify-between mb-2">
-              <h4 className="font-medium text-white">Estilo</h4>
-              <CheckCircle className="w-5 h-5 text-green-400" />
+              <h4 className="font-medium text-white">IA Agent</h4>
+              {useAiAgent ? (
+                <CheckCircle className="w-5 h-5 text-green-400" />
+              ) : (
+                <Clock className="w-5 h-5 text-yellow-400" />
+              )}
             </div>
-            <p className="text-sm text-gray-400">{imageStyle}</p>
+            <p className="text-sm text-gray-400">
+              {useAiAgent ? 'Agent ativo' : 'Agent desativado'}
+            </p>
+          </div>
+
+          <div className="bg-gray-700 rounded-lg p-4">
+            <div className="flex items-center justify-between mb-2">
+              <h4 className="font-medium text-white">Fila</h4>
+              {queueStatus === 'completed' ? (
+                <CheckCircle className="w-5 h-5 text-green-400" />
+              ) : queueStatus === 'processing' ? (
+                <Loader2 className="w-5 h-5 text-yellow-400 animate-spin" />
+              ) : queueStatus === 'error' ? (
+                <AlertCircle className="w-5 h-5 text-red-400" />
+              ) : (
+                <Clock className="w-5 h-5 text-gray-400" />
+              )}
+            </div>
+            <p className="text-sm text-gray-400">
+              {queueStatus === 'completed' ? 'Concluída' :
+               queueStatus === 'processing' ? 'Processando' :
+               queueStatus === 'error' ? 'Erro' : 'Aguardando'}
+            </p>
           </div>
         </div>
 
-        {/* Editor de Script e Estilo */}
-        <div className="space-y-4">
-          <div>
-            <label className="block text-sm font-medium text-gray-300 mb-2">
-              Estilo de imagem (aplicado em cada cena)
-            </label>
-            <input
-              type="text"
-              value={imageStyle}
-              onChange={(e) => setImageStyle(e.target.value)}
-              className="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-emerald-500"
-              placeholder="ex: cinematic, high detail, 4k, dramatic lighting"
-            />
+        {/* Configurações Principais */}
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
+          {/* Coluna 1: Configurações de Geração */}
+          <div className="space-y-4">
+            <div>
+              <label className="block text-sm font-medium text-gray-300 mb-2">
+                Provedor de IA
+              </label>
+              <select
+                value={imageProvider}
+                onChange={(e) => setImageProvider(e.target.value)}
+                className="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-purple-500"
+              >
+                <option value="pollinations">Pollinations.ai (Gratuito)</option>
+                <option value="together">Together.ai</option>
+                <option value="gemini">Gemini</option>
+              </select>
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium text-gray-300 mb-2">
+                Quantidade de Imagens
+              </label>
+              <input
+                type="number"
+                min="1"
+                max="20"
+                value={imageCount}
+                onChange={(e) => setImageCount(parseInt(e.target.value) || 1)}
+                className="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-purple-500"
+              />
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium text-gray-300 mb-2">
+                Formato da Imagem
+              </label>
+              <select
+                value={imageFormat}
+                onChange={(e) => setImageFormat(e.target.value)}
+                className="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-purple-500"
+              >
+                <option value="1024x1024">1024x1024 (Quadrado)</option>
+                <option value="1920x1080">1920x1080 (16:9)</option>
+                <option value="1080x1920">1080x1920 (9:16)</option>
+                <option value="1536x1024">1536x1024 (3:2)</option>
+              </select>
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium text-gray-300 mb-2">
+                Qualidade
+              </label>
+              <select
+                value={imageQuality}
+                onChange={(e) => setImageQuality(e.target.value)}
+                className="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-purple-500"
+              >
+                <option value="standard">Padrão</option>
+                <option value="hd">Alta Definição</option>
+              </select>
+            </div>
           </div>
-          <div>
+
+          {/* Coluna 2: Configurações de Conteúdo */}
+          <div className="space-y-4">
+            <div>
+              <div className="flex items-center space-x-3 mb-2">
+                <input
+                  type="checkbox"
+                  id="useAiAgent"
+                  checked={useAiAgent}
+                  onChange={(e) => setUseAiAgent(e.target.checked)}
+                  className="w-4 h-4 text-purple-600 bg-gray-700 border-gray-600 rounded focus:ring-purple-500"
+                />
+                <label htmlFor="useAiAgent" className="text-sm font-medium text-gray-300">
+                  Usar IA Agent para criar prompts
+                </label>
+              </div>
+              <p className="text-xs text-gray-500">
+                O agent analisará o roteiro e criará prompts específicos para cada cena
+              </p>
+            </div>
+
+            <div>
+              <div className="flex items-center space-x-3 mb-2">
+                <input
+                  type="checkbox"
+                  id="useCustomPrompt"
+                  checked={useCustomPrompt}
+                  onChange={(e) => setUseCustomPrompt(e.target.checked)}
+                  className="w-4 h-4 text-purple-600 bg-gray-700 border-gray-600 rounded focus:ring-purple-500"
+                />
+                <label htmlFor="useCustomPrompt" className="text-sm font-medium text-gray-300">
+                  Usar prompt personalizado
+                </label>
+              </div>
+              <p className="text-xs text-gray-500">
+                Ignore o roteiro e use um prompt específico
+              </p>
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium text-gray-300 mb-2">
+                Estilo das Imagens
+              </label>
+              <textarea
+                value={imageStyle}
+                onChange={(e) => setImageStyle(e.target.value)}
+                className="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-purple-500"
+                rows={2}
+                placeholder="Ex: cinematic, high detail, 4k, dramatic lighting"
+              />
+            </div>
+          </div>
+        </div>
+
+        {/* Prompt Personalizado */}
+        {useCustomPrompt && (
+          <div className="mb-6">
             <label className="block text-sm font-medium text-gray-300 mb-2">
-              Roteiro para gerar imagens (um parágrafo por cena)
+              Prompt Personalizado
             </label>
             <textarea
-              rows={10}
-              value={imageGenerationScript}
-              onChange={(e) => setImageGenerationScript(e.target.value)}
-              className="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-emerald-500"
-              placeholder="Cole aqui o roteiro completo ou edite as cenas..."
+              value={customPrompt}
+              onChange={(e) => setCustomPrompt(e.target.value)}
+              className="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-purple-500"
+              rows={3}
+              placeholder="Descreva exatamente a imagem que você quer gerar..."
             />
-            <p className="text-xs text-gray-400 mt-1">As cenas são separadas por uma linha em branco.</p>
-          </div>
-        </div>
-
-        {imageGenerationError && (
-          <div className="mt-4 p-3 bg-red-900 border border-red-600 rounded text-red-200 text-sm">
-            {imageGenerationError}
           </div>
         )}
 
-        <div className="mt-6 flex items-center gap-3">
+        {/* Configuração do IA Agent */}
+        {useAiAgent && !useCustomPrompt && (
+          <div className="mb-6 space-y-4">
+            <div>
+              <label className="block text-sm font-medium text-gray-300 mb-2">
+                Provedor de IA do Agent
+              </label>
+              <select
+                value={aiAgentProvider}
+                onChange={(e) => setAiAgentProvider(e.target.value)}
+                className="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-purple-500"
+              >
+                <option value="openai">OpenAI (GPT-4)</option>
+                <option value="gemini">Google Gemini</option>
+                <option value="openrouter">OpenRouter (Claude)</option>
+              </select>
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-300 mb-2">
+                Prompt do IA Agent
+              </label>
+              <textarea
+                value={aiAgentPrompt}
+                onChange={(e) => setAiAgentPrompt(e.target.value)}
+                className="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-purple-500"
+                rows={4}
+                placeholder="Instruções para o IA Agent sobre como criar prompts de imagem..."
+              />
+            </div>
+          </div>
+        )}
+
+        {/* Roteiro para Geração */}
+        {!useCustomPrompt && (
+          <div className="mb-6">
+            <label className="block text-sm font-medium text-gray-300 mb-2">
+              Roteiro para Geração de Imagens
+            </label>
+            <textarea
+              value={imageGenerationScript}
+              onChange={(e) => setImageGenerationScript(e.target.value)}
+              className="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-purple-500"
+              rows={3}
+              placeholder="O roteiro será carregado automaticamente dos roteiros gerados"
+            />
+          </div>
+        )}
+
+        {/* Erro */}
+        {imageGenerationError && (
+          <div className="bg-red-900/20 border border-red-500 rounded-lg p-4 mb-4">
+            <div className="flex items-center space-x-2">
+              <AlertCircle className="w-5 h-5 text-red-400" />
+              <span className="text-red-400">{imageGenerationError}</span>
+            </div>
+          </div>
+        )}
+
+        {/* Botões */}
+        <div className="flex space-x-4 mb-6">
           <button
             onClick={handleGenerateImages}
             disabled={isGeneratingImages}
-            className={`flex items-center gap-2 px-4 py-2 rounded-lg text-white transition-colors ${
-              isGeneratingImages ? 'bg-emerald-700 opacity-70' : 'bg-emerald-600 hover:bg-emerald-700'
-            }`}
+            className="flex-1 px-6 py-3 bg-purple-600 text-white rounded-lg hover:bg-purple-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors flex items-center justify-center space-x-2"
           >
             {isGeneratingImages ? (
               <>
-                <Loader2 className="w-4 h-4 animate-spin" />
-                Gerando imagens...
+                <Loader2 className="w-5 h-5 animate-spin" />
+                <span>Gerando Imagens...</span>
               </>
             ) : (
               <>
-                <Play className="w-4 h-4" />
-                Gerar Imagens
+                <Image className="w-5 h-5" />
+                <span>Gerar Imagens</span>
               </>
             )}
           </button>
+
           <button
             onClick={async () => {
               // Recarregar chave Together
@@ -4935,17 +5280,69 @@ ${agentGeneratedScript.model !== 'auto' ? `Modelo: ${agentGeneratedScript.model}
                 alert('❌ Erro ao sincronizar chave Together: ' + e.message)
               }
             }}
-            className="px-4 py-2 bg-gray-700 text-white rounded-lg hover:bg-gray-600 transition-colors"
+            className="px-6 py-3 bg-gray-600 text-white rounded-lg hover:bg-gray-700 transition-colors flex items-center space-x-2"
           >
-            Sincronizar Chave
+            <RefreshCw className="w-5 h-5" />
+            <span>Sincronizar Chave</span>
           </button>
         </div>
 
-        {/* Galeria de imagens */}
-        {generatedImages && generatedImages.length > 0 && (
-          <div className="mt-8">
-            <h4 className="text-lg font-semibold text-white mb-3">Imagens geradas ({generatedImages.length})</h4>
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+        {/* Fila de Processamento */}
+        {imageQueue.length > 0 && (
+          <div className="mb-6">
+            <h4 className="text-lg font-medium text-white mb-4 flex items-center space-x-2">
+              <Clock className="w-5 h-5 text-blue-400" />
+              <span>Fila de Processamento ({imageQueue.length} imagens)</span>
+            </h4>
+            <div className="space-y-2">
+              {imageQueue.map((item, idx) => (
+                <div key={item.id} className="bg-gray-700 rounded-lg p-3 flex items-center justify-between">
+                  <div className="flex items-center space-x-3">
+                    <div className="flex-shrink-0">
+                      {item.status === 'pending' && <Clock className="w-4 h-4 text-gray-400" />}
+                      {item.status === 'processing' && <Loader2 className="w-4 h-4 text-yellow-400 animate-spin" />}
+                      {item.status === 'completed' && <CheckCircle className="w-4 h-4 text-green-400" />}
+                      {item.status === 'error' && <AlertCircle className="w-4 h-4 text-red-400" />}
+                    </div>
+                    <div>
+                      <p className="text-sm text-white font-medium">Imagem {idx + 1}</p>
+                      <p className="text-xs text-gray-400 truncate max-w-md">{item.prompt}</p>
+                      {item.error && <p className="text-xs text-red-400">{item.error}</p>}
+                    </div>
+                  </div>
+                  <div className="text-xs text-gray-500 capitalize">
+                    {item.status === 'pending' && 'Aguardando'}
+                    {item.status === 'processing' && 'Processando'}
+                    {item.status === 'completed' && 'Concluída'}
+                    {item.status === 'error' && 'Erro'}
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {/* Imagens Geradas */}
+        {generatedImages.length > 0 && (
+          <div>
+            <h4 className="text-lg font-medium text-white mb-4 flex items-center space-x-2">
+              <Image className="w-5 h-5 text-green-400" />
+              <span>Imagens Geradas ({generatedImages.length})</span>
+              <button
+                onClick={() => {
+                  generatedImages.forEach((url, idx) => {
+                    const link = document.createElement('a')
+                    link.href = url
+                    link.download = `imagem_${idx + 1}.png`
+                    link.click()
+                  })
+                }}
+                className="ml-auto px-3 py-1 bg-emerald-600 text-white text-xs rounded hover:bg-emerald-700 transition-colors"
+              >
+                Baixar Todas
+              </button>
+            </h4>
+            <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
               {generatedImages.map((url, idx) => (
                 <div key={idx} className="bg-gray-700 rounded-lg overflow-hidden border border-gray-600">
                   <div className="aspect-square bg-gray-800">
