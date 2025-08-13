@@ -123,7 +123,7 @@ const AutomationsDev = () => {
   const [imageFormat, setImageFormat] = useState('1024x1024')
   const [imageQuality, setImageQuality] = useState('standard')
   const [pollinationsModel, setPollinationsModel] = useState('flux')
-  const [aiAgentPrompt, setAiAgentPrompt] = useState('Você é um especialista em criação de prompts visuais para IA. Analise o roteiro fornecido e crie prompts detalhados e específicos para gerar imagens que representem as principais cenas e momentos do conteúdo. Cada prompt deve ser descritivo, incluindo detalhes sobre cenário, personagens, emoções, iluminação e estilo visual. Retorne apenas os prompts separados por quebras de linha duplas.')
+  const [aiAgentPrompt, setAiAgentPrompt] = useState('Você é um especialista em criação de prompts visuais para IA. Analise o roteiro fornecido e crie prompts detalhados e específicos para gerar imagens que representem as principais cenas e momentos do conteúdo.\n\nREGRAS IMPORTANTES:\n- Cada prompt deve ter pelo menos 25 palavras\n- Inclua detalhes sobre cenário, personagens, emoções, iluminação e estilo visual\n- Não inclua títulos, cabeçalhos ou numeração\n- Cada prompt deve ser uma descrição visual completa e independente\n- Separe cada prompt por uma linha em branco\n\nFormato: Um prompt visual detalhado por parágrafo, separados por quebras de linha duplas.')
   const [aiAgentProvider, setAiAgentProvider] = useState('openai')
   const [imageQueue, setImageQueue] = useState([])
   const [queueStatus, setQueueStatus] = useState('idle') // idle, processing, completed, error
@@ -4884,7 +4884,16 @@ ${agentGeneratedScript.model !== 'auto' ? `Modelo: ${agentGeneratedScript.model}
           throw new Error('IA Agent não retornou conteúdo de texto válido')
         }
         
-        prompts = agentResult.split('\n\n').filter(p => p.trim()).slice(0, imageCount)
+        prompts = agentResult.split('\n\n')
+          .filter(p => {
+            const cleaned = p.trim()
+            return cleaned && 
+                   cleaned.length > 15 && 
+                   !cleaned.match(/^[\s\n\r<>br/]*$/) &&
+                   !cleaned.match(/^\*\*[^*]+\*\*:?\s*$/) && // Remove títulos
+                   cleaned.split(' ').length > 3 // Mínimo 3 palavras
+          })
+          .slice(0, imageCount)
         
         if (prompts.length === 0) {
           throw new Error('IA Agent não conseguiu gerar prompts válidos')
@@ -4894,7 +4903,27 @@ ${agentGeneratedScript.model !== 'auto' ? `Modelo: ${agentGeneratedScript.model}
         if (useCustomPrompt) {
           prompts = [contentToProcess]
         } else {
-          prompts = contentToProcess.split('\n\n').filter(p => p.trim()).slice(0, imageCount)
+          prompts = contentToProcess.split('\n\n')
+            .filter(p => {
+              const cleaned = p.trim()
+              return cleaned && 
+                     cleaned.length > 15 && 
+                     !cleaned.match(/^[\s\n\r<>br/]*$/) &&
+                     !cleaned.match(/^\*\*[^*]+\*\*:?\s*$/) && // Remove títulos
+                     cleaned.split(' ').length > 3 // Mínimo 3 palavras
+            })
+            .slice(0, imageCount)
+        }
+      }
+      
+      // Validação final: garantir que temos prompts suficientes
+      if (prompts.length < imageCount) {
+        const genericPrompt = useAiAgent ? 
+          'Uma cena cinematográfica profissional com boa iluminação e composição visual interessante' :
+          'Imagem relacionada ao conteúdo do roteiro'
+        
+        while (prompts.length < imageCount) {
+          prompts.push(`${genericPrompt} ${prompts.length + 1}`)
         }
       }
       
