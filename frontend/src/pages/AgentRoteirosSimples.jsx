@@ -330,7 +330,7 @@ Agora gere o roteiro completo seguindo EXATAMENTE o formato especificado acima, 
           throw new Error('Nenhum roteiro gerado pela IA. Verifique se as chaves de API estão configuradas.')
         }
 
-        setAgentGeneratedScript({
+        const scriptData = {
           title: selectedAgentTitle,
           premise: selectedAgentPremise,
           content: generatedContent,
@@ -345,7 +345,30 @@ Agora gere o roteiro completo seguindo EXATAMENTE o formato especificado acima, 
           parts: data.script?.parts || [],
           numChapters: data.script?.num_chapters || agentNumChapters,
           generationMethod: data.generation_method || 'single'
-        })
+        }
+
+        setAgentGeneratedScript(scriptData)
+
+        // Salvar roteiro gerado no localStorage
+        try {
+          const existingScripts = JSON.parse(localStorage.getItem('generated_scripts') || '[]')
+          const updatedScripts = [...existingScripts, {
+            id: Date.now().toString(),
+            title: scriptData.title,
+            content: scriptData.content,
+            timestamp: scriptData.timestamp,
+            provider: scriptData.provider,
+            model: scriptData.model,
+            characterCount: scriptData.characterCount,
+            wordCount: scriptData.wordCount,
+            estimatedDuration: scriptData.estimatedDuration,
+            type: 'agent_script'
+          }]
+          localStorage.setItem('generated_scripts', JSON.stringify(updatedScripts))
+          console.log('💾 Roteiro salvo no localStorage')
+        } catch (error) {
+          console.error('❌ Erro ao salvar roteiro no localStorage:', error)
+        }
 
         console.log('🎉 Roteiro gerado com sucesso!')
         alert('✅ Roteiro gerado com sucesso!')

@@ -140,6 +140,19 @@ const AutomationsDev = () => {
   const [agentGeneratedScript, setAgentGeneratedScript] = useState(null)
   const [agentInstructions, setAgentInstructions] = useState('')
 
+  // Estados para criação de vídeo
+  const [isCreatingVideo, setIsCreatingVideo] = useState(false)
+  const [videoConfig, setVideoConfig] = useState({
+    resolution: '1920x1080',
+    fps: 30,
+    transition_duration: 0.5
+  })
+  const [createdVideo, setCreatedVideo] = useState(null)
+  const [videoCreationProgress, setVideoCreationProgress] = useState({
+    stage: '',
+    progress: 0
+  })
+
   // Estados para automação completa
   const [isRunningWorkflow, setIsRunningWorkflow] = useState(false)
   const [workflowProgress, setWorkflowProgress] = useState({
@@ -946,6 +959,128 @@ Para cada título, forneça:
   const copyChapterToClipboard = (chapter, index) => {
     navigator.clipboard.writeText(`CAPÍTULO ${index + 1}:\n${chapter.content}`)
     alert(`Capítulo ${index + 1} copiado para a área de transferência!`)
+  }
+
+  // ========== FUNÇÕES DE CRIAÇÃO DE VÍDEO ==========
+
+  const handleCreateVideo = async () => {
+    if (!generatedScripts || !generatedScripts.chapters || generatedScripts.chapters.length === 0) {
+      alert('Nenhum roteiro encontrado. Gere um roteiro primeiro.')
+      return
+    }
+
+    // Verificar se há áudio gerado
+    const audioFiles = localStorage.getItem('generated_audio_files')
+    if (!audioFiles) {
+      alert('Nenhum áudio encontrado. Gere o áudio primeiro.')
+      return
+    }
+
+    // Verificar se há imagens geradas
+    const imageFiles = localStorage.getItem('generated_images')
+    if (!imageFiles) {
+      alert('Nenhuma imagem encontrada. Gere as imagens primeiro.')
+      return
+    }
+
+    setIsCreatingVideo(true)
+    setVideoCreationProgress({ stage: 'Iniciando criação do vídeo...', progress: 0 })
+
+    try {
+      const parsedAudioFiles = JSON.parse(audioFiles)
+      const parsedImageFiles = JSON.parse(imageFiles)
+
+      // Verificar se há áudios disponíveis
+      let audioFile = null
+      if (parsedAudioFiles && parsedAudioFiles.length > 0) {
+        // Usar o primeiro arquivo de áudio
+        const firstAudio = parsedAudioFiles[0]
+        const filename = firstAudio.filename
+        
+        if (filename) {
+          // Construir caminho completo para o backend
+          // Os arquivos de áudio são salvos no diretório temp do backend
+          audioFile = `C:\\Users\\Enderson\\Documents\\APP\\auto-video-producer\\backend\\temp\\${filename}`
+        } else {
+          audioFile = firstAudio.audio_url
+        }
+      }
+
+      // Verificar se há imagens disponíveis
+      let imagePaths = []
+      if (parsedImageFiles && parsedImageFiles.length > 0) {
+        imagePaths = parsedImageFiles.map(img => {
+          // Se a imagem tem URL (formato /api/images/view/filename), extrair o filename e construir caminho completo
+          if (img.url && img.url.includes('/api/images/view/')) {
+            const filename = img.url.split('/api/images/view/')[1]
+            return `C:\\Users\\Enderson\\Documents\\APP\\auto-video-producer\\backend\\output\\images\\${filename}`
+          }
+          // Fallback para outros formatos
+          return img.file_path || img.url || img.image_url
+        })
+      }
+
+      if (!audioFile) {
+        alert('❌ Nenhum arquivo de áudio válido encontrado')
+        return
+      }
+
+      if (imagePaths.length === 0) {
+        alert('❌ Nenhuma imagem válida encontrada')
+        return
+      }
+
+      // Preparar dados para a API (formato correto esperado pelo backend)
+      const videoData = {
+        title: generatedScripts.title || 'Vídeo Gerado',
+        audio_file: audioFile,  // Backend espera 'audio_file' (string)
+        images: imagePaths,     // Backend espera 'images' (array de strings)
+        config: {
+          resolution: videoConfig.resolution,
+          fps: videoConfig.fps,
+          transition_duration: videoConfig.transition_duration
+        }
+      }
+
+      console.log('🔍 Debug - Dados enviados para criação do vídeo:', videoData)
+
+      setVideoCreationProgress({ stage: 'Enviando dados para o servidor...', progress: 20 })
+
+      const response = await fetch('http://localhost:5000/api/videos/create', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(videoData)
+      })
+
+      const data = await response.json()
+
+      if (data.success) {
+        setVideoCreationProgress({ stage: 'Vídeo criado com sucesso!', progress: 100 })
+        setCreatedVideo(data.data)
+        
+        // Salvar informações do vídeo no localStorage
+        localStorage.setItem('created_video', JSON.stringify(data.data))
+        
+        alert(`✅ Vídeo criado com sucesso!\nDuração: ${data.data.duration}s\nResolução: ${data.data.resolution}\nArquivo: ${data.data.video_path}`)
+      } else {
+        alert(`❌ Erro ao criar vídeo: ${data.error}`)
+      }
+    } catch (error) {
+      console.error('Erro ao criar vídeo:', error)
+      alert(`❌ Erro de conexão: ${error.message}`)
+    } finally {
+      setIsCreatingVideo(false)
+      setVideoCreationProgress({ stage: '', progress: 0 })
+    }
+  }
+
+  const updateVideoConfig = (key, value) => {
+    setVideoConfig(prev => ({
+      ...prev,
+      [key]: value
+    }))
   }
 
   // ========== FUNÇÕES DO AGENTE IA PERSONALIZADO ==========
@@ -3825,6 +3960,21 @@ ${agentGeneratedScript.model !== 'auto' ? `Modelo: ${agentGeneratedScript.model}
       }
 
       setTtsSegments(segments)
+      
+      // Salvar dados de áudio no localStorage para uso na criação de vídeo
+      const audioData = segments.map(segment => ({
+        filename: segment.audio.filename,
+        audio_url: segment.audio.audio_url,
+        duration: segment.duration,
+        size: segment.audio.size,
+        voice_used: segment.audio.voice_used,
+        provider: ttsProvider,
+        text_segment: segment.text.substring(0, 100) + (segment.text.length > 100 ? '...' : '')
+      }))
+      
+      localStorage.setItem('generated_audio_files', JSON.stringify(audioData))
+      console.log('💾 Dados de áudio salvos no localStorage:', audioData)
+      
       console.log(`✅ ${segments.length} segmentos de áudio gerados com sucesso!`)
 
     } catch (err) {
@@ -3865,6 +4015,23 @@ ${agentGeneratedScript.model !== 'auto' ? `Modelo: ${agentGeneratedScript.model}
       }
 
       setFinalTTSAudio(result.data)
+      
+      // Salvar áudio final no localStorage
+      const finalAudioData = [{
+        filename: result.data.filename,
+        audio_url: `/api/audio/${result.data.filename}`,
+        duration: result.data.duration,
+        size: result.data.size,
+        voice_used: ttsSegments[0]?.audio.voice_used || 'unknown',
+        provider: ttsProvider,
+        text_segment: 'Áudio final unificado',
+        is_final: true,
+        segments_count: result.data.segments_count
+      }]
+      
+      localStorage.setItem('generated_audio_files', JSON.stringify(finalAudioData))
+      console.log('💾 Áudio final salvo no localStorage:', finalAudioData)
+      
       console.log('✅ Áudios unidos com sucesso:', result.data)
 
     } catch (err) {
@@ -4997,6 +5164,30 @@ ${agentGeneratedScript.model !== 'auto' ? `Modelo: ${agentGeneratedScript.model}
       }
       
       setGeneratedImages(generatedUrls)
+      
+      // Salvar imagens no localStorage para uso na criação de vídeos
+      if (generatedUrls.length > 0) {
+        const existingImages = JSON.parse(localStorage.getItem('generated_images') || '[]')
+        const imagesToSave = generatedUrls.map((url, index) => ({
+          id: Date.now() + index,
+          url: url,
+          filename: `imagem_automacao_${Date.now()}_${index + 1}.png`,
+          prompt: queue[index]?.prompt?.substring(0, 100) + (queue[index]?.prompt?.length > 100 ? '...' : '') || 'Prompt automático',
+          style: imageStyle,
+          provider: imageProvider,
+          format: imageFormat,
+          quality: imageQuality,
+          timestamp: new Date().toISOString(),
+          source: 'automation',
+          size: 'unknown'
+        }))
+        
+        const updatedImages = [...existingImages, ...imagesToSave]
+        localStorage.setItem('generated_images', JSON.stringify(updatedImages))
+        
+        console.log('✅ Imagens da automação salvas no localStorage:', imagesToSave)
+      }
+      
       setQueueStatus('completed')
       
     } catch (err) {
@@ -5418,39 +5609,270 @@ ${agentGeneratedScript.model !== 'auto' ? `Modelo: ${agentGeneratedScript.model}
         </h3>
 
         {/* Status da Pipeline */}
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
+        <div className="grid grid-cols-1 md:grid-cols-5 gap-4 mb-6">
           <div className="bg-gray-700 rounded-lg p-4">
             <div className="flex items-center justify-between mb-2">
               <h4 className="font-medium text-white">Títulos</h4>
-              <CheckCircle className="w-5 h-5 text-green-400" />
+              {generatedTitles && generatedTitles.length > 0 ? (
+                <CheckCircle className="w-5 h-5 text-green-400" />
+              ) : (
+                <Clock className="w-5 h-5 text-yellow-400" />
+              )}
             </div>
-            <p className="text-sm text-gray-400">Prontos para uso</p>
+            <p className="text-sm text-gray-400">
+              {generatedTitles && generatedTitles.length > 0 ? `${generatedTitles.length} títulos` : 'Aguardando'}
+            </p>
           </div>
 
           <div className="bg-gray-700 rounded-lg p-4">
             <div className="flex items-center justify-between mb-2">
               <h4 className="font-medium text-white">Premissas</h4>
-              <CheckCircle className="w-5 h-5 text-green-400" />
+              {generatedPremises && generatedPremises.length > 0 ? (
+                <CheckCircle className="w-5 h-5 text-green-400" />
+              ) : (
+                <Clock className="w-5 h-5 text-yellow-400" />
+              )}
             </div>
-            <p className="text-sm text-gray-400">Geradas com IA</p>
+            <p className="text-sm text-gray-400">
+              {generatedPremises && generatedPremises.length > 0 ? `${generatedPremises.length} premissas` : 'Aguardando'}
+            </p>
           </div>
 
           <div className="bg-gray-700 rounded-lg p-4">
             <div className="flex items-center justify-between mb-2">
               <h4 className="font-medium text-white">Roteiros</h4>
-              <Clock className="w-5 h-5 text-yellow-400" />
+              {generatedScripts && generatedScripts.chapters && generatedScripts.chapters.length > 0 ? (
+                <CheckCircle className="w-5 h-5 text-green-400" />
+              ) : (
+                <Clock className="w-5 h-5 text-yellow-400" />
+              )}
             </div>
-            <p className="text-sm text-gray-400">Em desenvolvimento</p>
+            <p className="text-sm text-gray-400">
+              {generatedScripts && generatedScripts.chapters && generatedScripts.chapters.length > 0 ? `${generatedScripts.chapters.length} capítulos` : 'Aguardando'}
+            </p>
           </div>
 
           <div className="bg-gray-700 rounded-lg p-4">
             <div className="flex items-center justify-between mb-2">
               <h4 className="font-medium text-white">Áudio</h4>
-              <Clock className="w-5 h-5 text-yellow-400" />
+              {(() => {
+                const audioFiles = localStorage.getItem('generated_audio_files')
+                const hasSessionAudio = (ttsSegments && ttsSegments.length > 0) || finalTTSAudio
+                let hasAudio = false
+                
+                try {
+                  if (audioFiles) {
+                    const parsedAudio = JSON.parse(audioFiles)
+                    hasAudio = Array.isArray(parsedAudio) && parsedAudio.length > 0
+                  }
+                } catch (e) {
+                  console.error('❌ Erro ao fazer parse dos áudios na seção de status:', e)
+                }
+                
+                // Se há áudios na sessão atual, considerar como disponível
+                if (hasSessionAudio) {
+                  hasAudio = true
+                }
+                
+                return hasAudio ? (
+                  <CheckCircle className="w-5 h-5 text-green-400" />
+                ) : (
+                  <Clock className="w-5 h-5 text-yellow-400" />
+                )
+              })()}
             </div>
-            <p className="text-sm text-gray-400">Em desenvolvimento</p>
+            <p className="text-sm text-gray-400">
+              {(() => {
+                const audioFiles = localStorage.getItem('generated_audio_files')
+                const hasSessionAudio = (ttsSegments && ttsSegments.length > 0) || finalTTSAudio
+                let audioCount = 0
+                
+                try {
+                  if (audioFiles) {
+                    const parsedAudio = JSON.parse(audioFiles)
+                    audioCount = Array.isArray(parsedAudio) ? parsedAudio.length : 0
+                  }
+                } catch (e) {
+                  console.error('❌ Erro ao fazer parse dos áudios na seção de status:', e)
+                }
+                
+                // Se há áudios na sessão atual, usar essa contagem
+                if (hasSessionAudio) {
+                  if (finalTTSAudio) {
+                    audioCount = 1 // Áudio final unificado
+                  } else if (ttsSegments && ttsSegments.length > 0) {
+                    audioCount = ttsSegments.length // Segmentos individuais
+                  }
+                }
+                
+                return audioCount > 0 ? `${audioCount} áudios` : 'Aguardando'
+              })()}
+            </p>
+          </div>
+
+          <div className="bg-gray-700 rounded-lg p-4">
+            <div className="flex items-center justify-between mb-2">
+              <h4 className="font-medium text-white">Imagens</h4>
+              {(() => {
+                const imageFiles = localStorage.getItem('generated_images')
+                const hasImages = imageFiles && JSON.parse(imageFiles).length > 0
+                return hasImages ? (
+                  <CheckCircle className="w-5 h-5 text-green-400" />
+                ) : (
+                  <Clock className="w-5 h-5 text-yellow-400" />
+                )
+              })()}
+            </div>
+            <p className="text-sm text-gray-400">
+              {(() => {
+                const imageFiles = localStorage.getItem('generated_images')
+                if (imageFiles) {
+                  const parsedImages = JSON.parse(imageFiles)
+                  return parsedImages.length > 0 ? `${parsedImages.length} imagens` : 'Aguardando'
+                }
+                return 'Aguardando'
+              })()}
+            </p>
           </div>
         </div>
+
+        {/* Seção de Geração de Vídeo */}
+        {(() => {
+          const audioFiles = localStorage.getItem('generated_audio_files')
+          const imageFiles = localStorage.getItem('generated_images')
+          
+          // Debug logs
+          console.log('🔍 Debug - audioFiles raw:', audioFiles)
+          console.log('🔍 Debug - imageFiles raw:', imageFiles)
+          console.log('🔍 Debug - ttsSegments:', ttsSegments)
+          console.log('🔍 Debug - finalTTSAudio:', finalTTSAudio)
+          
+          let hasAudio = false
+          let hasImages = false
+          
+          // Verificar se há áudios gerados na sessão atual
+          const hasSessionAudio = (ttsSegments && ttsSegments.length > 0) || finalTTSAudio
+          console.log('🔍 Debug - hasSessionAudio:', hasSessionAudio)
+          
+          try {
+            if (audioFiles) {
+              const parsedAudio = JSON.parse(audioFiles)
+              console.log('🔍 Debug - parsedAudio:', parsedAudio)
+              hasAudio = Array.isArray(parsedAudio) && parsedAudio.length > 0
+              console.log('🔍 Debug - hasAudio from localStorage:', hasAudio)
+            }
+          } catch (e) {
+            console.error('❌ Erro ao fazer parse dos áudios:', e)
+          }
+          
+          // Se há áudios na sessão atual, considerar como disponível
+          if (hasSessionAudio) {
+            hasAudio = true
+            console.log('🔍 Debug - hasAudio definido como true devido à sessão atual')
+          }
+          
+          try {
+            if (imageFiles) {
+              const parsedImages = JSON.parse(imageFiles)
+              console.log('🔍 Debug - parsedImages:', parsedImages)
+              hasImages = Array.isArray(parsedImages) && parsedImages.length > 0
+              console.log('🔍 Debug - hasImages:', hasImages)
+            }
+          } catch (e) {
+            console.error('❌ Erro ao fazer parse das imagens:', e)
+          }
+          
+          const hasScripts = generatedScripts && generatedScripts.chapters && generatedScripts.chapters.length > 0
+          console.log('🔍 Debug - hasScripts:', hasScripts)
+          
+          const allReady = hasAudio && hasImages && hasScripts
+          console.log('🔍 Debug - allReady:', allReady)
+          
+          return (
+            <div className={`mb-6 p-6 rounded-lg border-2 ${
+              allReady 
+                ? 'bg-green-900/20 border-green-500' 
+                : 'bg-gray-800/50 border-gray-600'
+            }`}>
+              <div className="flex items-center justify-between mb-4">
+                <div>
+                  <h3 className="text-xl font-semibold text-white mb-2">
+                    {allReady ? '🎬 Pronto para Gerar Vídeo!' : '⏳ Aguardando Elementos'}
+                  </h3>
+                  <p className="text-gray-400">
+                    {allReady 
+                      ? 'Todos os elementos necessários foram gerados. Você pode configurar e gerar seu vídeo agora.' 
+                      : 'Gere roteiros, áudios e imagens antes de criar o vídeo.'}
+                  </p>
+                </div>
+                {allReady && (
+                  <button
+                    onClick={handleCreateVideo}
+                    disabled={isCreatingVideo}
+                    className="px-6 py-3 bg-gradient-to-r from-pink-500 to-purple-600 text-white font-medium rounded-lg hover:from-pink-600 hover:to-purple-700 transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
+                  >
+                    {isCreatingVideo ? (
+                      <>
+                        <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
+                        Gerando...
+                      </>
+                    ) : (
+                      <>
+                        <Play className="w-4 h-4" />
+                        Gerar Vídeo
+                      </>
+                    )}
+                  </button>
+                )}
+              </div>
+              
+              {/* Checklist de elementos */}
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <div className={`flex items-center gap-3 p-3 rounded-lg ${
+                  hasScripts ? 'bg-green-900/30' : 'bg-gray-700/50'
+                }`}>
+                  {hasScripts ? (
+                    <CheckCircle className="w-5 h-5 text-green-400" />
+                  ) : (
+                    <Clock className="w-5 h-5 text-yellow-400" />
+                  )}
+                  <span className="text-white font-medium">Roteiros</span>
+                  <span className="text-gray-400 text-sm ml-auto">
+                    {hasScripts ? `${generatedScripts.chapters.length} prontos` : 'Pendente'}
+                  </span>
+                </div>
+                
+                <div className={`flex items-center gap-3 p-3 rounded-lg ${
+                  hasAudio ? 'bg-green-900/30' : 'bg-gray-700/50'
+                }`}>
+                  {hasAudio ? (
+                    <CheckCircle className="w-5 h-5 text-green-400" />
+                  ) : (
+                    <Clock className="w-5 h-5 text-yellow-400" />
+                  )}
+                  <span className="text-white font-medium">Áudios</span>
+                  <span className="text-gray-400 text-sm ml-auto">
+                    {hasAudio ? `${JSON.parse(audioFiles).length} prontos` : 'Pendente'}
+                  </span>
+                </div>
+                
+                <div className={`flex items-center gap-3 p-3 rounded-lg ${
+                  hasImages ? 'bg-green-900/30' : 'bg-gray-700/50'
+                }`}>
+                  {hasImages ? (
+                    <CheckCircle className="w-5 h-5 text-green-400" />
+                  ) : (
+                    <Clock className="w-5 h-5 text-yellow-400" />
+                  )}
+                  <span className="text-white font-medium">Imagens</span>
+                  <span className="text-gray-400 text-sm ml-auto">
+                    {hasImages ? `${JSON.parse(imageFiles).length} prontas` : 'Pendente'}
+                  </span>
+                </div>
+              </div>
+            </div>
+          )
+        })()}
 
         {/* Configurações de Vídeo */}
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
@@ -5461,7 +5883,11 @@ ${agentGeneratedScript.model !== 'auto' ? `Modelo: ${agentGeneratedScript.model}
                 <label className="block text-sm font-medium text-gray-300 mb-2">
                   Resolução
                 </label>
-                <select className="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-pink-500 focus:border-transparent">
+                <select 
+                  value={videoConfig.resolution}
+                  onChange={(e) => updateVideoConfig('resolution', e.target.value)}
+                  className="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-pink-500 focus:border-transparent"
+                >
                   <option value="1920x1080">1920x1080 (Full HD)</option>
                   <option value="1280x720">1280x720 (HD)</option>
                   <option value="3840x2160">3840x2160 (4K)</option>
@@ -5482,13 +5908,33 @@ ${agentGeneratedScript.model !== 'auto' ? `Modelo: ${agentGeneratedScript.model}
 
               <div>
                 <label className="block text-sm font-medium text-gray-300 mb-2">
-                  Duração Estimada
+                  FPS (Quadros por Segundo)
                 </label>
-                <select className="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-pink-500 focus:border-transparent">
-                  <option value="short">Curto (30s - 2min)</option>
-                  <option value="medium">Médio (2min - 10min)</option>
-                  <option value="long">Longo (10min+)</option>
+                <select 
+                  value={videoConfig.fps}
+                  onChange={(e) => updateVideoConfig('fps', parseInt(e.target.value))}
+                  className="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-pink-500 focus:border-transparent"
+                >
+                  <option value={24}>24 FPS (Cinema)</option>
+                  <option value={30}>30 FPS (Padrão)</option>
+                  <option value={60}>60 FPS (Suave)</option>
                 </select>
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-300 mb-2">
+                  Duração da Transição (segundos)
+                </label>
+                <input 
+                  type="number"
+                  min="0"
+                  max="5"
+                  step="0.1"
+                  value={videoConfig.transition_duration}
+                  onChange={(e) => updateVideoConfig('transition_duration', parseFloat(e.target.value))}
+                  className="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-pink-500 focus:border-transparent"
+                  placeholder="0.5"
+                />
               </div>
             </div>
           </div>
@@ -5585,15 +6031,28 @@ ${agentGeneratedScript.model !== 'auto' ? `Modelo: ${agentGeneratedScript.model}
         {/* Botão de Geração */}
         <div className="text-center">
           <button
-            disabled={true}
-            className="px-8 py-3 bg-gray-600 text-gray-400 rounded-lg font-medium cursor-not-allowed flex items-center space-x-2 mx-auto"
+            onClick={handleCreateVideo}
+            disabled={isCreatingVideo}
+            className={`px-8 py-3 rounded-lg font-medium flex items-center space-x-2 mx-auto transition-colors ${
+              isCreatingVideo
+                ? 'bg-gray-600 text-gray-400 cursor-not-allowed'
+                : 'bg-gradient-to-r from-pink-500 to-purple-600 hover:from-pink-600 hover:to-purple-700 text-white'
+            }`}
           >
             <Video className="w-5 h-5" />
-            <span>Gerar Vídeo (Em Desenvolvimento)</span>
+            <span>{isCreatingVideo ? 'Criando Vídeo...' : 'Gerar Vídeo'}</span>
           </button>
-          <p className="text-sm text-gray-500 mt-2">
-            Esta funcionalidade será implementada após a conclusão dos roteiros e áudio
-          </p>
+          {isCreatingVideo && videoCreationProgress.stage && (
+            <div className="mt-4">
+              <p className="text-sm text-gray-400 text-center mb-2">{videoCreationProgress.stage}</p>
+              <div className="w-full bg-gray-700 rounded-full h-2">
+                <div 
+                  className="bg-gradient-to-r from-pink-500 to-purple-600 h-2 rounded-full transition-all duration-300"
+                  style={{ width: `${videoCreationProgress.progress}%` }}
+                ></div>
+              </div>
+            </div>
+          )}
         </div>
       </div>
 
@@ -5605,13 +6064,46 @@ ${agentGeneratedScript.model !== 'auto' ? `Modelo: ${agentGeneratedScript.model}
         </h4>
 
         <div className="bg-gray-900 rounded-lg p-8 text-center">
-          <div className="w-full max-w-md mx-auto aspect-video bg-gray-700 rounded-lg flex items-center justify-center">
-            <div className="text-center">
-              <Video size={48} className="text-gray-500 mx-auto mb-3" />
-              <p className="text-gray-400">Preview será exibido aqui</p>
-              <p className="text-sm text-gray-500 mt-1">Após gerar o vídeo</p>
+          {createdVideo ? (
+            <div className="space-y-4">
+              <div className="w-full max-w-md mx-auto aspect-video bg-gray-700 rounded-lg flex items-center justify-center">
+                <div className="text-center">
+                  <Video size={48} className="text-green-400 mx-auto mb-3" />
+                  <p className="text-green-400 font-medium">Vídeo Criado com Sucesso!</p>
+                  <p className="text-sm text-gray-400 mt-1">{createdVideo.title}</p>
+                </div>
+              </div>
+              
+              <div className="bg-gray-800 rounded-lg p-4 text-left max-w-md mx-auto">
+                <h5 className="text-white font-medium mb-2">Informações do Vídeo:</h5>
+                <div className="space-y-1 text-sm">
+                  <p className="text-gray-300"><span className="text-gray-400">Duração:</span> {createdVideo.duration}s</p>
+                  <p className="text-gray-300"><span className="text-gray-400">Resolução:</span> {createdVideo.resolution}</p>
+                  <p className="text-gray-300"><span className="text-gray-400">FPS:</span> {createdVideo.fps}</p>
+                  <p className="text-gray-300"><span className="text-gray-400">Status:</span> {createdVideo.status}</p>
+                  <p className="text-gray-300"><span className="text-gray-400">Arquivo:</span> {createdVideo.file_path}</p>
+                </div>
+                
+                <button 
+                  onClick={() => {
+                    // Abrir pasta do vídeo ou fazer download
+                    window.open(`http://localhost:5000/api/videos/${createdVideo.video_id}/download`, '_blank')
+                  }}
+                  className="mt-3 w-full px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg text-sm transition-colors"
+                >
+                  Baixar Vídeo
+                </button>
+              </div>
             </div>
-          </div>
+          ) : (
+            <div className="w-full max-w-md mx-auto aspect-video bg-gray-700 rounded-lg flex items-center justify-center">
+              <div className="text-center">
+                <Video size={48} className="text-gray-500 mx-auto mb-3" />
+                <p className="text-gray-400">Preview será exibido aqui</p>
+                <p className="text-sm text-gray-500 mt-1">Após gerar o vídeo</p>
+              </div>
+            </div>
+          )}
         </div>
       </div>
     </div>

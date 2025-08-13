@@ -1,0 +1,79 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Test localStorage</title>
+</head>
+<body>
+    <h1>Test localStorage</h1>
+    <div id="output"></div>
+    
+    <button onclick="clearAudio()">Limpar Áudios</button>
+    <button onclick="clearImages()">Limpar Imagens</button>
+    <button onclick="testAudio()">Testar Áudio</button>
+    <button onclick="checkAll()">Verificar Tudo</button>
+    
+    <script>
+        const output = document.getElementById('output');
+        
+        function clearAudio() {
+            localStorage.removeItem('generated_audio_files');
+            output.innerHTML += '<p>Áudios limpos!</p>';
+        }
+        
+        function clearImages() {
+            localStorage.removeItem('generated_images');
+            output.innerHTML += '<p>Imagens limpas!</p>';
+        }
+        
+        function testAudio() {
+            const testData = [{
+                filename: 'test_audio.wav',
+                audio_url: '/api/audio/test_audio.wav',
+                duration: 30,
+                size: 1024,
+                voice_used: 'test_voice',
+                provider: 'kokoro',
+                text_segment: 'Teste de áudio'
+            }];
+            
+            localStorage.setItem('generated_audio_files', JSON.stringify(testData));
+            output.innerHTML += '<p>Áudio de teste criado!</p>';
+        }
+        
+        function checkAll() {
+            output.innerHTML = '<h2>Estado atual:</h2>';
+            
+            // Verificar áudios
+            const audioFiles = localStorage.getItem('generated_audio_files');
+            output.innerHTML += '<h3>Áudios:</h3>';
+            output.innerHTML += '<pre>' + (audioFiles || 'null') + '</pre>';
+            
+            if (audioFiles) {
+                try {
+                    const parsed = JSON.parse(audioFiles);
+                    output.innerHTML += '<p>Parse OK: ' + parsed.length + ' itens</p>';
+                    output.innerHTML += '<pre>' + JSON.stringify(parsed, null, 2) + '</pre>';
+                } catch (e) {
+                    output.innerHTML += '<p style="color: red;">Erro ao fazer parse: ' + e.message + '</p>';
+                }
+            }
+            
+            // Verificar imagens
+            const imageFiles = localStorage.getItem('generated_images');
+            output.innerHTML += '<h3>Imagens:</h3>';
+            output.innerHTML += '<pre>' + (imageFiles || 'null') + '</pre>';
+            
+            // Listar todas as chaves
+            output.innerHTML += '<h3>Todas as chaves:</h3>';
+            for (let i = 0; i < localStorage.length; i++) {
+                const key = localStorage.key(i);
+                const value = localStorage.getItem(key);
+                output.innerHTML += '<p><strong>' + key + ':</strong> ' + (value ? value.substring(0, 100) + '...' : 'null') + '</p>';
+            }
+        }
+        
+        // Verificar automaticamente ao carregar
+        checkAll();
+    </script>
+</body>
+</html>

@@ -271,6 +271,20 @@ const TTSGenerator = ({ scriptData, isVisible, onClose }) => {
         setGeneratedAudio(segments[0].audio)
       }
 
+      // Salvar dados de áudio no localStorage para uso na criação de vídeo
+      const audioData = segments.map(segment => ({
+        filename: segment.audio.filename,
+        audio_url: segment.audio.audio_url,
+        duration: segment.duration,
+        size: segment.audio.size,
+        voice_used: segment.audio.voice_used,
+        provider: currentProvider,
+        text_segment: segment.text.substring(0, 100) + (segment.text.length > 100 ? '...' : '')
+      }))
+      
+      localStorage.setItem('generated_audio_files', JSON.stringify(audioData))
+      console.log('💾 Dados de áudio salvos no localStorage:', audioData)
+
       console.log(`✅ ${segments.length} segmentos de áudio gerados com sucesso!`)
 
     } catch (err) {
@@ -321,6 +335,23 @@ const TTSGenerator = ({ scriptData, isVisible, onClose }) => {
       }
 
       setFinalAudio(result.data)
+      
+      // Salvar áudio final no localStorage
+      const finalAudioData = [{
+        filename: result.data.filename,
+        audio_url: `/api/audio/${result.data.filename}`,
+        duration: result.data.duration,
+        size: result.data.size,
+        voice_used: generatedSegments[0]?.audio.voice_used || 'unknown',
+        provider: currentProvider,
+        text_segment: 'Áudio final unificado',
+        is_final: true,
+        segments_count: result.data.segments_count
+      }]
+      
+      localStorage.setItem('generated_audio_files', JSON.stringify(finalAudioData))
+      console.log('💾 Áudio final salvo no localStorage:', finalAudioData)
+      
       console.log('✅ Áudios unidos com sucesso:', result.data)
 
     } catch (err) {

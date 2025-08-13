@@ -11,6 +11,8 @@ db = SQLAlchemy()
 
 class ImageQueue(db.Model):
     """Fila de geração de imagens"""
+    __table_args__ = {'extend_existing': True}
+    
     id = db.Column(db.Integer, primary_key=True)
     title = db.Column(db.String(200), nullable=False)
     prompts = db.Column(db.Text, nullable=False)  # JSON array de prompts
@@ -52,6 +54,8 @@ class ImageQueue(db.Model):
 
 class ScriptPrompt(db.Model):
     """Prompts gerados automaticamente a partir de roteiros"""
+    __table_args__ = {'extend_existing': True}
+    
     id = db.Column(db.Integer, primary_key=True)
     title = db.Column(db.String(200), nullable=False)
     script_content = db.Column(db.Text, nullable=False)

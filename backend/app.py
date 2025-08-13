@@ -42,6 +42,8 @@ os.makedirs('temp', exist_ok=True)
 
 class APIConfig(db.Model):
     """Configurações de APIs"""
+    __table_args__ = {'extend_existing': True}
+    
     id = db.Column(db.Integer, primary_key=True)
     api_name = db.Column(db.String(50), unique=True, nullable=False)
     api_key = db.Column(db.Text, nullable=True)
@@ -62,6 +64,8 @@ class APIConfig(db.Model):
 
 class Channel(db.Model):
     """Canais monitorados"""
+    __table_args__ = {'extend_existing': True}
+    
     id = db.Column(db.Integer, primary_key=True)
     name = db.Column(db.String(200), nullable=False)
     channel_id = db.Column(db.String(100), unique=True, nullable=False)
@@ -91,6 +95,8 @@ class Channel(db.Model):
 
 class Pipeline(db.Model):
     """Pipelines de produção"""
+    __table_args__ = {'extend_existing': True}
+    
     id = db.Column(db.Integer, primary_key=True)
     title = db.Column(db.String(500), nullable=False)
     channel_id = db.Column(db.Integer, db.ForeignKey('channel.id'), nullable=True)
@@ -123,14 +129,19 @@ class Pipeline(db.Model):
 
 class Video(db.Model):
     """Vídeos produzidos"""
+    __table_args__ = {'extend_existing': True}
+    
     id = db.Column(db.Integer, primary_key=True)
     title = db.Column(db.String(500), nullable=False)
     channel_id = db.Column(db.Integer, db.ForeignKey('channel.id'), nullable=True)
     pipeline_id = db.Column(db.Integer, db.ForeignKey('pipeline.id'), nullable=True)
-    duration = db.Column(db.Integer, nullable=False)  # segundos
+    duration = db.Column(db.Float, nullable=False)  # segundos (mudado para Float para suportar decimais)
     file_path = db.Column(db.String(500), nullable=False)
     file_size = db.Column(db.Integer, nullable=False)  # bytes
     video_style = db.Column(db.String(50), default='motivational')
+    resolution = db.Column(db.String(20), default='1920x1080')  # Novo campo
+    fps = db.Column(db.Integer, default=30)  # Novo campo
+    status = db.Column(db.String(50), default='completed')  # Novo campo
     download_count = db.Column(db.Integer, default=0)
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
     
@@ -144,12 +155,17 @@ class Video(db.Model):
             'file_path': self.file_path,
             'file_size': self.file_size,
             'video_style': self.video_style,
+            'resolution': self.resolution,
+            'fps': self.fps,
+            'status': self.status,
             'download_count': self.download_count,
             'created_at': self.created_at.isoformat()
         }
 
 class AutomationLog(db.Model):
     """Logs de automações"""
+    __table_args__ = {'extend_existing': True}
+    
     id = db.Column(db.Integer, primary_key=True)
     automation_type = db.Column(db.String(100), nullable=False)
     title = db.Column(db.String(500), nullable=False)
@@ -244,6 +260,8 @@ def system_status():
 def init_database():
     """Inicializar banco de dados"""
     with app.app_context():
+        # Forçar recriação das tabelas para garantir estrutura atualizada
+        db.drop_all()
         db.create_all()
         
         # Criar configurações padrão de APIs se não existirem
@@ -253,9 +271,8 @@ def init_database():
         ]
         
         for api_name in default_apis:
-            if not APIConfig.query.filter_by(api_name=api_name).first():
-                api_config = APIConfig(api_name=api_name)
-                db.session.add(api_config)
+            api_config = APIConfig(api_name=api_name)
+            db.session.add(api_config)
         
         db.session.commit()
         logger.info("✅ Banco de dados inicializado com sucesso!")

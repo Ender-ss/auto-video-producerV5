@@ -186,7 +186,28 @@ const ImageGeneration = () => {
             const data = await response.json();
 
             if (data.success) {
-                setImages(prev => [...prev, ...data.image_urls]);
+                const newImages = data.image_urls;
+                setImages(prev => [...prev, ...newImages]);
+                
+                // Salvar imagens no localStorage para uso na criação de vídeos
+                const existingImages = JSON.parse(localStorage.getItem('generated_images') || '[]');
+                const imagesToSave = newImages.map((url, index) => ({
+                    id: Date.now() + index,
+                    url: url,
+                    filename: `imagem_gerada_${Date.now()}_${index + 1}.png`,
+                    prompt: promptText.substring(0, 100) + (promptText.length > 100 ? '...' : ''),
+                    style: style,
+                    provider: provider,
+                    format: format,
+                    quality: quality,
+                    timestamp: new Date().toISOString(),
+                    size: 'unknown' // Será atualizado quando a imagem for carregada
+                }));
+                
+                const updatedImages = [...existingImages, ...imagesToSave];
+                localStorage.setItem('generated_images', JSON.stringify(updatedImages));
+                
+                console.log('✅ Imagens salvas no localStorage:', imagesToSave);
             } else {
                 setError(data.error);
             }
@@ -227,7 +248,29 @@ const ImageGeneration = () => {
                 const data = await response.json();
 
                 if (data.success) {
-                    setImages(prev => [...prev, ...data.image_urls]);
+                    const newImages = data.image_urls;
+                    setImages(prev => [...prev, ...newImages]);
+                    
+                    // Salvar imagens no localStorage para uso na criação de vídeos
+                    const existingImages = JSON.parse(localStorage.getItem('generated_images') || '[]');
+                    const imagesToSave = newImages.map((url, index) => ({
+                        id: Date.now() + index + (i * 1000), // Evitar IDs duplicados em lote
+                        url: url,
+                        filename: `imagem_lote_${Date.now()}_${i + 1}_${index + 1}.png`,
+                        prompt: promptText.substring(0, 100) + (promptText.length > 100 ? '...' : ''),
+                        style: style,
+                        provider: provider,
+                        format: format,
+                        quality: quality,
+                        timestamp: new Date().toISOString(),
+                        batch: i + 1,
+                        size: 'unknown'
+                    }));
+                    
+                    const updatedImages = [...existingImages, ...imagesToSave];
+                    localStorage.setItem('generated_images', JSON.stringify(updatedImages));
+                    
+                    console.log(`✅ Imagens do lote ${i + 1} salvas no localStorage:`, imagesToSave);
                 } else {
                     setError(`Erro na imagem ${i + 1}: ${data.error}`);
                     break;

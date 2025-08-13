@@ -1,0 +1,51 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Debug localStorage</title>
+</head>
+<body>
+    <h1>Debug localStorage</h1>
+    <div id="output"></div>
+    
+    <script>
+        const output = document.getElementById('output');
+        
+        // Verificar áudios
+        const audioFiles = localStorage.getItem('generated_audio_files');
+        output.innerHTML += '<h2>Áudios:</h2>';
+        output.innerHTML += '<pre>' + (audioFiles || 'null') + '</pre>';
+        
+        if (audioFiles) {
+            try {
+                const parsed = JSON.parse(audioFiles);
+                output.innerHTML += '<h3>Parsed:</h3>';
+                output.innerHTML += '<pre>' + JSON.stringify(parsed, null, 2) + '</pre>';
+            } catch (e) {
+                output.innerHTML += '<p style="color: red;">Erro ao fazer parse: ' + e.message + '</p>';
+            }
+        }
+        
+        // Verificar imagens
+        const imageFiles = localStorage.getItem('generated_images');
+        output.innerHTML += '<h2>Imagens:</h2>';
+        output.innerHTML += '<pre>' + (imageFiles || 'null') + '</pre>';
+        
+        if (imageFiles) {
+            try {
+                const parsed = JSON.parse(imageFiles);
+                output.innerHTML += '<h3>Parsed:</h3>';
+                output.innerHTML += '<pre>' + JSON.stringify(parsed, null, 2) + '</pre>';
+            } catch (e) {
+                output.innerHTML += '<p style="color: red;">Erro ao fazer parse: ' + e.message + '</p>';
+            }
+        }
+        
+        // Listar todas as chaves do localStorage
+        output.innerHTML += '<h2>Todas as chaves do localStorage:</h2>';
+        for (let i = 0; i < localStorage.length; i++) {
+            const key = localStorage.key(i);
+            output.innerHTML += '<p><strong>' + key + ':</strong> ' + localStorage.getItem(key).substring(0, 100) + '...</p>';
+        }
+    </script>
+</body>
+</html>
