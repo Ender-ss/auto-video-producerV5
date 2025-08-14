@@ -70,6 +70,8 @@ const AutomationsDev = () => {
   // Estado para o formulário de extração do YouTube
   const [formData, setFormData] = useState({
     url: '',
+    channel_id: '',
+    input_type: 'url',
     max_titles: 10,
     min_views: 1000,
     max_views: '',
@@ -163,7 +165,9 @@ const AutomationsDev = () => {
     completed: []
   })
   const [workflowConfig, setWorkflowConfig] = useState({
-    channel_url: '',
+    url: '',
+    channel_id: '',
+    input_type: 'url',
     max_titles: 5,
     min_views: 50,  // Reduzido de 1000 para 50
     days: 30,
@@ -427,7 +431,12 @@ Você é um roteirista profissional especializado em criar roteiros envolventes 
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
-          api_key: keys.rapidapi
+          api_key: keys.rapidapi,
+          url: '@eusouodh',
+          max_titles: 5,
+          min_views: 1000,
+          max_views: 0,
+          days: 30
         })
       })
 
@@ -588,34 +597,37 @@ Você é um roteirista profissional especializado em criar roteiros envolventes 
       return
     }
 
-    if (!apiKeys.rapidapi) {
-      alert('Configure a chave RapidAPI nas Configurações primeiro')
-      return
-    }
-
     setIsProcessing(true)
     setResults(null) // Limpar resultados anteriores
 
     try {
-      // Timeout maior para a requisição (2 minutos)
+      // Timeout maior para a requisição (5 minutos)
       const controller = new AbortController()
-      const timeoutId = setTimeout(() => controller.abort(), 120000) // 2 minutos
+      const timeoutId = setTimeout(() => controller.abort(), 300000) // 5 minutos
+
+      // Preparar payload baseado no tipo de entrada
+      const payload = {
+        config: {
+          max_titles: parseInt(formData.max_titles),
+          min_views: parseInt(formData.min_views),
+          max_views: formData.max_views ? parseInt(formData.max_views) : 0,
+          days: parseInt(formData.days)
+        }
+      }
+
+      // Adicionar URL ou channel_id baseado no tipo
+      if (formData.input_type === 'channel_id' && formData.channel_id) {
+        payload.channel_id = formData.channel_id
+      } else {
+        payload.url = formData.url
+      }
 
       const response = await fetch('http://localhost:5000/api/automations/extract-youtube', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify({
-          url: formData.url,
-          api_key: apiKeys.rapidapi,
-          config: {
-            max_titles: parseInt(formData.max_titles),
-            min_views: parseInt(formData.min_views),
-            max_views: formData.max_views ? parseInt(formData.max_views) : 0,
-            days: parseInt(formData.days)
-          }
-        }),
+        body: JSON.stringify(payload),
         signal: controller.signal
       })
 
@@ -649,7 +661,7 @@ Você é um roteirista profissional especializado em criar roteiros envolventes 
         if (error.message && (error.message.includes('400') || error.message.includes('BAD REQUEST'))) {
           alert(`🚫 Erro de Quota da API!\n\n❌ A API RapidAPI retornou erro 400 (BAD REQUEST)\n\n💡 Isso geralmente indica:\n• Limite de quota mensal excedido\n• Chave de API inválida ou expirada\n• Muitas requisições em pouco tempo\n\n🔧 Soluções:\n• Configure múltiplas chaves RapidAPI nas Configurações\n• Verifique o status das suas chaves\n• Aguarde o reset da quota (geralmente mensal)`)
         } else {
-          alert(`❌ Erro de conexão: ${error.message}`)
+          showNotification(`Erro de conexão: ${error.message}`, 'error')
         }
       }
     } finally {
@@ -677,7 +689,9 @@ Você é um roteirista profissional especializado em criar roteiros envolventes 
   const handleSelectChannel = (channel) => {
     setFormData(prev => ({
       ...prev,
-      url: channel.url
+      url: channel.url,
+      channel_id: channel.channel_id || '',
+      input_type: channel.input_type || 'url'
     }))
     setShowChannelsManager(false)
 
@@ -685,7 +699,9 @@ Você é um roteirista profissional especializado em criar roteiros envolventes 
     if (activeTab === 'complete') {
       setWorkflowConfig(prev => ({
         ...prev,
-        channel_url: channel.url
+        channel_url: channel.url,
+        channel_id: channel.channel_id || '',
+        input_type: channel.input_type || 'url'
       }))
     }
   }
@@ -963,23 +979,71 @@ Para cada título, forneça:
 
   // ========== FUNÇÕES DE CRIAÇÃO DE VÍDEO ==========
 
+  // Helper function to validate file existence
+  const validateFileExists = async (filePath) => {
+    try {
+      const response = await fetch('/api/system/files/validate', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ file_path: filePath })
+      })
+      const data = await response.json()
+      return data.exists || false
+    } catch (error) {
+      console.error('Erro ao validar arquivo:', error)
+      return false
+    }
+  }
+
+  // Notification helper
+  const showNotification = (message, type = 'info') => {
+    if (type === 'error') {
+      alert('❌ ' + message)
+    } else if (type === 'success') {
+      alert('✅ ' + message)
+    } else if (type === 'warning') {
+      alert('⚠️ ' + message)
+    } else {
+      alert('ℹ️ ' + message)
+    }
+  }
+
+  // Função para verificar o status dos áudios gerados
+  const checkAudioStatus = () => {
+    const audioFiles = JSON.parse(localStorage.getItem('generated_audio_files') || '[]')
+    
+    if (audioFiles.length === 0) {
+      return { status: 'none', message: 'Nenhum áudio gerado' }
+    } else if (audioFiles.length === 1) {
+      return { status: 'single', message: 'Um áudio disponível' }
+    } else {
+      const hasFinal = audioFiles.some(audio => audio.is_final)
+      if (hasFinal) {
+        return { status: 'unified', message: 'Áudio unificado pronto' }
+      } else {
+        return { status: 'multiple', message: `${audioFiles.length} segmentos - Recomendado juntar` }
+      }
+    }
+  }
+
   const handleCreateVideo = async () => {
     if (!generatedScripts || !generatedScripts.chapters || generatedScripts.chapters.length === 0) {
       alert('Nenhum roteiro encontrado. Gere um roteiro primeiro.')
       return
     }
 
-    // Verificar se há áudio gerado
     const audioFiles = localStorage.getItem('generated_audio_files')
+    const imageFiles = localStorage.getItem('generated_images')
+    
     if (!audioFiles) {
-      alert('Nenhum áudio encontrado. Gere o áudio primeiro.')
+      showNotification('Nenhum arquivo de áudio encontrado. Gere o áudio primeiro.', 'error')
       return
     }
-
-    // Verificar se há imagens geradas
-    const imageFiles = localStorage.getItem('generated_images')
+    
     if (!imageFiles) {
-      alert('Nenhuma imagem encontrada. Gere as imagens primeiro.')
+      showNotification('Nenhuma imagem encontrada. Gere as imagens primeiro.', 'error')
       return
     }
 
@@ -990,19 +1054,41 @@ Para cada título, forneça:
       const parsedAudioFiles = JSON.parse(audioFiles)
       const parsedImageFiles = JSON.parse(imageFiles)
 
-      // Verificar se há áudios disponíveis
+      // ✅ CORREÇÃO: Verificar se há áudio final unificado
       let audioFile = null
       if (parsedAudioFiles && parsedAudioFiles.length > 0) {
-        // Usar o primeiro arquivo de áudio
-        const firstAudio = parsedAudioFiles[0]
-        const filename = firstAudio.filename
+        // Procurar por áudio final unificado primeiro
+        const finalAudio = parsedAudioFiles.find(audio => audio.is_final === true)
         
-        if (filename) {
-          // Construir caminho completo para o backend
-          // Os arquivos de áudio são salvos no diretório temp do backend
-          audioFile = `C:\\Users\\Enderson\\Documents\\APP\\auto-video-producer\\backend\\temp\\${filename}`
+        if (finalAudio) {
+          // Usar áudio final unificado
+          const filename = finalAudio.filename
+          if (filename) {
+            audioFile = `C:\\Users\\Enderson\\Documents\\APP\\auto-video-producer\\backend\\temp\\${filename}`
+            console.log('✅ Usando áudio final unificado:', finalAudio)
+            showNotification(`Usando áudio final unificado (${finalAudio.segments_count} segmentos)`, 'success')
+          } else {
+            audioFile = finalAudio.audio_url
+          }
+        } else if (parsedAudioFiles.length > 1) {
+          // Se há múltiplos áudios mas nenhum unificado, alertar usuário
+          alert(`⚠️ Encontrados ${parsedAudioFiles.length} segmentos de áudio.\n\nPara criar o vídeo com todos os áudios, clique em "Juntar Áudios" na seção TTS primeiro.\n\nOu o sistema usará apenas o primeiro segmento.`)
+          
+          // Usar primeiro áudio como fallback
+          const firstAudio = parsedAudioFiles[0]
+          audioFile = firstAudio.filename || firstAudio.audio_url
+          if (audioFile && !audioFile.includes('\\')) {
+            audioFile = `C:\\Users\\Enderson\\Documents\\APP\\auto-video-producer\\backend\\temp\\${audioFile}`
+          }
+          console.log('🎵 Usando primeiro segmento de áudio:', firstAudio)
         } else {
-          audioFile = firstAudio.audio_url
+          // Apenas um áudio, usar diretamente
+          const firstAudio = parsedAudioFiles[0]
+          audioFile = firstAudio.filename || firstAudio.audio_url
+          if (audioFile && !audioFile.includes('\\')) {
+            audioFile = `C:\\Users\\Enderson\\Documents\\APP\\auto-video-producer\\backend\\temp\\${audioFile}`
+          }
+          console.log('🎵 Usando áudio único:', firstAudio)
         }
       }
 
@@ -1021,13 +1107,34 @@ Para cada título, forneça:
       }
 
       if (!audioFile) {
-        alert('❌ Nenhum arquivo de áudio válido encontrado')
+        showNotification('❌ Nenhum arquivo de áudio válido encontrado', 'error')
         return
       }
 
       if (imagePaths.length === 0) {
-        alert('❌ Nenhuma imagem válida encontrada')
+        showNotification('❌ Nenhuma imagem válida encontrada', 'error')
         return
+      }
+
+      // Validar existência dos arquivos antes de enviar para o backend
+      setVideoCreationProgress({ stage: 'Validando arquivos...', progress: 10 })
+      
+      const audioExists = await validateFileExists(audioFile)
+      if (!audioExists) {
+        showNotification(`❌ Arquivo de áudio não encontrado: ${audioFile}`, 'error')
+        setIsCreatingVideo(false)
+        return
+      }
+
+      // Validar algumas imagens (não todas para não sobrecarregar)
+      const imagesToValidate = imagePaths.slice(0, 3) // Validar apenas as 3 primeiras
+      for (const imagePath of imagesToValidate) {
+        const imageExists = await validateFileExists(imagePath)
+        if (!imageExists) {
+          showNotification(`❌ Arquivo de imagem não encontrado: ${imagePath}`, 'error')
+          setIsCreatingVideo(false)
+          return
+        }
       }
 
       // Preparar dados para a API (formato correto esperado pelo backend)
@@ -1063,9 +1170,9 @@ Para cada título, forneça:
         // Salvar informações do vídeo no localStorage
         localStorage.setItem('created_video', JSON.stringify(data.data))
         
-        alert(`✅ Vídeo criado com sucesso!\nDuração: ${data.data.duration}s\nResolução: ${data.data.resolution}\nArquivo: ${data.data.video_path}`)
+        showNotification(`Vídeo criado com sucesso! Duração: ${data.data.duration}s, Resolução: ${data.data.resolution}`, 'success')
       } else {
-        alert(`❌ Erro ao criar vídeo: ${data.error}`)
+        showNotification(`Erro ao criar vídeo: ${data.error}`, 'error')
       }
     } catch (error) {
       console.error('Erro ao criar vídeo:', error)
@@ -1399,7 +1506,7 @@ ${agentGeneratedScript.model !== 'auto' ? `Modelo: ${agentGeneratedScript.model}
   }
 
   const handleCompleteWorkflow = async () => {
-    if (!workflowConfig.channel_url.trim()) {
+    if (!workflowConfig.url.trim()) {
       alert('Por favor, insira o nome ou ID do canal do YouTube')
       return
     }
@@ -1444,7 +1551,7 @@ ${agentGeneratedScript.model !== 'auto' ? `Modelo: ${agentGeneratedScript.model}
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
-          channel_url: workflowConfig.channel_url,
+          url: workflowConfig.url,
           max_titles: workflowConfig.max_titles,
           min_views: workflowConfig.min_views,
           days: workflowConfig.days,
@@ -3083,8 +3190,8 @@ ${agentGeneratedScript.model !== 'auto' ? `Modelo: ${agentGeneratedScript.model}
                 </label>
                 <input
                   type="text"
-                  value={workflowConfig.channel_url}
-                  onChange={(e) => setWorkflowConfig(prev => ({ ...prev, channel_url: e.target.value }))}
+                  value={workflowConfig.url}
+                  onChange={(e) => setWorkflowConfig(prev => ({ ...prev, url: e.target.value }))}
                   placeholder="CanalClaYOliveiraOficial ou UCykzGI8qdfLywefslXnnyGw"
                   className="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
                 />
@@ -3401,9 +3508,9 @@ ${agentGeneratedScript.model !== 'auto' ? `Modelo: ${agentGeneratedScript.model}
 
           <button
             onClick={handleCompleteWorkflow}
-            disabled={isRunningWorkflow || !workflowConfig.channel_url.trim()}
+            disabled={isRunningWorkflow || !workflowConfig.url.trim()}
             className={`flex items-center justify-center space-x-2 px-6 py-4 rounded-lg font-medium transition-all ${
-              isRunningWorkflow || !workflowConfig.channel_url.trim()
+              isRunningWorkflow || !workflowConfig.url.trim()
                 ? 'bg-gray-600 text-gray-400 cursor-not-allowed'
                 : 'bg-indigo-600 text-white hover:bg-indigo-700 hover:shadow-lg'
             }`}

@@ -26,7 +26,8 @@ yt-dlp==2023.12.30
 
 # Audio/Video Processing
 moviepy==1.0.3
-pydub==0.25.1
+soundfile==0.13.1
+numpy==2.3.2
 Pillow==10.4.0
 
 # Utilities

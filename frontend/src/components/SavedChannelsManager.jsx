@@ -32,6 +32,8 @@ const SavedChannelsManager = ({
   const [formData, setFormData] = useState({
     name: '',
     url: '',
+    channel_id: '',
+    input_type: 'url',
     description: '',
     category: 'geral'
   })
@@ -72,15 +74,32 @@ const SavedChannelsManager = ({
 
   const saveChannel = async () => {
     try {
-      if (!formData.name.trim() || !formData.url.trim()) {
-        showMessage('error', 'Nome e URL do canal são obrigatórios')
+      if (!formData.name.trim()) {
+        showMessage('error', 'Nome do canal é obrigatório')
         return
       }
 
-      // Validar URL do YouTube
-      if (!formData.url.includes('youtube.com') && !formData.url.includes('youtu.be')) {
-        showMessage('error', 'URL deve ser de um canal do YouTube')
-        return
+      // Validar baseado no tipo de entrada
+      if (formData.input_type === 'url') {
+        if (!formData.url.trim()) {
+          showMessage('error', 'URL do canal é obrigatória quando o tipo é URL')
+          return
+        }
+        // Validar URL do YouTube
+        if (!formData.url.includes('youtube.com') && !formData.url.includes('youtu.be')) {
+          showMessage('error', 'URL deve ser de um canal do YouTube')
+          return
+        }
+      } else if (formData.input_type === 'channel_id') {
+        if (!formData.channel_id.trim()) {
+          showMessage('error', 'ID do canal é obrigatório quando o tipo é ID')
+          return
+        }
+        // Validar formato do ID do canal
+        if (!formData.channel_id.startsWith('UC') && !formData.channel_id.startsWith('@')) {
+          showMessage('error', 'ID do canal deve começar com "UC" ou "@"')
+          return
+        }
       }
 
       setLoading(true)
@@ -96,7 +115,7 @@ const SavedChannelsManager = ({
       if (data.success) {
         showMessage('success', data.message)
         setShowForm(false)
-        setFormData({ name: '', url: '', description: '', category: 'geral' })
+        setFormData({ name: '', url: '', channel_id: '', input_type: 'url', description: '', category: 'geral' })
         loadChannels()
       } else {
         showMessage('error', data.error || 'Erro ao salvar canal')
@@ -161,7 +180,7 @@ const SavedChannelsManager = ({
         <button
           onClick={() => {
             setShowForm(true)
-            setFormData({ name: '', url: '', description: '', category: 'geral' })
+            setFormData({ name: '', url: '', channel_id: '', input_type: 'url', description: '', category: 'geral' })
           }}
           className="bg-red-600 text-white px-3 py-1 rounded-lg hover:bg-red-700 flex items-center gap-2 text-sm"
         >
@@ -248,15 +267,42 @@ const SavedChannelsManager = ({
           </div>
           
           <div className="mb-4">
-            <label className="block text-sm font-medium mb-1">URL do Canal</label>
-            <input
-              type="url"
-              value={formData.url}
-              onChange={(e) => setFormData(prev => ({ ...prev, url: e.target.value }))}
-              placeholder="https://www.youtube.com/@canal"
+            <label className="block text-sm font-medium mb-1">Tipo de Entrada</label>
+            <select
+              value={formData.input_type}
+              onChange={(e) => setFormData(prev => ({ ...prev, input_type: e.target.value }))}
               className="w-full p-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-transparent"
-            />
+            >
+              <option value="url">🔗 URL do Canal</option>
+              <option value="channel_id">🆔 ID do Canal</option>
+            </select>
           </div>
+          
+          {formData.input_type === 'url' ? (
+            <div className="mb-4">
+              <label className="block text-sm font-medium mb-1">URL do Canal</label>
+              <input
+                type="url"
+                value={formData.url}
+                onChange={(e) => setFormData(prev => ({ ...prev, url: e.target.value }))}
+                placeholder="https://www.youtube.com/@canal"
+                className="w-full p-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-transparent"
+              />
+              <p className="text-xs text-gray-500 mt-1">Ex: https://www.youtube.com/@felipenetooficial</p>
+            </div>
+          ) : (
+            <div className="mb-4">
+              <label className="block text-sm font-medium mb-1">ID do Canal</label>
+              <input
+                type="text"
+                value={formData.channel_id}
+                onChange={(e) => setFormData(prev => ({ ...prev, channel_id: e.target.value }))}
+                placeholder="UCxxxxxxxxxxxxxxxxxxxxxxxx ou @usuario"
+                className="w-full p-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-transparent"
+              />
+              <p className="text-xs text-gray-500 mt-1">Ex: UCxxxxxxxxxxxxxxxxxxxxxxxx ou @felipenetooficial</p>
+            </div>
+          )}
           
           <div className="mb-4">
             <label className="block text-sm font-medium mb-1">Descrição (Opcional)</label>
@@ -281,7 +327,7 @@ const SavedChannelsManager = ({
             <button
               onClick={() => {
                 setShowForm(false)
-                setFormData({ name: '', url: '', description: '', category: 'geral' })
+                setFormData({ name: '', url: '', channel_id: '', input_type: 'url', description: '', category: 'geral' })
               }}
               className="bg-gray-500 text-white px-4 py-2 rounded-lg hover:bg-gray-600"
             >
@@ -365,11 +411,26 @@ const SavedChannelsManager = ({
               
               <div className="text-sm text-gray-700 bg-gray-50 p-3 rounded border">
                 <div className="mb-2">
-                  <strong>URL:</strong> 
-                  <a href={channel.url} target="_blank" rel="noopener noreferrer" className="text-blue-600 hover:underline ml-1">
-                    {channel.url}
-                  </a>
+                  <strong>Tipo:</strong> 
+                  <span className="ml-1">
+                    {channel.input_type === 'channel_id' ? '🆔 ID do Canal' : '🔗 URL do Canal'}
+                  </span>
                 </div>
+                {channel.input_type === 'channel_id' && channel.channel_id ? (
+                  <div className="mb-2">
+                    <strong>ID do Canal:</strong> 
+                    <span className="ml-1 font-mono text-sm bg-gray-200 px-2 py-1 rounded">
+                      {channel.channel_id}
+                    </span>
+                  </div>
+                ) : (
+                  <div className="mb-2">
+                    <strong>URL:</strong> 
+                    <a href={channel.url} target="_blank" rel="noopener noreferrer" className="text-blue-600 hover:underline ml-1">
+                      {channel.url}
+                    </a>
+                  </div>
+                )}
                 {channel.description && (
                   <div>
                     <strong>Descrição:</strong> {channel.description}

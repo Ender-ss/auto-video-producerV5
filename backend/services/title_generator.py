@@ -157,7 +157,7 @@ class TitleGenerator:
         patterns = self.analyze_viral_patterns(source_titles)
         
         # Criar prompt baseado nos padrões encontrados
-        prompt = self.create_openai_prompt(source_titles, topic, patterns, style)
+        prompt = self.create_openai_prompt(source_titles, topic, patterns, style, count)
         
         try:
             response = self.openai_client.chat.completions.create(
@@ -192,7 +192,7 @@ class TitleGenerator:
         patterns = self.analyze_viral_patterns(source_titles)
         
         # Criar prompt baseado nos padrões encontrados
-        prompt = self.create_gemini_prompt(source_titles, topic, patterns, style)
+        prompt = self.create_gemini_prompt(source_titles, topic, patterns, style, count)
         
         try:
             print(f"🔍 DEBUG: Enviando prompt para Gemini...")
@@ -222,7 +222,7 @@ class TitleGenerator:
             print(f"❌ Erro na geração Gemini: {e}")
             return []
     
-    def create_openai_prompt(self, source_titles: List[str], topic: str, patterns: Dict, style: str) -> str:
+    def create_openai_prompt(self, source_titles: List[str], topic: str, patterns: Dict, style: str, count: int = 10) -> str:
         """Criar prompt otimizado para OpenAI"""
         prompt = f"""
 Você é um especialista em marketing digital para YouTube. Analise os títulos de referência abaixo e crie NOVOS títulos SIMILARES mas MELHORADOS sobre o mesmo tema.
@@ -258,7 +258,7 @@ Títulos ({count} títulos):
 """
         return prompt
     
-    def create_gemini_prompt(self, source_titles: List[str], topic: str, patterns: Dict, style: str) -> str:
+    def create_gemini_prompt(self, source_titles: List[str], topic: str, patterns: Dict, style: str, count: int = 10) -> str:
         """Criar prompt otimizado para Gemini"""
         prompt = f"""
 Você é um especialista em marketing digital e criação de conteúdo viral para YouTube.

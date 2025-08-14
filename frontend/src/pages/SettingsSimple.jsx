@@ -225,7 +225,7 @@ const SettingsSimple = () => {
                 <div className="flex items-center space-x-2">
                   <input
                     type={showPasswords[api.key] ? 'text' : 'password'}
-                    value={apiKeys[api.key]}
+                    value={apiKeys[api.key] || ''}
                     onChange={(e) => handleApiKeyChange(api.key, e.target.value)}
                     placeholder={`Digite sua chave ${api.name}...`}
                     className="flex-1 px-3 py-2 bg-gray-600 border border-gray-500 rounded-md text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-cyan-500"

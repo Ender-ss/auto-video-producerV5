@@ -23,7 +23,7 @@ const SettingsDebug = () => {
     console.log('🔍 Iniciando fetch do status RapidAPI...')
     setIsLoadingRapidApiStatus(true)
     try {
-      const response = await fetch('http://localhost:5000/api/automations/rapidapi/status')
+      const response = await fetch('http://localhost:5000/api/automations/rapidapi-status')
       console.log('🔍 Response status:', response.status)
       const data = await response.json()
       console.log('🔍 RapidAPI Status Response:', data)

@@ -155,7 +155,7 @@ const Settings = () => {
   const fetchRapidApiStatus = async () => {
     setIsLoadingRapidApiStatus(true)
     try {
-      const response = await fetch('http://localhost:5000/api/automations/rapidapi/status')
+      const response = await fetch('http://localhost:5000/api/automations/rapidapi-status')
       const data = await response.json()
       console.log('🔍 RapidAPI Status Response:', data)
       setRapidApiStatus(data)
@@ -194,7 +194,7 @@ const Settings = () => {
   // Função para resetar throttling RapidAPI
   const resetRapidApiThrottle = async () => {
     try {
-      const response = await fetch('http://localhost:5000/api/automations/rapidapi/throttle/reset', {
+      const response = await fetch('http://localhost:5000/api/automations/rapidapi-throttle/reset', {
         method: 'POST'
       })
       const data = await response.json()
@@ -256,7 +256,8 @@ const Settings = () => {
       title: 'Extração de Conteúdo (Chave Principal)',
       icon: Youtube,
       apis: [
-        { key: 'rapidapi', name: 'RapidAPI YouTube V2 (Principal)', description: 'Chave principal para extração de dados do YouTube', required: true }
+        { key: 'rapidapi', name: 'RapidAPI YouTube V2 (Principal)', description: 'Chave principal para extração de dados do YouTube', required: true },
+        { key: 'youtube_api', name: 'YouTube Data API v3', description: 'API oficial do YouTube para extração de dados', required: false }
       ]
     },
     {
@@ -451,7 +452,7 @@ const Settings = () => {
                             <input
                               type={showPasswords[api.key] ? 'text' : 'password'}
                               placeholder={`Chave da API ${api.name}`}
-                              value={apiKeys[api.key]}
+                              value={apiKeys[api.key] || ''}
                               onChange={(e) => handleApiKeyChange(api.key, e.target.value)}
                               className="w-full px-3 py-2 bg-gray-800 border border-gray-600 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent pr-10"
                             />

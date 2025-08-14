@@ -30,6 +30,8 @@ import Logs from './pages/Logs'
 import ApiTests from './pages/ApiTests';
 import ImageGeneration from './pages/ImageGeneration';
 import ImageQueue from './pages/ImageQueue';
+import YouTubeExtractTest from './pages/YouTubeExtractTest';
+import YouTubeExtractComparison from './pages/YouTubeExtractComparison';
 
 // Mock system status for demo
 const mockSystemStatus = {
@@ -344,6 +346,36 @@ function App() {
                       transition={{ duration: 0.3 }}
                     >
                       <ImageQueue />
+                    </motion.div>
+                  }
+                />
+
+                <Route
+                  path="/youtube-test"
+                  element={
+                    <motion.div
+                      key="youtube-test"
+                      initial={{ opacity: 0, y: 20 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      exit={{ opacity: 0, y: -20 }}
+                      transition={{ duration: 0.3 }}
+                    >
+                      <YouTubeExtractTest />
+                    </motion.div>
+                  }
+                />
+
+                <Route
+                  path="/youtube-comparison"
+                  element={
+                    <motion.div
+                      key="youtube-comparison"
+                      initial={{ opacity: 0, y: 20 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      exit={{ opacity: 0, y: -20 }}
+                      transition={{ duration: 0.3 }}
+                    >
+                      <YouTubeExtractComparison />
                     </motion.div>
                   }
                 />

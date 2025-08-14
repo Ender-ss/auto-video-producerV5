@@ -154,6 +154,25 @@ $RECYCLE.BIN/
 *.msp
 *.lnk
 
+# Project specific
+backend/temp/
+backend/output/
+backend/cache/
+*.mp4
+*.mp3
+*.wav
+*.avi
+*.mov
+*.mkv
+
+# Vercel
+.vercel/
+.vercelignore
+
+# Documentation
+DIAGNOSTICO_*.md
+RELATORIO_*.md
+
 # Ignore parent directories
 ../
 ../../

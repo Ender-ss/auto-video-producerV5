@@ -862,7 +862,7 @@ def extract_youtube_channel_content():
             print(f"🔍 DEBUG: Detectado ID do canal na entrada: {channel_id}")
         else:
             # Tentar extrair ID do canal da URL
-            channel_id = extract_channel_id_from_url(input_value)
+            channel_id = extract_channel_id_from_url(input_value, api_key)
 
             if channel_id:
                 print(f"🔍 DEBUG: ID do canal extraído da URL: {channel_id}")
@@ -1091,53 +1091,54 @@ def extract_youtube_channel_content():
 # 🎯 GERAÇÃO DE TÍTULOS
 # ================================
 
-@automations_bp.route('/generate-titles', methods=['POST'])
-def generate_titles_with_ai():
-    """Gerar títulos usando diferentes agentes de IA"""
-    try:
-        data = request.get_json()
-        agent = data.get('agent', 'gemini').lower()
-        api_key = data.get('api_key', '').strip()
-        instructions = data.get('instructions', '').strip()
-        source_titles = data.get('source_titles', [])
-        
-        if not api_key:
-            return jsonify({
-                'success': False,
-                'error': f'Chave da API {agent.upper()} é obrigatória'
-            }), 400
-        
-        if not source_titles:
-            return jsonify({
-                'success': False,
-                'error': 'Títulos de origem são obrigatórios'
-            }), 400
-        
-        if not instructions:
-            instructions = 'Crie títulos virais e chamativos baseados nos títulos fornecidos.'
-        
-        # Gerar títulos baseado no agente selecionado
-        if agent == 'chatgpt' or agent == 'openai':
-            result = generate_titles_with_openai(source_titles, instructions, api_key)
-        elif agent == 'claude':
-            result = generate_titles_with_claude(source_titles, instructions, api_key)
-        elif agent == 'gemini':
-            result = generate_titles_with_gemini(source_titles, instructions, api_key)
-        elif agent == 'openrouter':
-            result = generate_titles_with_openrouter(source_titles, instructions, api_key)
-        else:
-            return jsonify({
-                'success': False,
-                'error': f'Agente {agent} não suportado'
-            }), 400
-        
-        return jsonify(result)
-    
-    except Exception as e:
-        return jsonify({
-            'success': False,
-            'error': f'Erro interno: {str(e)}'
-        }), 500
+# ENDPOINT ANTIGO COMENTADO - USAR O NOVO ENDPOINT NA LINHA 2626
+# @automations_bp.route('/generate-titles', methods=['POST'])
+# def generate_titles_with_ai():
+#     """Gerar títulos usando diferentes agentes de IA"""
+#     try:
+#         data = request.get_json()
+#         agent = data.get('agent', 'gemini').lower()
+#         api_key = data.get('api_key', '').strip()
+#         instructions = data.get('instructions', '').strip()
+#         source_titles = data.get('source_titles', [])
+#         
+#         if not api_key:
+#             return jsonify({
+#                 'success': False,
+#                 'error': f'Chave da API {agent.upper()} é obrigatória'
+#             }), 400
+#         
+#         if not source_titles:
+#             return jsonify({
+#                 'success': False,
+#                 'error': 'Títulos de origem são obrigatórios'
+#             }), 400
+#         
+#         if not instructions:
+#             instructions = 'Crie títulos virais e chamativos baseados nos títulos fornecidos.'
+#         
+#         # Gerar títulos baseado no agente selecionado
+#         if agent == 'chatgpt' or agent == 'openai':
+#             result = generate_titles_with_openai(source_titles, instructions, api_key)
+#         elif agent == 'claude':
+#             result = generate_titles_with_claude(source_titles, instructions, api_key)
+#         elif agent == 'gemini':
+#             result = generate_titles_with_gemini(source_titles, instructions, api_key)
+#         elif agent == 'openrouter':
+#             result = generate_titles_with_openrouter(source_titles, instructions, api_key)
+#         else:
+#             return jsonify({
+#                 'success': False,
+#                 'error': f'Agente {agent} não suportado'
+#             }), 400
+#         
+#         return jsonify(result)
+#     
+#     except Exception as e:
+#         return jsonify({
+#             'success': False,
+#             'error': f'Erro interno: {str(e)}'
+#         }), 500
 
 # ================================
 # 📝 GERAÇÃO DE ROTEIROS
@@ -2810,8 +2811,9 @@ def generate_titles_custom():
         if api_keys.get('openai'):
             openai_configured = title_generator.configure_openai(api_keys['openai'])
 
-        if api_keys.get('gemini'):
-            gemini_configured = title_generator.configure_gemini(api_keys['gemini'])
+        gemini_key = api_keys.get('gemini') or api_keys.get('gemini_1')
+        if gemini_key:
+            gemini_configured = title_generator.configure_gemini(gemini_key)
 
         if api_keys.get('openrouter'):
             openrouter_configured = title_generator.configure_openrouter(api_keys['openrouter'])
@@ -3317,13 +3319,15 @@ def join_audio_files(segments):
         print(f"🔗 Juntando {len(segments)} segmentos de áudio...")
 
         import os
-        from pydub import AudioSegment
+        import numpy as np
+        import soundfile as sf
+        import subprocess
+        import tempfile
 
         temp_dir = os.path.join(os.path.dirname(__file__), '..', 'temp')
 
-        # Carregar todos os segmentos
-        audio_segments = []
-        total_duration = 0
+        # Verificar se temos segmentos válidos
+        valid_files = []
         total_size = 0
 
         for segment in sorted(segments, key=lambda x: x.get('index', 0)):
@@ -3336,48 +3340,80 @@ def join_audio_files(segments):
                 print(f"⚠️ Arquivo não encontrado: {filepath}")
                 continue
 
-            # Carregar segmento de áudio
-            if filename.endswith('.mp3'):
-                audio_seg = AudioSegment.from_mp3(filepath)
-            elif filename.endswith('.wav'):
-                audio_seg = AudioSegment.from_wav(filepath)
-            else:
-                # Tentar detectar formato automaticamente
-                audio_seg = AudioSegment.from_file(filepath)
-
-            audio_segments.append(audio_seg)
-            total_duration += len(audio_seg) / 1000.0  # pydub usa milissegundos
+            valid_files.append(filepath)
             total_size += os.path.getsize(filepath)
+            print(f"✅ Arquivo válido encontrado: {filename}")
 
-            print(f"✅ Carregado segmento: {filename} ({len(audio_seg)/1000:.1f}s)")
-
-        if not audio_segments:
+        if not valid_files:
             return {
                 'success': False,
                 'error': 'Nenhum segmento de áudio válido encontrado'
             }
 
-        # Juntar todos os segmentos
-        print("🔗 Concatenando segmentos...")
-        final_audio = audio_segments[0]
-        for segment in audio_segments[1:]:
-            final_audio += segment
-
-        # Salvar arquivo final
+        # Usar ffmpeg para concatenar os arquivos (mais eficiente e compatível)
         timestamp = int(time.time())
         final_filename = f"audio_final_{timestamp}.mp3"
         final_filepath = os.path.join(temp_dir, final_filename)
 
-        # Exportar como MP3 com qualidade alta
-        final_audio.export(
-            final_filepath,
-            format="mp3",
-            bitrate="192k",
-            parameters=["-q:a", "0"]
-        )
+        # Criar arquivo de lista para ffmpeg
+        with tempfile.NamedTemporaryFile(mode='w', suffix='.txt', delete=False) as f:
+            for filepath in valid_files:
+                # Escapar aspas no caminho do arquivo
+                escaped_path = filepath.replace('\\', '/').replace("'", "'\"'\"'")
+                f.write(f"file '{escaped_path}'\n")
+            list_file = f.name
+
+        try:
+            # Comando ffmpeg para concatenar
+            cmd = [
+                'ffmpeg', '-y',  # -y para sobrescrever arquivo existente
+                '-f', 'concat',
+                '-safe', '0',
+                '-i', list_file,
+                '-c', 'copy',  # Copiar streams sem recodificar
+                final_filepath
+            ]
+
+            print(f"🔗 Executando concatenação com ffmpeg...")
+            result = subprocess.run(cmd, capture_output=True, text=True, timeout=60)
+
+            if result.returncode != 0:
+                # Se falhar com copy, tentar recodificar
+                print("⚠️ Falha com copy, tentando recodificar...")
+                cmd = [
+                    'ffmpeg', '-y',
+                    '-f', 'concat',
+                    '-safe', '0',
+                    '-i', list_file,
+                    '-acodec', 'mp3',
+                    '-ab', '192k',
+                    final_filepath
+                ]
+                result = subprocess.run(cmd, capture_output=True, text=True, timeout=60)
+
+            if result.returncode != 0:
+                raise Exception(f"Erro do ffmpeg: {result.stderr}")
+
+        finally:
+            # Limpar arquivo temporário
+            try:
+                os.unlink(list_file)
+            except:
+                pass
+
+        # Verificar se o arquivo foi criado
+        if not os.path.exists(final_filepath):
+            raise Exception("Arquivo final não foi criado")
 
         final_size = os.path.getsize(final_filepath)
-        final_duration = len(final_audio) / 1000.0
+        
+        # Tentar obter duração usando soundfile
+        try:
+            with sf.SoundFile(final_filepath) as f:
+                final_duration = len(f) / f.samplerate
+        except:
+            # Fallback: estimar duração baseada no número de arquivos
+            final_duration = len(valid_files) * 10  # Estimativa de 10s por arquivo
 
         print(f"✅ Áudio final criado: {final_filename} ({final_duration:.1f}s, {final_size} bytes)")
 
@@ -3388,16 +3424,21 @@ def join_audio_files(segments):
                 'filename': final_filename,
                 'duration': final_duration,
                 'size': final_size,
-                'segments_count': len(audio_segments),
+                'segments_count': len(valid_files),
                 'format': 'mp3',
                 'bitrate': '192k'
             }
         }
 
-    except ImportError:
+    except ImportError as e:
         return {
             'success': False,
-            'error': 'Biblioteca pydub não instalada. Execute: pip install pydub'
+            'error': f'Biblioteca necessária não instalada: {str(e)}. Execute: pip install soundfile'
+        }
+    except subprocess.TimeoutExpired:
+        return {
+            'success': False,
+            'error': 'Timeout na concatenação de áudio. Arquivos muito grandes.'
         }
     except Exception as e:
         print(f"❌ Erro ao juntar áudios: {e}")
