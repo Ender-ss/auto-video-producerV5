@@ -19,6 +19,11 @@ anthropic==0.40.0
 requests==2.31.0
 urllib3==2.2.0
 
+# YouTube APIs
+google-api-python-client==2.108.0
+isodate==0.6.1
+yt-dlp==2023.12.30
+
 # Audio/Video Processing
 moviepy==1.0.3
 pydub==0.25.1

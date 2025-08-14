@@ -52,7 +52,7 @@ def add_real_time_log(message, level="info", source="system"):
         elif level.lower() == 'warning':
             logger.warning(f"[{source}] {message}")
         elif level.lower() == 'success':
-            logger.info(f"[{source}] ✅ {message}")
+            logger.info(f"[{source}] [SUCCESS] {message}")
         else:
             logger.info(f"[{source}] {message}")
 
@@ -267,5 +267,40 @@ def health_check():
         return jsonify({
             'success': False,
             'status': 'unhealthy',
+            'error': str(e)
+        }), 500
+
+# Adicionar ao final do arquivo system.py
+
+@system_bp.route('/files/validate', methods=['POST'])
+def validate_file():
+    """Validar se um arquivo existe no sistema"""
+    try:
+        data = request.get_json()
+        file_path = data.get('file_path')
+        
+        if not file_path:
+            return jsonify({
+                'success': False,
+                'exists': False,
+                'error': 'Caminho do arquivo não fornecido'
+            }), 400
+        
+        # Verificar se o arquivo existe
+        exists = os.path.exists(file_path) and os.path.isfile(file_path)
+        
+        logger.info(f"Validação de arquivo: {file_path} - Existe: {exists}")
+        
+        return jsonify({
+            'success': True,
+            'exists': exists,
+            'file_path': file_path
+        })
+        
+    except Exception as e:
+        logger.error(f"Erro ao validar arquivo: {str(e)}")
+        return jsonify({
+            'success': False,
+            'exists': False,
             'error': str(e)
         }), 500

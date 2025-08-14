@@ -1048,12 +1048,25 @@ def get_channels_db_connection():
             id INTEGER PRIMARY KEY AUTOINCREMENT,
             name TEXT UNIQUE NOT NULL,
             url TEXT NOT NULL,
+            channel_id TEXT,
+            input_type TEXT DEFAULT 'url',
             description TEXT,
             category TEXT DEFAULT 'geral',
             created_at TEXT NOT NULL,
             updated_at TEXT NOT NULL
         )
     ''')
+    
+    # Adicionar colunas se não existirem (para compatibilidade com bancos existentes)
+    try:
+        cursor.execute('ALTER TABLE saved_channels ADD COLUMN channel_id TEXT')
+    except:
+        pass  # Coluna já existe
+    
+    try:
+        cursor.execute('ALTER TABLE saved_channels ADD COLUMN input_type TEXT DEFAULT "url"')
+    except:
+        pass  # Coluna já existe
     conn.commit()
 
     return conn
@@ -1066,7 +1079,7 @@ def get_saved_channels():
         cursor = conn.cursor()
 
         cursor.execute('''
-            SELECT id, name, url, description, category, created_at, updated_at
+            SELECT id, name, url, channel_id, input_type, description, category, created_at, updated_at
             FROM saved_channels
             ORDER BY category, name
         ''')
@@ -1077,10 +1090,12 @@ def get_saved_channels():
                 'id': row[0],
                 'name': row[1],
                 'url': row[2],
-                'description': row[3],
-                'category': row[4],
-                'created_at': row[5],
-                'updated_at': row[6]
+                'channel_id': row[3],
+                'input_type': row[4] or 'url',
+                'description': row[5],
+                'category': row[6],
+                'created_at': row[7],
+                'updated_at': row[8]
             })
 
         conn.close()
@@ -1103,21 +1118,42 @@ def save_channel():
         data = request.get_json()
         name = data.get('name', '').strip()
         url = data.get('url', '').strip()
+        channel_id = data.get('channel_id', '').strip()
+        input_type = data.get('input_type', 'url').strip()
         description = data.get('description', '').strip()
         category = data.get('category', 'geral').strip()
 
-        if not name or not url:
+        if not name:
             return jsonify({
                 'success': False,
-                'error': 'Nome e URL do canal são obrigatórios'
+                'error': 'Nome do canal é obrigatório'
             }), 400
 
-        # Validar URL do YouTube
-        if 'youtube.com' not in url and 'youtu.be' not in url:
-            return jsonify({
-                'success': False,
-                'error': 'URL deve ser de um canal do YouTube'
-            }), 400
+        # Validar baseado no tipo de entrada
+        if input_type == 'url':
+            if not url:
+                return jsonify({
+                    'success': False,
+                    'error': 'URL do canal é obrigatória quando o tipo é URL'
+                }), 400
+            # Validar URL do YouTube
+            if 'youtube.com' not in url and 'youtu.be' not in url:
+                return jsonify({
+                    'success': False,
+                    'error': 'URL deve ser de um canal do YouTube'
+                }), 400
+        elif input_type == 'channel_id':
+            if not channel_id:
+                return jsonify({
+                    'success': False,
+                    'error': 'ID do canal é obrigatório quando o tipo é ID'
+                }), 400
+            # Validar formato do ID do canal (deve começar com UC ou @)
+            if not (channel_id.startswith('UC') or channel_id.startswith('@')):
+                return jsonify({
+                    'success': False,
+                    'error': 'ID do canal deve começar com "UC" ou "@"'
+                }), 400
 
         conn = get_channels_db_connection()
         cursor = conn.cursor()
@@ -1137,9 +1173,9 @@ def save_channel():
         from datetime import datetime
         now = datetime.now().isoformat()
         cursor.execute('''
-            INSERT INTO saved_channels (name, url, description, category, created_at, updated_at)
-            VALUES (?, ?, ?, ?, ?, ?)
-        ''', (name, url, description, category, now, now))
+            INSERT INTO saved_channels (name, url, channel_id, input_type, description, category, created_at, updated_at)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+        ''', (name, url, channel_id, input_type, description, category, now, now))
 
         channel_id = cursor.lastrowid
         conn.commit()

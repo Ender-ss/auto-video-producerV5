@@ -25,7 +25,22 @@ app.config['UPLOAD_FOLDER'] = 'uploads'
 app.config['MAX_CONTENT_LENGTH'] = 100 * 1024 * 1024  # 100MB max file size
 
 # Configurar CORS
-CORS(app, origins=['http://localhost:5173', 'http://127.0.0.1:5173', 'http://localhost:5174'])
+CORS(app, 
+     origins=['http://localhost:5173', 'http://127.0.0.1:5173', 'http://localhost:5174'],
+     methods=['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+     allow_headers=['Content-Type', 'Authorization', 'X-Requested-With'],
+     supports_credentials=True)
+
+# Handler específico para requisições OPTIONS (preflight)
+@app.before_request
+def handle_preflight():
+    if request.method == "OPTIONS":
+        response = jsonify({})
+        response.headers.add("Access-Control-Allow-Origin", request.headers.get('Origin', '*'))
+        response.headers.add('Access-Control-Allow-Headers', "Content-Type,Authorization,X-Requested-With")
+        response.headers.add('Access-Control-Allow-Methods', "GET,PUT,POST,DELETE,OPTIONS")
+        response.headers.add('Access-Control-Allow-Credentials', 'true')
+        return response
 
 # Inicializar banco de dados
 from database import db, ImageQueue, ScriptPrompt
@@ -281,7 +296,7 @@ def init_database():
 def register_blueprints():
     """Registrar blueprints das rotas"""
     try:
-        from routes.automations import automations_bp
+        from routes.automations import automations_bp, load_rapidapi_keys
         from routes.premise import premise_bp
         from routes.scripts import scripts_bp
         from routes.workflow import workflow_bp
@@ -293,6 +308,10 @@ def register_blueprints():
         from routes.tests import tests_bp
         from routes.images import images_bp
         from routes.image_queue import image_queue_bp
+
+        # Carregar chaves RapidAPI na inicialização
+        load_rapidapi_keys()
+        logger.info("✅ Chaves RapidAPI carregadas na inicialização!")
 
         app.register_blueprint(automations_bp, url_prefix='/api/automations')
         app.register_blueprint(premise_bp, url_prefix='/api/premise')
