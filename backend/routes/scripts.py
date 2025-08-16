@@ -405,16 +405,57 @@ def call_openrouter(prompt, model, api_key):
         print(f"❌ DEBUG: Erro detalhado no OpenRouter: {str(e)}")
         raise Exception(f'Erro OpenRouter: {str(e)}')
 
-def call_gemini(prompt, title_generator):
-    """Chamar Gemini API"""
-    try:
-        print(f"🔍 DEBUG: Enviando prompt para Gemini ({len(prompt)} chars)")
-        response = title_generator.gemini_model.generate_content(prompt)
-        print(f"🔍 DEBUG: Gemini respondeu com {len(response.text)} caracteres")
-        return response.text
-    except Exception as e:
-        print(f"❌ DEBUG: Erro detalhado no Gemini: {str(e)}")
-        raise Exception(f'Erro Gemini: {str(e)}')
+def call_gemini(prompt, title_generator=None):
+    """Chamar Gemini API com retry automático entre múltiplas chaves"""
+    import google.generativeai as genai
+    from routes.automations import get_next_gemini_key, handle_gemini_429_error
+    
+    # Tentar múltiplas chaves se necessário
+    max_retries = 3
+    last_error = None
+    
+    for attempt in range(max_retries):
+        try:
+            # Obter próxima chave Gemini
+            api_key = get_next_gemini_key()
+            if not api_key:
+                raise Exception('Nenhuma chave Gemini disponível. Configure pelo menos uma chave nas Configurações.')
+            
+            print(f"🔍 DEBUG: Tentativa {attempt + 1}/{max_retries}: Enviando prompt para Gemini ({len(prompt)} chars)")
+            
+            # Configurar Gemini diretamente
+            genai.configure(api_key=api_key)
+            model = genai.GenerativeModel('gemini-1.5-flash')
+            
+            # Gerar conteúdo
+            response = model.generate_content(prompt)
+            content = response.text.strip()
+            
+            print(f"🔍 DEBUG: Gemini respondeu com {len(content)} caracteres na tentativa {attempt + 1}")
+            return content
+            
+        except Exception as e:
+            error_str = str(e)
+            last_error = error_str
+            print(f"❌ DEBUG: Erro na tentativa {attempt + 1}: {error_str}")
+            
+            # Check if it's a quota error (429)
+            if "429" in error_str or "quota" in error_str.lower() or "rate limit" in error_str.lower():
+                if attempt < max_retries - 1:  # Not the last attempt
+                    print(f"🔄 Erro de quota detectado, tentando próxima chave Gemini...")
+                    handle_gemini_429_error(error_str)
+                    continue
+                else:
+                    print("❌ Todas as tentativas de retry falharam")
+                    handle_gemini_429_error(error_str)
+            else:
+                # For non-quota errors, don't retry
+                print(f"❌ Erro não relacionado à quota, parando tentativas: {error_str}")
+                break
+    
+    # Se chegou aqui, todas as tentativas falharam
+    final_error = f'Falha na geração com Gemini após todas as {max_retries} tentativas. Último erro: {last_error}'
+    raise Exception(final_error)
 
 def call_openai(prompt, title_generator):
     """Chamar OpenAI API"""

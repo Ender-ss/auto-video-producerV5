@@ -188,7 +188,7 @@ def test_gemini(api_key, endpoint, params):
     """Testar Google Gemini API"""
     try:
         if endpoint == '/generate/title':
-            url = f"https://generativelanguage.googleapis.com/v1beta/models/gemini-pro:generateContent?key={api_key}"
+            url = f"https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key={api_key}"
             payload = {
                 "contents": [{
                     "parts": [{

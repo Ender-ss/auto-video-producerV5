@@ -38,6 +38,105 @@ def get_api_keys():
             'error': str(e)
         }), 500
 
+@settings_bp.route('/gemini-quota-status', methods=['GET'])
+def get_gemini_quota_status():
+    """Obter status das quotas das chaves Gemini"""
+    try:
+        # Importar sistema de rotação de chaves Gemini
+        from routes.automations import GEMINI_KEYS_ROTATION, load_gemini_keys, get_fallback_provider_info
+        
+        # Carregar chaves se necessário
+        if not GEMINI_KEYS_ROTATION['keys']:
+            load_gemini_keys()
+        
+        # Calcular tempo para reset (00:00 UTC)
+        from datetime import datetime, timezone, timedelta
+        now_utc = datetime.now(timezone.utc)
+        tomorrow_utc = (now_utc + timedelta(days=1)).replace(hour=0, minute=0, second=0, microsecond=0)
+        seconds_to_reset = int((tomorrow_utc - now_utc).total_seconds())
+        
+        # Preparar dados das chaves
+        keys_data = []
+        total_requests_today = 0
+        
+        for i, key in enumerate(GEMINI_KEYS_ROTATION['keys']):
+            usage = GEMINI_KEYS_ROTATION['usage_count'].get(key, 0)
+            total_requests_today += usage
+            
+            keys_data.append({
+                'key_index': i + 1,
+                'key_id': f"gemini_{i + 1}",
+                'usage_current': usage,
+                'usage_limit': 8,
+                'status': 'active' if usage < 8 else 'exhausted',
+                'percentage_used': round((usage / 8) * 100, 1)
+            })
+        
+        # Verificar fallbacks disponíveis
+        fallback_info = get_fallback_provider_info()
+        fallback_status = {
+            'openai_available': False,
+            'openrouter_available': False,
+            'current_fallback': None
+        }
+        
+        if fallback_info:
+            if fallback_info['provider'] == 'openai':
+                fallback_status['openai_available'] = True
+                fallback_status['current_fallback'] = 'openai'
+            elif fallback_info['provider'] == 'openrouter':
+                fallback_status['openrouter_available'] = True
+                fallback_status['current_fallback'] = 'openrouter'
+        
+        # Verificar se há chaves OpenAI e OpenRouter separadamente
+        try:
+            config_path = os.path.join(os.path.dirname(__file__), '..', 'config', 'api_keys.json')
+            if os.path.exists(config_path):
+                with open(config_path, 'r') as f:
+                    keys = json.load(f)
+                
+                openai_key = keys.get('openai', '')
+                openrouter_key = keys.get('openrouter', '')
+                
+                if openai_key and len(openai_key) > 10:
+                    fallback_status['openai_available'] = True
+                if openrouter_key and len(openrouter_key) > 10:
+                    fallback_status['openrouter_available'] = True
+        except:
+            pass
+        
+        return jsonify({
+            'success': True,
+            'data': {
+                'keys': keys_data,
+                'summary': {
+                    'total_keys': len(GEMINI_KEYS_ROTATION['keys']),
+                    'active_keys': len([k for k in keys_data if k['status'] == 'active']),
+                    'exhausted_keys': len([k for k in keys_data if k['status'] == 'exhausted']),
+                    'total_requests_today': total_requests_today,
+                    'max_requests_per_day': len(GEMINI_KEYS_ROTATION['keys']) * 8,
+                    'percentage_used': round((total_requests_today / (len(GEMINI_KEYS_ROTATION['keys']) * 8)) * 100, 1) if GEMINI_KEYS_ROTATION['keys'] else 0
+                },
+                'reset_info': {
+                    'seconds_to_reset': seconds_to_reset,
+                    'reset_time_utc': tomorrow_utc.isoformat(),
+                    'last_reset': GEMINI_KEYS_ROTATION['last_reset'].isoformat() if GEMINI_KEYS_ROTATION['last_reset'] else None
+                },
+                'fallback_status': fallback_status,
+                'limits': {
+                    'requests_per_key_per_day': 8,
+                    'total_gemini_limit_per_day': 50,
+                    'note': 'Limite ajustado para respeitar Free Tier do Gemini (50 req/dia)'
+                }
+            }
+        })
+    
+    except Exception as e:
+        return jsonify({
+            'success': False,
+            'error': str(e)
+        }), 500
+
 @settings_bp.route('/api-keys/<api_name>', methods=['GET'])
 def get_single_api_key(api_name):
     """Obter uma chave de API específica."""
@@ -717,36 +816,79 @@ def test_openai_connection(api_key):
 def test_gemini_connection(api_key):
     """Testar Google Gemini API"""
     try:
-        url = f"https://generativelanguage.googleapis.com/v1beta/models/gemini-pro:generateContent?key={api_key}"
+        # URL correta da API Gemini v1beta
+        url = f"https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key={api_key}"
 
         payload = {
             "contents": [{
-                "parts": [{"text": "Teste"}]
+                "parts": [{"text": "Hello, test connection"}]
             }]
         }
 
-        response = requests.post(url, json=payload, timeout=15)
+        headers = {
+            'Content-Type': 'application/json'
+        }
 
+        response = requests.post(url, json=payload, headers=headers, timeout=15)
+        
+        # Log para debug
+        print(f"🔍 Testando chave Gemini: {api_key[:20]}...")
+        print(f"📡 Status: {response.status_code}")
+        
         if response.status_code == 200:
-            return {
-                'success': True,
-                'message': 'Conectado com sucesso!'
-            }
+            result = response.json()
+            if 'candidates' in result and len(result['candidates']) > 0:
+                return {
+                    'success': True,
+                    'message': 'Conectado com sucesso! API Gemini funcionando.'
+                }
+            else:
+                return {
+                    'success': False,
+                    'message': 'Resposta inesperada da API Gemini'
+                }
         elif response.status_code == 400:
+            error_detail = response.text
             return {
                 'success': False,
-                'message': 'Chave de API inválida'
+                'message': f'Chave de API inválida ou requisição malformada: {error_detail}'
+            }
+        elif response.status_code == 403:
+            return {
+                'success': False,
+                'message': 'Acesso negado - verifique se a chave tem permissões para Gemini API'
+            }
+        elif response.status_code == 404:
+            return {
+                'success': False,
+                'message': 'Endpoint não encontrado - verifique se a API Gemini está habilitada no projeto'
+            }
+        elif response.status_code == 429:
+            return {
+                'success': False,
+                'message': 'Limite de requisições excedido - tente novamente mais tarde'
             }
         else:
+            error_detail = response.text
             return {
                 'success': False,
-                'message': f'Erro HTTP {response.status_code}'
+                'message': f'Erro HTTP {response.status_code}: {error_detail}'
             }
 
+    except requests.exceptions.Timeout:
+        return {
+            'success': False,
+            'message': 'Timeout na conexão com a API Gemini'
+        }
+    except requests.exceptions.ConnectionError:
+        return {
+            'success': False,
+            'message': 'Erro de conexão com a API Gemini'
+        }
     except Exception as e:
         return {
             'success': False,
-            'message': f'Erro: {str(e)}'
+            'message': f'Erro inesperado: {str(e)}'
         }
 
 def test_elevenlabs_connection(api_key):

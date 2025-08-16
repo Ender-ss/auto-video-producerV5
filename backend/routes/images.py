@@ -255,53 +255,82 @@ def generate_image_together(prompt, api_key, width, height, quality, model):
 
 def generate_image_gemini(prompt, api_key, width, height, quality):
     """
-    Generate image using Gemini 2.0 Flash Preview Image Generation
+    Generate image using Gemini 2.0 Flash Preview Image Generation with automatic retry system
     """
-    try:
-        from google import genai
-        from google.genai import types
-        import base64
-        from io import BytesIO
-        
-        # Debug: Check if API key is provided
-        # print(f"Gemini API key received: {api_key[:10]}..." if api_key and len(api_key) > 10 else f"Gemini API key: {api_key}")
-        
-        # Create Gemini client
-        client = genai.Client(api_key=api_key)
-        
-        # Prepare the prompt with size specifications
-        enhanced_prompt = f"{prompt}. Generate a {width}x{height} image."
-        if quality == "hd":
-            enhanced_prompt += " High quality, detailed, professional."
-        
-        # Generate content with image output using new API
-        response = client.models.generate_content(
-            model="gemini-2.0-flash-preview-image-generation",
-            contents=enhanced_prompt,
-            config=types.GenerateContentConfig(
-                response_modalities=["TEXT", "IMAGE"]
+    from routes.automations import get_next_gemini_key, handle_gemini_429_error
+    
+    max_retries = 3
+    current_api_key = api_key
+    
+    for attempt in range(max_retries):
+        try:
+            from google import genai
+            from google.genai import types
+            import base64
+            from io import BytesIO
+            
+            print(f"🎨 Tentativa {attempt + 1}/{max_retries} - Gerando imagem com Gemini")
+            
+            # Create Gemini client
+            client = genai.Client(api_key=current_api_key)
+            
+            # Prepare the prompt with size specifications
+            enhanced_prompt = f"{prompt}. Generate a {width}x{height} image."
+            if quality == "hd":
+                enhanced_prompt += " High quality, detailed, professional."
+            
+            # Generate content with image output using new API
+            response = client.models.generate_content(
+                model="gemini-2.0-flash-preview-image-generation",
+                contents=enhanced_prompt,
+                config=types.GenerateContentConfig(
+                    response_modalities=["TEXT", "IMAGE"]
+                )
             )
-        )
-        
-        # Extract image from response
-        for part in response.candidates[0].content.parts:
-            if part.inline_data is not None:
-                # Get image data
-                image_data = part.inline_data.data
-                
-                # Convert to bytes if needed
-                if isinstance(image_data, str):
-                    image_bytes = base64.b64decode(image_data)
+            
+            # Extract image from response
+            for part in response.candidates[0].content.parts:
+                if part.inline_data is not None:
+                    # Get image data
+                    image_data = part.inline_data.data
+                    
+                    # Convert to bytes if needed
+                    if isinstance(image_data, str):
+                        image_bytes = base64.b64decode(image_data)
+                    else:
+                        image_bytes = image_data
+                    
+                    print(f"✅ Sucesso! Imagem gerada com Gemini na tentativa {attempt + 1}")
+                    return image_bytes
+            
+            raise Exception("No image data found in Gemini response")
+            
+        except Exception as e:
+            error_str = str(e)
+            print(f"❌ Erro na tentativa {attempt + 1}: {error_str}")
+            
+            # Check if it's a quota error (429)
+            if "429" in error_str or "quota" in error_str.lower() or "rate limit" in error_str.lower():
+                if attempt < max_retries - 1:  # Not the last attempt
+                    print(f"🔄 Erro de quota detectado, tentando próxima chave Gemini...")
+                    handle_gemini_429_error(error_str)
+                    current_api_key = get_next_gemini_key()
+                    if current_api_key:
+                        print(f"🔑 Nova chave Gemini obtida para tentativa {attempt + 2}")
+                        continue
+                    else:
+                        print("❌ Nenhuma chave Gemini disponível")
+                        break
                 else:
-                    image_bytes = image_data
-                
-                return image_bytes
-        
-        raise Exception("No image data found in Gemini response")
-        
-    except Exception as e:
-        print(f"Error generating image with Gemini: {str(e)}")
-        return None
+                    print("❌ Todas as tentativas de retry falharam")
+                    handle_gemini_429_error(error_str)
+            else:
+                # For non-quota errors, don't retry
+                print(f"❌ Erro não relacionado à quota, parando tentativas: {error_str}")
+                break
+    
+    print("❌ Falha na geração de imagem com Gemini após todas as tentativas")
+    return None
 
 def generate_image_pollinations(prompt, width, height, quality, model='flux'):
     """

@@ -11,6 +11,10 @@ import os
 import json
 import logging
 from werkzeug.utils import secure_filename
+from dotenv import load_dotenv
+
+# Carregar variáveis de ambiente do arquivo .env
+load_dotenv()
 
 # Configurar logging
 logging.basicConfig(level=logging.INFO)
@@ -296,7 +300,7 @@ def init_database():
 def register_blueprints():
     """Registrar blueprints das rotas"""
     try:
-        from routes.automations import automations_bp, load_rapidapi_keys
+        from routes.automations import automations_bp, load_rapidapi_keys, load_gemini_keys
         from routes.premise import premise_bp
         from routes.scripts import scripts_bp
         from routes.workflow import workflow_bp
@@ -309,9 +313,12 @@ def register_blueprints():
         from routes.images import images_bp
         from routes.image_queue import image_queue_bp
 
-        # Carregar chaves RapidAPI na inicialização
+        # Carregar chaves na inicialização
         load_rapidapi_keys()
         logger.info("✅ Chaves RapidAPI carregadas na inicialização!")
+        
+        load_gemini_keys()
+        logger.info("✅ Chaves Gemini carregadas na inicialização!")
 
         app.register_blueprint(automations_bp, url_prefix='/api/automations')
         app.register_blueprint(premise_bp, url_prefix='/api/premise')

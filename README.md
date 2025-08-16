@@ -36,9 +36,11 @@ Um sistema avançado que automatiza todo o processo de criação de vídeos, des
 
 ### 1. Clone o Repositório
 ```bash
-git clone <repository-url>
+git clone https://github.com/SEU_USUARIO/auto-video-producer.git
 cd auto-video-producer
 ```
+
+> **📋 Primeira vez?** Veja o arquivo `GITHUB_SETUP.md` para instruções de configuração do Git e GitHub.
 
 ### 2. Instalação Automática
 ```bash

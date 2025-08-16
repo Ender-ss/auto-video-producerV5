@@ -110,6 +110,33 @@ except ImportError as e:
         def generate_titles_with_custom_prompt(self, *args, **kwargs):
             return {'success': False, 'error': 'TitleGenerator não disponível'}
 
+# Import AI Services functions
+try:
+    from services.ai_services import (
+        generate_script_chapters_with_openai,
+        generate_script_chapters_with_gemini,
+        generate_script_chapters_with_claude,
+        generate_script_chapters_with_openrouter
+    )
+    AI_SERVICES_AVAILABLE = True
+    print("✅ AI Services importado com sucesso")
+except ImportError as e:
+    AI_SERVICES_AVAILABLE = False
+    print(f"⚠️ AI Services não disponível: {e}")
+    
+    # Fallback: criar funções mock
+    def generate_script_chapters_with_openai(*args, **kwargs):
+        return {'success': False, 'error': 'AI Services não disponível'}
+    
+    def generate_script_chapters_with_gemini(*args, **kwargs):
+        return {'success': False, 'error': 'AI Services não disponível'}
+    
+    def generate_script_chapters_with_claude(*args, **kwargs):
+        return {'success': False, 'error': 'AI Services não disponível'}
+    
+    def generate_script_chapters_with_openrouter(*args, **kwargs):
+        return {'success': False, 'error': 'AI Services não disponível'}
+
 try:
     import anthropic
     ANTHROPIC_AVAILABLE = True
@@ -146,6 +173,12 @@ def load_gemini_keys():
 
             GEMINI_KEYS_ROTATION['keys'] = gemini_keys
             print(f"🔑 Carregadas {len(gemini_keys)} chaves Gemini para rotação")
+            
+            # Logs detalhados para debug
+            for i, key in enumerate(gemini_keys):
+                print(f"🔍 [DEBUG] Chave {i+1}: {key[:20]}... (tamanho: {len(key)})")
+            
+            add_real_time_log(f"🔑 Carregadas {len(gemini_keys)} chaves Gemini", "info", "gemini-load")
             return gemini_keys
     except Exception as e:
         print(f"❌ Erro ao carregar chaves Gemini: {e}")
@@ -217,12 +250,11 @@ def get_next_gemini_key():
             min_usage = usage
             best_key_index = i
 
-    # Se todas as chaves atingiram o limite (15 por dia), usar rotação simples
-    if min_usage >= 15:
-        print("⚠️ Todas as chaves atingiram o limite diário, usando rotação simples")
-        add_real_time_log("⚠️ Todas as chaves atingiram o limite diário, usando rotação simples", "warning", "gemini-rotation")
-        best_key_index = GEMINI_KEYS_ROTATION['current_index']
-        GEMINI_KEYS_ROTATION['current_index'] = (GEMINI_KEYS_ROTATION['current_index'] + 1) % len(keys)
+    # Se todas as chaves atingiram o limite (8 por dia para respeitar limite de 50 do Free Tier), retornar None
+    if min_usage >= 8:
+        print("⚠️ Todas as chaves Gemini atingiram o limite diário (8/8). Limite Free Tier: 50 req/dia")
+        add_real_time_log("⚠️ Todas as chaves Gemini atingiram o limite diário. Fallback necessário", "warning", "gemini-rotation")
+        return None  # Retornar None para forçar fallback
 
     selected_key = keys[best_key_index]
 
@@ -230,10 +262,113 @@ def get_next_gemini_key():
     GEMINI_KEYS_ROTATION['usage_count'][selected_key] = GEMINI_KEYS_ROTATION['usage_count'].get(selected_key, 0) + 1
 
     usage_count = GEMINI_KEYS_ROTATION['usage_count'][selected_key]
-    print(f"🔑 Usando chave Gemini {best_key_index + 1}/{len(keys)} (uso: {usage_count}/15)")
-    add_real_time_log(f"🔑 Usando chave Gemini {best_key_index + 1}/{len(keys)} (uso: {usage_count}/15)", "info", "gemini-rotation")
+    
+    # Logs detalhados para debug
+    print(f"🔑 Usando chave Gemini {best_key_index + 1}/{len(keys)} (uso: {usage_count}/8) - Free Tier: 50 req/dia")
+    print(f"🔍 [DEBUG] Chave selecionada: {selected_key[:20]}... (índice: {best_key_index})")
+    print(f"🔍 [DEBUG] Estado das chaves: {[(i, GEMINI_KEYS_ROTATION['usage_count'].get(key, 0)) for i, key in enumerate(keys)]}")
+    
+    add_real_time_log(f"🔑 Usando chave Gemini {best_key_index + 1}/{len(keys)} (uso: {usage_count}/8)", "info", "gemini-rotation")
+    add_real_time_log(f"🔍 Chave: {selected_key[:20]}... (índice: {best_key_index})", "debug", "gemini-key-detail")
 
     return selected_key
+
+def handle_gemini_429_error(error_message):
+    """Tratar erro 429 específico do Gemini com logs detalhados"""
+    print(f"🚫 ERRO 429 GEMINI: {error_message}")
+    add_real_time_log(f"🚫 ERRO 429 GEMINI: Quota excedida - {error_message}", "error", "gemini-429")
+    
+    # Log detalhado sobre o estado atual das chaves
+    total_usage = sum(GEMINI_KEYS_ROTATION['usage_count'].values())
+    num_keys = len(GEMINI_KEYS_ROTATION['keys'])
+    
+    print(f"📊 Estado das chaves Gemini: {total_usage} requisições usadas com {num_keys} chaves")
+    add_real_time_log(f"📊 Estado Gemini: {total_usage} req usadas, {num_keys} chaves disponíveis", "info", "gemini-status")
+    
+    # Marcar todas as chaves como esgotadas para forçar fallback
+    for key in GEMINI_KEYS_ROTATION['keys']:
+        GEMINI_KEYS_ROTATION['usage_count'][key] = 8  # Marcar como limite atingido
+    
+    print("⚠️ Todas as chaves Gemini marcadas como esgotadas. Fallback automático ativado.")
+    add_real_time_log("⚠️ Fallback automático ativado para Gemini", "warning", "gemini-fallback")
+    
+    return False
+
+def check_gemini_availability():
+    """Verificar se há chaves Gemini disponíveis"""
+    if not GEMINI_KEYS_ROTATION['keys']:
+        load_gemini_keys()
+    
+    # Reset diário
+    today = datetime.now().date()
+    if GEMINI_KEYS_ROTATION['last_reset'] != today:
+        GEMINI_KEYS_ROTATION['usage_count'] = {}
+        GEMINI_KEYS_ROTATION['last_reset'] = today
+    
+    # Verificar se alguma chave ainda tem quota disponível
+    for key in GEMINI_KEYS_ROTATION['keys']:
+        usage = GEMINI_KEYS_ROTATION['usage_count'].get(key, 0)
+        if usage < 8:  # Limite de 8 por chave
+            return True
+    
+    return False
+
+def get_fallback_provider_info():
+    """Obter informações sobre provedores de fallback disponíveis com hierarquia: Gemini → OpenRouter → OpenAI"""
+    try:
+        print("🔍 [FALLBACK DEBUG] Iniciando verificação de provedores de fallback...")
+        config_path = os.path.join(os.path.dirname(__file__), '..', 'config', 'api_keys.json')
+        print(f"🔍 [FALLBACK DEBUG] Caminho do arquivo de configuração: {config_path}")
+        
+        if os.path.exists(config_path):
+            print("🔍 [FALLBACK DEBUG] Arquivo de configuração encontrado, carregando...")
+            with open(config_path, 'r') as f:
+                keys = json.load(f)
+            
+            print(f"🔍 [FALLBACK DEBUG] Chaves carregadas: {list(keys.keys()) if keys else 'Nenhuma'}")
+            
+            # Verificar OpenRouter primeiro (fallback secundário preferido)
+            openrouter_key = keys.get('openrouter', '')
+            print(f"🔍 [FALLBACK DEBUG] Chave OpenRouter: {'Presente' if openrouter_key else 'Ausente'} (tamanho: {len(openrouter_key)})")
+            if openrouter_key and len(openrouter_key) > 10:
+                print(f"✅ [FALLBACK DEBUG] OpenRouter disponível como fallback secundário (chave: {openrouter_key[:10]}...)")
+                add_real_time_log("🔄 OpenRouter disponível como fallback secundário", "info", "fallback")
+                return {
+                    'provider': 'openrouter',
+                    'key': openrouter_key,
+                    'available': ['openrouter'],
+                    'priority': 2
+                }
+            else:
+                print("❌ [FALLBACK DEBUG] OpenRouter não disponível (chave inválida ou muito curta)")
+            
+            # Verificar OpenAI como terceira opção (fallback terciário)
+            openai_key = keys.get('openai', '')
+            print(f"🔍 [FALLBACK DEBUG] Chave OpenAI: {'Presente' if openai_key else 'Ausente'} (tamanho: {len(openai_key)})")
+            if openai_key and len(openai_key) > 10:
+                print(f"✅ [FALLBACK DEBUG] OpenAI disponível como fallback terciário (chave: {openai_key[:10]}...)")
+                add_real_time_log("🔄 OpenAI disponível como fallback terciário", "info", "fallback")
+                return {
+                    'provider': 'openai',
+                    'key': openai_key,
+                    'available': ['openai'],
+                    'priority': 3
+                }
+            else:
+                print("❌ [FALLBACK DEBUG] OpenAI não disponível (chave inválida ou muito curta)")
+        else:
+            print("❌ [FALLBACK DEBUG] Arquivo de configuração não encontrado")
+                
+        print(f"❌ [FALLBACK DEBUG] Nenhum provedor de fallback disponível")
+        add_real_time_log("❌ Nenhum provedor de fallback disponível", "error", "fallback")
+        return None
+        
+    except Exception as e:
+        print(f"❌ [FALLBACK DEBUG] Erro ao verificar provedores: {e}")
+        import traceback
+        print(f"❌ [FALLBACK DEBUG] Traceback: {traceback.format_exc()}")
+        add_real_time_log(f"❌ Erro ao verificar provedores de fallback: {e}", "error", "fallback")
+        return None
 
 def get_next_rapidapi_key():
     """Obter próxima chave RapidAPI na rotação, evitando chaves que falharam por quota"""
@@ -1155,7 +1290,17 @@ def generate_script_chapters():
         context = data.get('context', '').strip()
         num_chapters = data.get('num_chapters', 10)
         
-        if not api_key:
+        # Para Gemini, usar rotação de chaves se não fornecida
+        if not api_key and agent == 'gemini':
+            api_key = get_next_gemini_key()
+            if not api_key:
+                return jsonify({
+                    'success': False,
+                    'error': 'Nenhuma chave Gemini disponível. Configure pelo menos uma chave nas Configurações.'
+                }), 400
+            print(f"🔄 Usando rotação de chaves Gemini para generate-premise")
+            add_real_time_log(f"🔄 Usando rotação de chaves Gemini para generate-premise", "info", "gemini-rotation")
+        elif not api_key:
             return jsonify({
                 'success': False,
                 'error': f'Chave da API {agent.upper()} é obrigatória'
@@ -1173,7 +1318,8 @@ def generate_script_chapters():
         elif agent == 'claude':
             result = generate_script_chapters_with_claude(title, context, num_chapters, api_key)
         elif agent == 'gemini':
-            result = generate_script_chapters_with_gemini(title, context, num_chapters, api_key)
+            # Implementar retry automático para Gemini
+            result = generate_script_chapters_with_gemini_retry(title, context, num_chapters, api_key)
         elif agent == 'openrouter':
             result = generate_script_chapters_with_openrouter(title, context, num_chapters, api_key)
         else:
@@ -1205,7 +1351,17 @@ def generate_premise_with_ai():
         resume = data.get('resume', '').strip()
         agent_prompt = data.get('agent_prompt', '').strip()
 
-        if not api_key:
+        # Para Gemini, usar rotação de chaves se não fornecida
+        if not api_key and agent == 'gemini':
+            api_key = get_next_gemini_key()
+            if not api_key:
+                return jsonify({
+                    'success': False,
+                    'error': 'Nenhuma chave Gemini disponível. Configure pelo menos uma chave nas Configurações.'
+                }), 400
+            print(f"🔄 Usando rotação de chaves Gemini para generate-premise")
+            add_real_time_log(f"🔄 Usando rotação de chaves Gemini para generate-premise", "info", "gemini-rotation")
+        elif not api_key:
             return jsonify({
                 'success': False,
                 'error': f'Chave da API {agent.upper()} é obrigatória'
@@ -1219,7 +1375,7 @@ def generate_premise_with_ai():
 
         # Usar prompt padrão se não fornecido
         if not agent_prompt:
-            agent_prompt = get_default_premise_prompt()
+            agent_prompt = "Crie uma premissa narrativa envolvente e criativa baseada no título e resumo fornecidos. A premissa deve ser clara, interessante e adequada para um vídeo educativo."
 
         # Gerar premissa baseado no agente selecionado
         if agent == 'chatgpt' or agent == 'openai':
@@ -1243,6 +1399,144 @@ def generate_premise_with_ai():
             'success': False,
             'error': f'Erro interno: {str(e)}'
         }), 500
+
+def generate_premise_with_gemini(title, resume, prompt, api_key=None):
+    """Gerar premissa usando Gemini com rotação de chaves e retry automático"""
+    import google.generativeai as genai
+    
+    # Tentar múltiplas chaves se necessário
+    max_retries = 3  # Tentar até 3 chaves diferentes
+    last_error = None
+    
+    for attempt in range(max_retries):
+        try:
+            # Se não foi fornecida chave ou tentativa anterior falhou, usar rotação
+            if not api_key or attempt > 0:
+                api_key = get_next_gemini_key()
+                if not api_key:
+                    return {
+                        'success': False,
+                        'error': 'Nenhuma chave Gemini disponível. Configure pelo menos uma chave nas Configurações.'
+                    }
+                print(f"🔄 Tentativa {attempt + 1}/{max_retries}: Usando rotação de chaves Gemini para premissa")
+            
+            # Configurar Gemini diretamente
+            genai.configure(api_key=api_key)
+            model = genai.GenerativeModel('gemini-1.5-flash')
+            
+            # Criar prompt completo
+            full_prompt = f"""
+{prompt}
+
+Título: {title}
+Resumo: {resume}
+
+Por favor, crie uma premissa narrativa envolvente baseada no título e resumo fornecidos.
+"""
+            
+            # Gerar conteúdo diretamente com Gemini
+            response = model.generate_content(full_prompt)
+            premise_text = response.text.strip()
+            print(f"✅ Sucesso na geração de premissa com Gemini na tentativa {attempt + 1}")
+            
+            return {
+                'success': True,
+                'premise': premise_text,
+                'title': title,
+                'resume': resume
+            }
+            
+        except Exception as e:
+            error_str = str(e)
+            last_error = error_str
+            print(f"❌ Erro na tentativa {attempt + 1}: {error_str}")
+            
+            # Check if it's a quota error (429)
+            if "429" in error_str or "quota" in error_str.lower() or "rate limit" in error_str.lower():
+                if attempt < max_retries - 1:  # Not the last attempt
+                    print(f"🔄 Erro de quota detectado, tentando próxima chave Gemini...")
+                    handle_gemini_429_error(error_str)
+                    api_key = None  # Forçar nova chave na próxima tentativa
+                    continue
+                else:
+                    print("❌ Todas as tentativas de retry falharam")
+                    handle_gemini_429_error(error_str)
+            else:
+                # For non-quota errors, don't retry
+                print(f"❌ Erro não relacionado à quota, parando tentativas: {error_str}")
+                break
+    
+    # Se chegou aqui, todas as tentativas falharam
+    final_error = f'Falha na geração de premissa com Gemini após todas as {max_retries} tentativas. Último erro: {last_error}'
+    return {
+        'success': False,
+        'error': final_error
+    }
+
+def generate_script_chapters_with_gemini_retry(title, context, num_chapters, api_key=None):
+    """Gerar roteiro usando Gemini com rotação de chaves e retry automático"""
+    # Tentar múltiplas chaves se necessário
+    max_key_attempts = 3  # Tentar até 3 chaves diferentes
+    last_error = None
+    
+    for attempt in range(max_key_attempts):
+        try:
+            # Se não foi fornecida chave ou tentativa anterior falhou, usar rotação
+            if not api_key or attempt > 0:
+                api_key = get_next_gemini_key()
+                if not api_key:
+                    return {
+                        'success': False,
+                        'error': 'Nenhuma chave Gemini disponível. Configure pelo menos uma chave nas Configurações.'
+                    }
+                print(f"🔄 Tentativa {attempt + 1}: Usando rotação de chaves Gemini para roteiro")
+                add_real_time_log(f"🔄 Tentativa {attempt + 1}: Usando rotação de chaves Gemini para roteiro", "info", "gemini-rotation")
+            
+            # Chamar função original do ai_services com retry
+            result = generate_script_chapters_with_gemini(title, context, num_chapters, api_key)
+            
+            # Se sucesso, retornar resultado
+            if result.get('success'):
+                return result
+            
+            # Se falha, verificar se é erro de quota
+            error_str = result.get('error', '')
+            last_error = error_str
+            print(f"❌ Tentativa {attempt + 1} falhou: {error_str}")
+            
+            # Se é erro 429 (quota exceeded), tentar próxima chave
+            if "429" in error_str or "quota" in error_str.lower() or "exceeded" in error_str.lower():
+                print(f"🔄 Erro de cota detectado, tentando próxima chave...")
+                handle_gemini_429_error(error_str)
+                api_key = None  # Forçar nova chave na próxima tentativa
+                continue
+            else:
+                # Outros erros, não tentar novamente
+                print(f"🛑 Erro não relacionado à cota, parando tentativas")
+                break
+                
+        except Exception as e:
+            error_str = str(e)
+            last_error = error_str
+            print(f"❌ Tentativa {attempt + 1} falhou com exceção: {error_str}")
+            
+            # Se é erro 429 (quota exceeded), tentar próxima chave
+            if "429" in error_str or "quota" in error_str.lower() or "exceeded" in error_str.lower():
+                print(f"🔄 Erro de cota detectado, tentando próxima chave...")
+                handle_gemini_429_error(error_str)
+                api_key = None  # Forçar nova chave na próxima tentativa
+                continue
+            else:
+                # Outros erros, não tentar novamente
+                print(f"🛑 Erro não relacionado à cota, parando tentativas")
+                break
+    
+    # Se chegou aqui, todas as tentativas falharam
+    final_error = f'Todas as {max_key_attempts} chaves Gemini falharam. Último erro: {last_error}'
+    return {
+        'success': False,
+        'error': final_error
+    }
 
 # ================================
 # 🎤 TEXT-TO-SPEECH
@@ -2649,13 +2943,15 @@ def generate_titles():
                 'error': 'Tópico é obrigatório'
             }), 400
 
-        # Carregar chaves de API
-        config_path = os.path.join(os.path.dirname(__file__), '..', 'config', 'api_keys.json')
-        api_keys = {}
-
-        if os.path.exists(config_path):
-            with open(config_path, 'r') as f:
-                api_keys = json.load(f)
+        # Carregar chaves de API - priorizar as enviadas pelo frontend
+        api_keys = data.get('api_keys', {})
+        
+        # Se não foram enviadas chaves pelo frontend, carregar do arquivo
+        if not api_keys:
+            config_path = os.path.join(os.path.dirname(__file__), '..', 'config', 'api_keys.json')
+            if os.path.exists(config_path):
+                with open(config_path, 'r') as f:
+                    api_keys = json.load(f)
 
         # Inicializar gerador de títulos
         title_generator = TitleGenerator()
@@ -2779,6 +3075,7 @@ def generate_titles_custom():
         custom_prompt = data.get('custom_prompt', '')
         count = data.get('count', 10)
         ai_provider = data.get('ai_provider', 'auto')  # 'openai', 'gemini', 'auto'
+        script_size = data.get('script_size', 'medio')  # 'curto', 'medio', 'longo'
 
         if not source_titles:
             return jsonify({
@@ -2832,7 +3129,8 @@ def generate_titles_custom():
             source_titles,
             custom_prompt,
             count,
-            ai_provider
+            ai_provider,
+            script_size
         )
 
         if results.get('success', False):
@@ -4045,3 +4343,60 @@ try:
     print(f"✅ Chaves RapidAPI carregadas na inicialização: {len(RAPIDAPI_KEYS_ROTATION.get('keys', []))} chaves")
 except Exception as e:
     print(f"⚠️ Erro ao carregar chaves RapidAPI na inicialização: {e}")
+
+# Carregar chaves Gemini na inicialização
+try:
+    load_gemini_keys()
+    print(f"✅ Chaves Gemini carregadas na inicialização: {len(GEMINI_KEYS_ROTATION.get('keys', []))} chaves")
+except Exception as e:
+    print(f"⚠️ Erro ao carregar chaves Gemini na inicialização: {e}")
+
+# ================================
+# 🔄 SISTEMA DE RETRY AUTOMÁTICO GEMINI
+# ================================
+
+def generate_content_with_gemini_retry(prompt, max_retries=3):
+    """Gerar conteúdo usando Gemini com retry automático entre múltiplas chaves"""
+    import google.generativeai as genai
+    last_error = None
+    
+    for attempt in range(max_retries):
+        try:
+            # Obter chave Gemini
+            api_key = get_next_gemini_key()
+            if not api_key:
+                raise Exception('Nenhuma chave Gemini disponível. Configure pelo menos uma chave nas Configurações.')
+            
+            print(f"🔄 Tentativa {attempt + 1}/{max_retries}: Usando chave Gemini")
+            
+            # Configurar Gemini diretamente
+            genai.configure(api_key=api_key)
+            model = genai.GenerativeModel('gemini-1.5-flash')
+            
+            print(f"🔍 DEBUG: Enviando prompt para Gemini ({len(prompt)} chars) - Tentativa {attempt + 1}/{max_retries}")
+            response = model.generate_content(prompt)
+            print(f"✅ Gemini respondeu com sucesso na tentativa {attempt + 1}")
+            return response.text
+            
+        except Exception as e:
+            error_str = str(e)
+            last_error = error_str
+            print(f"❌ Tentativa {attempt + 1}/{max_retries} falhou: {error_str}")
+            
+            # Se é erro 429 (quota exceeded) e não é a última tentativa, tentar próxima chave
+            if ("429" in error_str or "quota" in error_str.lower() or "exceeded" in error_str.lower()) and attempt < max_retries - 1:
+                print(f"🔄 Erro de cota detectado, tentando próxima chave...")
+                handle_gemini_429_error(error_str)
+                continue
+            else:
+                # Outros erros ou última tentativa, parar
+                if attempt == max_retries - 1:
+                    print(f"🛑 Última tentativa falhou, parando retries")
+                else:
+                    print(f"🛑 Erro não relacionado à cota, parando tentativas")
+                break
+    
+    # Se chegou aqui, todas as tentativas falharam
+    final_error = f'Todas as {max_retries} tentativas Gemini falharam. Último erro: {last_error}'
+    print(f"❌ DEBUG: {final_error}")
+    raise Exception(f'Erro Gemini: {final_error}')

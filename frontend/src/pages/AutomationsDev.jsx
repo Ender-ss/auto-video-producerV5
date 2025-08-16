@@ -141,6 +141,10 @@ const AutomationsDev = () => {
   const [isGeneratingAgentScript, setIsGeneratingAgentScript] = useState(false)
   const [agentGeneratedScript, setAgentGeneratedScript] = useState(null)
   const [agentInstructions, setAgentInstructions] = useState('')
+  const [agentScriptSize, setAgentScriptSize] = useState('medio') // curto, medio, longo
+  const [agentNumberOfChapters, setAgentNumberOfChapters] = useState(8) // Número de capítulos para o agente IA
+  const [agentProgress, setAgentProgress] = useState({ current: 0, total: 0, stage: '' }) // Progresso detalhado do agente
+  const [usePartsGeneration, setUsePartsGeneration] = useState(false) // Geração em partes para roteiros longos
 
   // Estados para criação de vídeo
   const [isCreatingVideo, setIsCreatingVideo] = useState(false)
@@ -1237,8 +1241,26 @@ Para cada título, forneça:
     }
 
     setIsGeneratingAgentScript(true)
+    setAgentProgress({ current: 0, total: agentNumberOfChapters, stage: 'Iniciando geração...' })
 
     try {
+      // Simular progresso de capítulos
+      const progressInterval = setInterval(() => {
+        setAgentProgress(prev => {
+          if (prev.current < prev.total) {
+            const newCurrent = prev.current + 1
+            return {
+              current: newCurrent,
+              total: prev.total,
+              stage: `Gerando Capítulo ${newCurrent} de ${prev.total}...`
+            }
+          }
+          return prev
+        })
+      }, 2000) // Atualizar a cada 2 segundos
+
+      // Limpar intervalo após 30 segundos ou quando terminar
+      setTimeout(() => clearInterval(progressInterval), 30000)
       // Construir o prompt completo
       let fullPrompt = agentPrompt
 
@@ -1265,22 +1287,18 @@ Para cada título, forneça:
       fullPrompt += `**TÍTULO:** ${selectedAgentTitle}\n`
       fullPrompt += `**PREMISSA:** ${selectedAgentPremise}`
 
-      // Escolher endpoint baseado no provider
-      let endpoint = 'http://localhost:5000/api/premise/generate'
-      let requestBody = {
-        titles: [selectedAgentTitle],
-        prompt: fullPrompt
-      }
-
-      // Se for OpenAI ou OpenRouter, usar endpoint de títulos customizados
-      if (agentAiProvider === 'openai' || agentAiProvider === 'openrouter') {
-        endpoint = 'http://localhost:5000/api/automations/generate-titles-custom'
-        requestBody = {
-          titles: [selectedAgentTitle],
-          prompt: fullPrompt,
-          ai_provider: agentAiProvider,
-          openrouter_model: agentOpenRouterModel
-        }
+      // Usar endpoint específico para geração de roteiros com agente
+      const endpoint = 'http://localhost:5000/api/premise/generate-agent-script'
+      const requestBody = {
+        title: selectedAgentTitle,
+        premise: selectedAgentPremise,
+        custom_prompt: fullPrompt,
+        ai_provider: agentAiProvider,
+        api_keys: apiKeys,
+        script_size: agentScriptSize,
+        num_chapters: agentNumberOfChapters,
+        use_parts_generation: usePartsGeneration,
+        openrouter_model: agentOpenRouterModel
       }
 
       const response = await fetch(endpoint, {
@@ -1294,10 +1312,8 @@ Para cada título, forneça:
       if (data.success) {
         let generatedContent = ''
 
-        if (data.premises && data.premises.length > 0) {
-          generatedContent = data.premises[0].premise
-        } else if (data.titles && data.titles.length > 0) {
-          generatedContent = data.titles[0]
+        if (data.script && data.script.content) {
+          generatedContent = data.script.content
         } else {
           throw new Error('Nenhum conteúdo gerado')
         }
@@ -1321,6 +1337,7 @@ Para cada título, forneça:
       alert('❌ Erro na geração: ' + error.message)
     } finally {
       setIsGeneratingAgentScript(false)
+      setAgentProgress({ current: 0, total: 0, stage: '' })
     }
   }
 
@@ -2764,6 +2781,176 @@ ${agentGeneratedScript.model !== 'auto' ? `Modelo: ${agentGeneratedScript.model}
             )}
           </div>
 
+          {/* Configuração de Tamanho do Roteiro */}
+          <div className="mb-6">
+            <label className="block text-sm font-medium text-gray-300 mb-2">
+              📏 Tamanho do Roteiro
+            </label>
+            <div className="grid grid-cols-3 gap-3">
+              <button
+                onClick={() => setAgentScriptSize('curto')}
+                className={`px-4 py-3 rounded-lg border transition-all text-sm font-medium ${
+                  agentScriptSize === 'curto'
+                    ? 'border-blue-400 bg-blue-900/30 text-blue-300'
+                    : 'border-gray-600 bg-gray-700 text-gray-300 hover:border-gray-500'
+                }`}
+              >
+                <div className="text-center">
+                  <div className="text-lg mb-1">📄</div>
+                  <div>Curto</div>
+                  <div className="text-xs text-gray-400 mt-1">1.5-2K palavras</div>
+                </div>
+              </button>
+              <button
+                onClick={() => setAgentScriptSize('medio')}
+                className={`px-4 py-3 rounded-lg border transition-all text-sm font-medium ${
+                  agentScriptSize === 'medio'
+                    ? 'border-green-400 bg-green-900/30 text-green-300'
+                    : 'border-gray-600 bg-gray-700 text-gray-300 hover:border-gray-500'
+                }`}
+              >
+                <div className="text-center">
+                  <div className="text-lg mb-1">📃</div>
+                  <div>Médio</div>
+                  <div className="text-xs text-gray-400 mt-1">3.5-5K palavras</div>
+                </div>
+              </button>
+              <button
+                onClick={() => setAgentScriptSize('longo')}
+                className={`px-4 py-3 rounded-lg border transition-all text-sm font-medium ${
+                  agentScriptSize === 'longo'
+                    ? 'border-purple-400 bg-purple-900/30 text-purple-300'
+                    : 'border-gray-600 bg-gray-700 text-gray-300 hover:border-gray-500'
+                }`}
+              >
+                <div className="text-center">
+                  <div className="text-lg mb-1">📋</div>
+                  <div>Longo</div>
+                  <div className="text-xs text-gray-400 mt-1">7-10K palavras</div>
+                </div>
+              </button>
+            </div>
+            <div className="mt-2 text-xs text-gray-400 text-center">
+              {agentScriptSize === 'curto' && 'Roteiro conciso e direto, ideal para conteúdo rápido'}
+              {agentScriptSize === 'medio' && 'Roteiro equilibrado com boa profundidade de conteúdo'}
+              {agentScriptSize === 'longo' && 'Roteiro detalhado e abrangente para conteúdo extenso'}
+            </div>
+          </div>
+
+          {/* Configuração de Geração em Partes */}
+          {agentScriptSize === 'longo' && (
+            <div className="mb-6">
+              <div className="flex items-center space-x-3 p-4 bg-purple-900/20 border border-purple-500/30 rounded-lg">
+                <input
+                  type="checkbox"
+                  id="usePartsGeneration"
+                  checked={usePartsGeneration}
+                  onChange={(e) => setUsePartsGeneration(e.target.checked)}
+                  className="w-4 h-4 text-purple-600 bg-gray-700 border-gray-600 rounded focus:ring-purple-500 focus:ring-2"
+                />
+                <label htmlFor="usePartsGeneration" className="flex-1">
+                  <div className="text-sm font-medium text-purple-300 mb-1">
+                    🔄 Geração em Partes
+                  </div>
+                  <div className="text-xs text-gray-400">
+                    Divide roteiros longos em 4 partes para contornar limites de tokens das IAs
+                  </div>
+                </label>
+              </div>
+              {usePartsGeneration && (
+                <div className="mt-3 p-3 bg-gray-800/50 rounded-lg">
+                  <div className="text-xs text-gray-400 mb-2">📋 Estrutura das Partes:</div>
+                  <div className="grid grid-cols-2 md:grid-cols-4 gap-2 text-xs">
+                    <div className="p-2 bg-blue-900/30 rounded text-blue-300">
+                      <div className="font-medium">1. Introdução</div>
+                      <div className="text-gray-400">25% (~2K tokens)</div>
+                    </div>
+                    <div className="p-2 bg-green-900/30 rounded text-green-300">
+                      <div className="font-medium">2. Desenvolvimento</div>
+                      <div className="text-gray-400">40% (~3K tokens)</div>
+                    </div>
+                    <div className="p-2 bg-orange-900/30 rounded text-orange-300">
+                      <div className="font-medium">3. Clímax</div>
+                      <div className="text-gray-400">25% (~2K tokens)</div>
+                    </div>
+                    <div className="p-2 bg-purple-900/30 rounded text-purple-300">
+                      <div className="font-medium">4. Conclusão</div>
+                      <div className="text-gray-400">10% (~1K tokens)</div>
+                    </div>
+                  </div>
+                </div>
+              )}
+            </div>
+          )}
+
+          {/* Controle de Número de Capítulos */}
+          <div className="mb-6">
+            <div className="p-4 bg-blue-900/20 border border-blue-500/30 rounded-lg">
+              <div className="flex items-center justify-between mb-3">
+                <div>
+                  <div className="text-sm font-medium text-blue-300 mb-1">
+                    📚 Número de Capítulos
+                  </div>
+                  <div className="text-xs text-gray-400">
+                    Controle a estrutura e duração do roteiro
+                  </div>
+                </div>
+                <div className="text-right">
+                  <div className="text-lg font-bold text-blue-300">{agentNumberOfChapters}</div>
+                  <div className="text-xs text-gray-400">
+                    {(agentNumberOfChapters * 4.5).toFixed(1)}-{(agentNumberOfChapters * 6).toFixed(1)} min
+                  </div>
+                </div>
+              </div>
+              
+              <div className="mb-4">
+                <input
+                  type="range"
+                  min="1"
+                  max="15"
+                  value={agentNumberOfChapters}
+                  onChange={(e) => setAgentNumberOfChapters(parseInt(e.target.value))}
+                  className="w-full h-2 bg-gray-700 rounded-lg appearance-none cursor-pointer slider"
+                  style={{
+                    background: `linear-gradient(to right, #3b82f6 0%, #3b82f6 ${((agentNumberOfChapters - 1) / 14) * 100}%, #374151 ${((agentNumberOfChapters - 1) / 14) * 100}%, #374151 100%)`
+                  }}
+                />
+                <div className="flex justify-between text-xs text-gray-500 mt-1">
+                  <span>1</span>
+                  <span>8</span>
+                  <span>15</span>
+                </div>
+              </div>
+              
+              <div className="text-xs text-gray-400">
+                {agentNumberOfChapters <= 3 && (
+                  <div className="flex items-center space-x-2 text-yellow-400">
+                    <span>⚠️</span>
+                    <span>Roteiro muito curto - Recomendado para conteúdo rápido</span>
+                  </div>
+                )}
+                {agentNumberOfChapters >= 4 && agentNumberOfChapters <= 8 && (
+                  <div className="flex items-center space-x-2 text-green-400">
+                    <span>✅</span>
+                    <span>Duração ideal para a maioria dos conteúdos</span>
+                  </div>
+                )}
+                {agentNumberOfChapters >= 9 && agentNumberOfChapters <= 12 && (
+                  <div className="flex items-center space-x-2 text-blue-400">
+                    <span>📚</span>
+                    <span>Roteiro extenso - Ideal para conteúdo educativo</span>
+                  </div>
+                )}
+                {agentNumberOfChapters >= 13 && (
+                  <div className="flex items-center space-x-2 text-purple-400">
+                    <span>🎬</span>
+                    <span>Roteiro muito longo - Para documentários ou análises profundas</span>
+                  </div>
+                )}
+              </div>
+            </div>
+          </div>
+
           {/* Botão de Geração */}
           <button
             onClick={handleGenerateAgentScript}
@@ -2777,12 +2964,25 @@ ${agentGeneratedScript.model !== 'auto' ? `Modelo: ${agentGeneratedScript.model}
             {isGeneratingAgentScript ? (
               <>
                 <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-white"></div>
-                <span>Gerando Roteiro...</span>
+                <div className="flex flex-col items-center">
+                  <span>Gerando Roteiro...</span>
+                  {agentProgress.stage && (
+                    <span className="text-sm text-gray-300 mt-1">{agentProgress.stage}</span>
+                  )}
+                  {agentProgress.total > 0 && (
+                    <div className="w-48 bg-gray-700 rounded-full h-2 mt-2">
+                      <div 
+                        className="bg-blue-400 h-2 rounded-full transition-all duration-500"
+                        style={{ width: `${(agentProgress.current / agentProgress.total) * 100}%` }}
+                      ></div>
+                    </div>
+                  )}
+                </div>
               </>
             ) : (
               <>
                 <span className="text-2xl">🎬</span>
-                <span>Gerar Roteiro com Agente IA</span>
+                <span>Gerar Roteiro com Agente IA ({agentNumberOfChapters} capítulos)</span>
               </>
             )}
           </button>
@@ -2986,19 +3186,70 @@ ${agentGeneratedScript.model !== 'auto' ? `Modelo: ${agentGeneratedScript.model}
 
           <div>
             <label className="block text-sm font-medium text-gray-300 mb-2">
-              Número de Capítulos
+              📊 Número de Capítulos
             </label>
-            <select
-              value={numberOfChapters}
-              onChange={(e) => setNumberOfChapters(parseInt(e.target.value))}
-              className="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent"
-            >
-              <option value={4}>4 Capítulos</option>
-              <option value={6}>6 Capítulos</option>
-              <option value={8}>8 Capítulos (Recomendado)</option>
-              <option value={10}>10 Capítulos</option>
-              <option value={12}>12 Capítulos</option>
-            </select>
+            <div className="bg-gray-700 border border-gray-600 rounded-lg p-4">
+              {/* Slider */}
+              <div className="mb-3">
+                <input
+                  type="range"
+                  min="1"
+                  max="15"
+                  value={numberOfChapters}
+                  onChange={(e) => setNumberOfChapters(parseInt(e.target.value))}
+                  className="w-full h-2 bg-gray-600 rounded-lg appearance-none cursor-pointer slider"
+                  style={{
+                    background: `linear-gradient(to right, #10b981 0%, #10b981 ${((numberOfChapters - 1) / 14) * 100}%, #4b5563 ${((numberOfChapters - 1) / 14) * 100}%, #4b5563 100%)`
+                  }}
+                />
+                <div className="flex justify-between text-xs text-gray-400 mt-1">
+                  <span>1</span>
+                  <span>5</span>
+                  <span>10</span>
+                  <span>15</span>
+                </div>
+              </div>
+              
+              {/* Valor atual e estimativa */}
+              <div className="flex items-center justify-between">
+                <div className="flex items-center space-x-2">
+                  <span className="text-white font-medium text-lg">{numberOfChapters}</span>
+                  <span className="text-gray-400 text-sm">capítulos</span>
+                </div>
+                <div className="text-right">
+                  <div className="text-green-400 font-medium text-sm">
+                    ⏱️ {Math.round(numberOfChapters * 4.5)} - {Math.round(numberOfChapters * 6)} min
+                  </div>
+                  <div className="text-gray-400 text-xs">
+                    Duração estimada
+                  </div>
+                </div>
+              </div>
+              
+              {/* Validação e recomendações */}
+              <div className="mt-3 p-2 rounded-lg text-xs">
+                {numberOfChapters <= 3 && (
+                  <div className="text-yellow-400 bg-yellow-900/20 p-2 rounded">
+                    ⚠️ Poucos capítulos podem resultar em conteúdo superficial
+                  </div>
+                )}
+                {numberOfChapters >= 4 && numberOfChapters <= 8 && (
+                  <div className="text-green-400 bg-green-900/20 p-2 rounded">
+                    ✅ Quantidade ideal para conteúdo equilibrado
+                  </div>
+                )}
+                {numberOfChapters >= 9 && numberOfChapters <= 12 && (
+                  <div className="text-blue-400 bg-blue-900/20 p-2 rounded">
+                    📚 Ótimo para conteúdo detalhado e abrangente
+                  </div>
+                )}
+                {numberOfChapters > 12 && (
+                  <div className="text-orange-400 bg-orange-900/20 p-2 rounded">
+                    🔥 Muitos capítulos podem tornar o conteúdo extenso demais
+                  </div>
+                )}
+              </div>
+            </div>
           </div>
         </div>
 

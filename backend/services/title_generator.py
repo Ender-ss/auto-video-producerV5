@@ -184,17 +184,58 @@ class TitleGenerator:
                               topic: str, 
                               count: int = 10,
                               style: str = "viral") -> List[str]:
-        """Gerar títulos usando Google Gemini"""
-        if not self.gemini_model:
-            raise Exception("Gemini não configurado")
-        
-        # Analisar padrões dos títulos de origem
-        patterns = self.analyze_viral_patterns(source_titles)
-        
-        # Criar prompt baseado nos padrões encontrados
-        prompt = self.create_gemini_prompt(source_titles, topic, patterns, style, count)
-        
+        """Gerar títulos usando Google Gemini com cache e fallback automático"""
         try:
+            from routes.automations import handle_gemini_429_error, check_gemini_availability, get_fallback_provider_info
+            import hashlib
+            import json
+            import os
+            from datetime import datetime, timedelta
+            
+            # Sistema de cache simples
+            cache_dir = "cache/gemini_titles"
+            os.makedirs(cache_dir, exist_ok=True)
+            
+            # Gerar hash do prompt para cache
+            cache_key = f"{str(source_titles)}_{topic}_{count}_{style}"
+            prompt_hash = hashlib.md5(cache_key.encode()).hexdigest()
+            cache_file = os.path.join(cache_dir, f"{prompt_hash}.json")
+            
+            # Verificar cache (válido por 4 horas para títulos)
+            if os.path.exists(cache_file):
+                try:
+                    with open(cache_file, 'r', encoding='utf-8') as f:
+                        cache_data = json.load(f)
+                    cache_time = datetime.fromisoformat(cache_data['timestamp'])
+                    if datetime.now() - cache_time < timedelta(hours=4):
+                        print(f"📦 [CACHE] Usando títulos em cache para Gemini ({len(cache_data['titles'])} títulos)")
+                        return cache_data['titles']
+                except Exception as e:
+                    print(f"⚠️ [CACHE] Erro ao ler cache de títulos: {e}")
+            
+            # Verificar disponibilidade do Gemini
+            if not check_gemini_availability():
+                print("⚠️ [GEMINI] Todas as chaves Gemini esgotadas, usando fallback para títulos")
+                fallback_info = get_fallback_provider_info()
+                if fallback_info:
+                    if fallback_info['provider'] == 'openai':
+                        return self.generate_titles_openai(source_titles, topic, count, style)
+                    elif fallback_info['provider'] == 'openrouter':
+                        # Implementar fallback para OpenRouter se necessário
+                        print("⚠️ [FALLBACK] OpenRouter não implementado para títulos, retornando lista vazia")
+                        return []
+                print("⚠️ [FALLBACK] Nenhum fallback disponível para títulos")
+                return []
+            
+            if not self.gemini_model:
+                raise Exception("Gemini não configurado")
+            
+            # Analisar padrões dos títulos de origem
+            patterns = self.analyze_viral_patterns(source_titles)
+            
+            # Criar prompt baseado nos padrões encontrados
+            prompt = self.create_gemini_prompt(source_titles, topic, patterns, style, count)
+            
             print(f"🔍 DEBUG: Enviando prompt para Gemini...")
             print(f"🔍 DEBUG: Títulos de origem: {source_titles}")
             print(f"🔍 DEBUG: Quantidade solicitada: {count}")
@@ -206,20 +247,58 @@ class TitleGenerator:
             except:
                 pass  # Se não conseguir importar, continua
 
-            response = self.gemini_model.generate_content(prompt)
-            print(f"🔍 DEBUG: Resposta bruta do Gemini: {response.text[:200]}...")
+            # Usar função centralizada de retry
+            from routes.automations import generate_content_with_gemini_retry
+            response_text = generate_content_with_gemini_retry(self, prompt)
+            print(f"🔍 DEBUG: Resposta bruta do Gemini: {response_text[:200]}...")
 
-            titles = self.parse_generated_titles(response.text)
+            titles = self.parse_generated_titles(response_text)
             print(f"🔍 DEBUG: Títulos parseados ({len(titles)}): {titles}")
             print(f"🔍 DEBUG: Limitando para {count} títulos")
 
             limited_titles = titles[:count]
             print(f"🔍 DEBUG: Títulos finais ({len(limited_titles)}): {limited_titles}")
+            
+            # Salvar no cache
+            try:
+                cache_data = {
+                    'titles': limited_titles,
+                    'timestamp': datetime.now().isoformat(),
+                    'prompt_hash': prompt_hash,
+                    'count': count,
+                    'style': style
+                }
+                with open(cache_file, 'w', encoding='utf-8') as f:
+                    json.dump(cache_data, f, ensure_ascii=False, indent=2)
+                print(f"📦 [CACHE] Títulos salvos no cache")
+            except Exception as e:
+                print(f"⚠️ [CACHE] Erro ao salvar cache de títulos: {e}")
 
             return limited_titles
 
         except Exception as e:
-            print(f"❌ Erro na geração Gemini: {e}")
+            error_str = str(e)
+            
+            # Tratar erro 429 especificamente
+            if '429' in error_str or 'quota' in error_str.lower() or 'exceeded' in error_str.lower():
+                print(f"🚫 [GEMINI] Erro 429 detectado nos títulos: {error_str}")
+                handle_gemini_429_error(error_str)
+                
+                # Tentar fallback automático
+                try:
+                    from routes.automations import get_fallback_provider_info
+                    fallback_info = get_fallback_provider_info()
+                    if fallback_info:
+                        print(f"🔄 [FALLBACK] Usando {fallback_info['provider']} como fallback para títulos")
+                        if fallback_info['provider'] == 'openai':
+                            return self.generate_titles_openai(source_titles, topic, count, style)
+                        elif fallback_info['provider'] == 'openrouter':
+                            print("⚠️ [FALLBACK] OpenRouter não implementado para títulos, retornando lista vazia")
+                            return []
+                except Exception as fallback_error:
+                    print(f"❌ [FALLBACK] Erro no fallback dos títulos: {fallback_error}")
+            
+            print(f"❌ Erro na geração Gemini: {error_str}")
             return []
     
     def create_openai_prompt(self, source_titles: List[str], topic: str, patterns: Dict, style: str, count: int = 10) -> str:
@@ -423,7 +502,8 @@ Gere os {count} títulos agora:
                                          source_titles: List[str],
                                          custom_prompt: str,
                                          count: int = 10,
-                                         ai_provider: str = "auto") -> Dict:
+                                         ai_provider: str = "auto",
+                                         script_size: str = "medio") -> Dict:
         """Gerar títulos usando prompt personalizado"""
         results = {
             'generated_titles': [],
@@ -439,7 +519,7 @@ Gere os {count} títulos agora:
             results['patterns_analysis'] = self.analyze_viral_patterns(source_titles)
 
             # Criar prompt final combinando o personalizado com os títulos
-            final_prompt = self.create_custom_prompt(source_titles, custom_prompt, count)
+            final_prompt = self.create_custom_prompt(source_titles, custom_prompt, count, script_size)
 
             # Tentar gerar com a IA escolhida
             if ai_provider == "openai" and self.openai_client:
@@ -495,8 +575,18 @@ Gere os {count} títulos agora:
             results['error'] = str(e)
             return results
 
-    def create_custom_prompt(self, source_titles: List[str], custom_prompt: str, count: int) -> str:
+    def create_custom_prompt(self, source_titles: List[str], custom_prompt: str, count: int, script_size: str = "medio") -> str:
         """Criar prompt final combinando títulos originais com prompt personalizado"""
+        
+        # Definir instruções específicas de tamanho
+        size_instructions = {
+            'curto': "Crie títulos para roteiros CURTOS (1.500-2.000 palavras). Foque em temas diretos, tutoriais rápidos, dicas práticas e conteúdo conciso.",
+            'medio': "Crie títulos para roteiros MÉDIOS (3.500-5.000 palavras). Equilibre profundidade e acessibilidade, permitindo desenvolvimento moderado dos temas.",
+            'longo': "Crie títulos para roteiros LONGOS (7.000-10.000 palavras). Foque em análises profundas, estudos de caso detalhados, tutoriais completos e conteúdo abrangente."
+        }
+        
+        size_instruction = size_instructions.get(script_size, size_instructions['medio'])
+        
         prompt = f"""
 TÍTULOS ORIGINAIS EXTRAÍDOS DO YOUTUBE:
 {chr(10).join([f"• {title}" for title in source_titles])}
@@ -504,15 +594,19 @@ TÍTULOS ORIGINAIS EXTRAÍDOS DO YOUTUBE:
 INSTRUÇÃO PERSONALIZADA:
 {custom_prompt}
 
+INSTRUÇÃO DE TAMANHO:
+{size_instruction}
+
 TAREFA:
 Com base nos títulos originais acima e seguindo a instrução personalizada, crie {count} novos títulos únicos e otimizados.
 
 DIRETRIZES:
 1. Use os títulos originais como inspiração e referência
 2. Siga exatamente a instrução personalizada fornecida
-3. Mantenha a essência viral dos títulos originais
-4. Crie títulos únicos e atraentes
-5. Foque em gerar curiosidade e engajamento
+3. Considere o tamanho do roteiro especificado na criação dos títulos
+4. Mantenha a essência viral dos títulos originais
+5. Crie títulos únicos e atraentes
+6. Foque em gerar curiosidade e engajamento
 
 FORMATO DE RESPOSTA:
 Liste apenas os títulos numerados, um por linha:
@@ -551,19 +645,53 @@ Gere os {count} títulos agora:
             raise e
 
     def generate_with_gemini_custom(self, prompt: str) -> List[str]:
-        """Gerar títulos com Gemini usando prompt personalizado"""
+        """Gerar títulos com Gemini usando prompt personalizado com sistema de retry automático"""
         if not self.gemini_model:
             raise Exception("Gemini não configurado")
 
         try:
-            print(f"🔍 DEBUG: Enviando prompt personalizado para Gemini...")
-            response = self.gemini_model.generate_content(prompt)
-            print(f"🔍 DEBUG: Resposta bruta do Gemini: {response.text[:300]}...")
+            from routes.automations import get_next_gemini_key, handle_gemini_429_error
+            
+            max_retries = 3
+            
+            for attempt in range(max_retries):
+                try:
+                    print(f"🔍 DEBUG: Tentativa {attempt + 1}/{max_retries} - Enviando prompt personalizado para Gemini...")
+                    response = self.gemini_model.generate_content(prompt)
+                    print(f"🔍 DEBUG: Resposta bruta do Gemini: {response.text[:300]}...")
 
-            titles = self.parse_generated_titles(response.text)
-            print(f"🔍 DEBUG: Títulos parseados do Gemini: {titles}")
+                    titles = self.parse_generated_titles(response.text)
+                    print(f"🔍 DEBUG: Títulos parseados do Gemini: {titles}")
+                    print(f"✅ Sucesso na geração de títulos com Gemini na tentativa {attempt + 1}")
 
-            return titles
+                    return titles
+
+                except Exception as e:
+                    error_str = str(e)
+                    print(f"❌ Erro na tentativa {attempt + 1}: {error_str}")
+                    
+                    # Check if it's a quota error (429)
+                    if "429" in error_str or "quota" in error_str.lower() or "rate limit" in error_str.lower():
+                        if attempt < max_retries - 1:  # Not the last attempt
+                            print(f"🔄 Erro de quota detectado, tentando próxima chave Gemini...")
+                            handle_gemini_429_error(error_str)
+                            new_api_key = get_next_gemini_key()
+                            if new_api_key:
+                                print(f"🔑 Nova chave Gemini obtida, reconfigurando...")
+                                self.configure_gemini(new_api_key)
+                                continue
+                            else:
+                                print("❌ Nenhuma chave Gemini disponível")
+                                break
+                        else:
+                            print("❌ Todas as tentativas de retry falharam")
+                            handle_gemini_429_error(error_str)
+                    else:
+                        # For non-quota errors, don't retry
+                        print(f"❌ Erro não relacionado à quota, parando tentativas: {error_str}")
+                        raise e
+            
+            raise Exception("Falha na geração de títulos com Gemini após todas as tentativas")
 
         except Exception as e:
             print(f"❌ Erro na geração Gemini: {e}")

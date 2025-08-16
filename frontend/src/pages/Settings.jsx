@@ -57,6 +57,10 @@ const Settings = () => {
   // Estado para monitoramento da rotação RapidAPI
   const [rapidApiStatus, setRapidApiStatus] = useState(null)
   const [isLoadingRapidApiStatus, setIsLoadingRapidApiStatus] = useState(false)
+  
+  // Estado para monitoramento de quotas Gemini
+  const [geminiQuotaStatus, setGeminiQuotaStatus] = useState(null)
+  const [isLoadingGeminiStatus, setIsLoadingGeminiStatus] = useState(false)
   const [apiStatus, setApiStatus] = useState({
     openai: 'unknown',
     gemini_1: 'unknown',
@@ -103,12 +107,16 @@ const Settings = () => {
     }
   }, [])
 
-  // Carregar status RapidAPI quando a aba APIs for aberta
+  // Carregar status RapidAPI e Gemini quando a aba APIs for aberta
   useEffect(() => {
     if (activeTab === 'apis') {
       fetchRapidApiStatus()
+      fetchGeminiQuotaStatus()
       // Atualizar status a cada 30 segundos
-      const interval = setInterval(fetchRapidApiStatus, 30000)
+      const interval = setInterval(() => {
+        fetchRapidApiStatus()
+        fetchGeminiQuotaStatus()
+      }, 30000)
       return () => clearInterval(interval)
     }
   }, [activeTab])
@@ -164,6 +172,22 @@ const Settings = () => {
       setRapidApiStatus(null)
     } finally {
       setIsLoadingRapidApiStatus(false)
+    }
+  }
+
+  // Função para buscar status das quotas Gemini
+  const fetchGeminiQuotaStatus = async () => {
+    setIsLoadingGeminiStatus(true)
+    try {
+      const response = await fetch('http://localhost:5000/api/settings/gemini-quota-status')
+      const data = await response.json()
+      console.log('🔍 Gemini Quota Status Response:', data)
+      setGeminiQuotaStatus(data)
+    } catch (error) {
+      console.error('Erro ao buscar status das quotas Gemini:', error)
+      setGeminiQuotaStatus(null)
+    } finally {
+      setIsLoadingGeminiStatus(false)
     }
   }
 
@@ -471,50 +495,149 @@ const Settings = () => {
                 </div>
               ))}
 
-              {/* Status da Rotação de Chaves Gemini */}
+              {/* Monitoramento de Quotas Gemini */}
               <div className="mt-8 bg-gray-700 rounded-lg p-4 border border-gray-600">
-                <div className="flex items-center space-x-2 mb-4">
-                  <RefreshCw size={20} className="text-cyan-400" />
-                  <h3 className="text-lg font-semibold text-white">Status da Rotação Gemini</h3>
+                <div className="flex items-center justify-between mb-4">
+                  <div className="flex items-center space-x-2">
+                    <RefreshCw size={20} className="text-cyan-400" />
+                    <h3 className="text-lg font-semibold text-white">Monitoramento de Quotas Gemini</h3>
+                  </div>
+                  <div className="flex space-x-2">
+                    <button
+                      onClick={fetchGeminiQuotaStatus}
+                      disabled={isLoadingGeminiStatus}
+                      className="px-3 py-1 bg-blue-600 text-white rounded text-sm hover:bg-blue-700 disabled:opacity-50 flex items-center space-x-1"
+                    >
+                      <RefreshCw size={14} className={isLoadingGeminiStatus ? 'animate-spin' : ''} />
+                      <span>Atualizar</span>
+                    </button>
+                  </div>
                 </div>
 
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <div className="bg-gray-800 rounded p-3">
-                    <h4 className="text-sm font-medium text-gray-300 mb-2">Chaves Configuradas</h4>
-                    <div className="space-y-1">
-                      {[1,2,3,4,5,6,7,8,9,10].map(num => {
-                        const key = `gemini_${num}`
-                        const hasKey = apiKeys[key] && apiKeys[key].length > 10
-                        return (
-                          <div key={key} className="flex items-center space-x-2 text-xs">
-                            {hasKey ? (
-                              <CheckCircle size={12} className="text-green-400" />
-                            ) : (
-                              <XCircle size={12} className="text-gray-500" />
-                            )}
-                            <span className={hasKey ? 'text-green-300' : 'text-gray-500'}>
-                              Chave {num}: {hasKey ? 'Configurada' : 'Não configurada'}
-                            </span>
+                {isLoadingGeminiStatus ? (
+                  <div className="text-center py-4">
+                    <RefreshCw size={24} className="text-blue-400 animate-spin mx-auto mb-2" />
+                    <p className="text-gray-400">Carregando status das quotas...</p>
+                  </div>
+                ) : (
+                  <div>
+                    {geminiQuotaStatus ? (
+                      <div>
+                        {/* Resumo Geral */}
+                        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
+                          <div className="bg-gray-800 rounded p-3">
+                            <h4 className="text-sm font-medium text-gray-300 mb-2">Uso Total</h4>
+                            <div className="text-2xl font-bold text-white">
+                              {geminiQuotaStatus.data?.summary?.total_requests_today || 0}/{geminiQuotaStatus.data?.summary?.max_requests_per_day || 0}
+                            </div>
+                            <div className="text-xs text-gray-400">
+                              {geminiQuotaStatus.data?.summary?.percentage_used || 0}% usado
+                            </div>
                           </div>
-                        )
-                      })}
-                    </div>
-                  </div>
+                          
+                          <div className="bg-gray-800 rounded p-3">
+                            <h4 className="text-sm font-medium text-gray-300 mb-2">Reset em</h4>
+                            <div className="text-lg font-bold text-cyan-400">
+                              {geminiQuotaStatus.data?.reset_info?.seconds_to_reset ? 
+                                `${Math.floor(geminiQuotaStatus.data.reset_info.seconds_to_reset / 3600)}h ${Math.floor((geminiQuotaStatus.data.reset_info.seconds_to_reset % 3600) / 60)}m` : 
+                                'N/A'
+                              }
+                            </div>
+                            <div className="text-xs text-gray-400">
+                              Reset diário às 00:00 UTC
+                            </div>
+                          </div>
+                          
+                          <div className="bg-gray-800 rounded p-3">
+                            <h4 className="text-sm font-medium text-gray-300 mb-2">Fallbacks</h4>
+                            <div className="space-y-1">
+                              <div className="flex items-center space-x-2">
+                                {geminiQuotaStatus.data?.fallback_status?.openai_available ? (
+                                  <CheckCircle size={12} className="text-green-400" />
+                                ) : (
+                                  <XCircle size={12} className="text-red-400" />
+                                )}
+                                <span className="text-xs text-gray-300">OpenAI</span>
+                              </div>
+                              <div className="flex items-center space-x-2">
+                                {geminiQuotaStatus.data?.fallback_status?.openrouter_available ? (
+                                  <CheckCircle size={12} className="text-green-400" />
+                                ) : (
+                                  <XCircle size={12} className="text-red-400" />
+                                )}
+                                <span className="text-xs text-gray-300">OpenRouter</span>
+                              </div>
+                            </div>
+                          </div>
+                        </div>
 
-                  <div className="bg-gray-800 rounded p-3">
-                    <h4 className="text-sm font-medium text-gray-300 mb-2">Informações</h4>
-                    <div className="space-y-1 text-xs text-gray-400">
-                      <div>• Limite por chave: 15 requisições/dia</div>
-                      <div>• Rotação automática por uso</div>
-                      <div>• Reset diário às 00:00</div>
-                      <div>• Usado para TTS Gemini</div>
-                    </div>
+                        {/* Cards das Chaves */}
+                        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3">
+                          {geminiQuotaStatus.data?.keys?.map((keyData, index) => {
+                            const usagePercentage = keyData.percentage_used || 0
+                            let statusColor = 'text-green-400'
+                            let bgColor = 'bg-green-900/20'
+                            
+                            if (keyData.status === 'exhausted') {
+                              statusColor = 'text-red-400'
+                              bgColor = 'bg-red-900/20'
+                            } else if (usagePercentage >= 75) {
+                              statusColor = 'text-yellow-400'
+                              bgColor = 'bg-yellow-900/20'
+                            }
+                            
+                            return (
+                              <div key={keyData.key_id} className={`${bgColor} rounded p-3 border border-gray-600`}>
+                                <div className="flex items-center justify-between mb-2">
+                                  <h5 className="text-sm font-medium text-white">{keyData.key_id}</h5>
+                                  <div className={`w-2 h-2 rounded-full ${keyData.status === 'active' ? 'bg-green-400' : keyData.status === 'exhausted' ? 'bg-red-400' : 'bg-yellow-400'}`}></div>
+                                </div>
+                                
+                                <div className="space-y-2">
+                                  <div className="flex justify-between items-center">
+                                    <span className="text-xs text-gray-400">Uso:</span>
+                                    <span className={`text-sm font-bold ${statusColor}`}>
+                                      {keyData.usage_current}/{keyData.usage_limit}
+                                    </span>
+                                  </div>
+                                  
+                                  <div className="w-full bg-gray-700 rounded-full h-2">
+                                    <div 
+                                      className={`h-2 rounded-full transition-all duration-300 ${
+                                        keyData.status === 'exhausted' ? 'bg-red-400' : 
+                                        usagePercentage >= 75 ? 'bg-yellow-400' : 'bg-green-400'
+                                      }`}
+                                      style={{ width: `${Math.min(usagePercentage, 100)}%` }}
+                                    ></div>
+                                  </div>
+                                  
+                                  <div className="text-xs text-gray-400">
+                                    Status: <span className={statusColor}>{keyData.status === 'active' ? 'Ativa' : keyData.status === 'exhausted' ? 'Esgotada' : 'Inativa'}</span>
+                                  </div>
+                                </div>
+                              </div>
+                            )
+                          })}
+                        </div>
+                        
+                        <div className="mt-4 text-xs text-gray-400">
+                          💡 <strong>Dica:</strong> Configure pelo menos 3-5 chaves para evitar limites de cota durante uso intenso.
+                        </div>
+                      </div>
+                    ) : (
+                      <div className="text-center py-4">
+                        <AlertCircle size={24} className="text-yellow-400 mx-auto mb-2" />
+                        <p className="text-gray-400">Não foi possível carregar o status das quotas Gemini</p>
+                        <button
+                          onClick={fetchGeminiQuotaStatus}
+                          className="mt-2 px-3 py-1 bg-blue-600 text-white rounded text-sm hover:bg-blue-700"
+                        >
+                          Tentar novamente
+                        </button>
+                      </div>
+                    )}
                   </div>
-                </div>
-
-                <div className="mt-3 text-xs text-gray-400">
-                  💡 <strong>Dica:</strong> Configure pelo menos 3-5 chaves para evitar limites de cota durante uso intenso.
-                </div>
+                )}
               </div>
 
 
