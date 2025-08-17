@@ -32,6 +32,7 @@ import ImageGeneration from './pages/ImageGeneration';
 import ImageQueue from './pages/ImageQueue';
 import YouTubeExtractTest from './pages/YouTubeExtractTest';
 import YouTubeExtractComparison from './pages/YouTubeExtractComparison';
+import ScreenplayGeneratorTest from './pages/ScreenplayGeneratorTest';
 
 // Mock system status for demo
 const mockSystemStatus = {
@@ -376,6 +377,22 @@ function App() {
                       transition={{ duration: 0.3 }}
                     >
                       <YouTubeExtractComparison />
+                    </motion.div>
+                  }
+                />
+
+                {/* Screenplay Generator Test */}
+                <Route
+                  path="/screenplay-test"
+                  element={
+                    <motion.div
+                      key="screenplay-test"
+                      initial={{ opacity: 0, y: 20 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      exit={{ opacity: 0, y: -20 }}
+                      transition={{ duration: 0.3 }}
+                    >
+                      <ScreenplayGeneratorTest />
                     </motion.div>
                   }
                 />

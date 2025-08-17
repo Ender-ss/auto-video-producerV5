@@ -20,7 +20,8 @@ import {
   Users,
   TrendingUp,
   FileText,
-  TestTube
+  TestTube,
+  PenSquare
 } from 'lucide-react'
 
 const Sidebar = ({ onClose }) => {
@@ -104,6 +105,12 @@ const Sidebar = ({ onClose }) => {
       icon: Zap,
       label: '🤖 DEV: Agente Simples',
       description: 'Agente simplificado (desenvolvimento)'
+    },
+    {
+      path: '/screenplay-test',
+      icon: PenSquare,
+      label: '🧪 DEV: Roteiro Longo',
+      description: 'Gerador de roteiros longos (teste)'
     }
   ]
 
