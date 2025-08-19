@@ -24,6 +24,8 @@ const ImageGeneration = () => {
     const [currentBatch, setCurrentBatch] = useState(0);
     const [isGeneratingBatch, setIsGeneratingBatch] = useState(false);
     const [pollinationsModel, setPollinationsModel] = useState('flux'); // flux ou gpt
+    const [isCancelled, setIsCancelled] = useState(false);
+    const [abortController, setAbortController] = useState(null);
 
     useEffect(() => {
         const fetchApiKey = async () => {
@@ -95,20 +97,38 @@ const ImageGeneration = () => {
             return;
         }
 
+        // Resetar estado de cancelamento
+        setIsCancelled(false);
+        
+        // Criar novo AbortController
+        const controller = new AbortController();
+        setAbortController(controller);
+
         // Se usar agente IA, processar o conteúdo primeiro
         if (useAiAgent) {
             promptToUse = await processWithAiAgent(promptToUse);
-            if (!promptToUse) {
+            if (!promptToUse || isCancelled) {
                 setError('Falha ao processar conteúdo com o agente IA.');
                 return;
             }
         }
 
         if (batchCount > 1) {
-            await handleBatchGeneration(promptToUse);
+            await handleBatchGeneration(promptToUse, controller);
         } else {
-            await generateSingleImage(promptToUse);
+            await generateSingleImage(promptToUse, controller);
         }
+    };
+
+    const handleCancelGeneration = () => {
+        setIsCancelled(true);
+        if (abortController) {
+            abortController.abort();
+        }
+        setIsLoading(false);
+        setIsGeneratingBatch(false);
+        setCurrentBatch(0);
+        setError('Geração cancelada pelo usuário.');
     };
 
     const processWithAiAgent = async (content) => {
@@ -162,9 +182,10 @@ const ImageGeneration = () => {
         }
     };
 
-    const generateSingleImage = async (promptText) => {
+    const generateSingleImage = async (promptText, controller) => {
         setIsLoading(true);
         setError(null);
+        setImages([]);
         
         try {
             const response = await fetch('http://localhost:5000/api/images/generate', {
@@ -179,8 +200,10 @@ const ImageGeneration = () => {
                     provider: provider,
                     format: format,
                     quality: quality,
-                    pollinations_model: pollinationsModel
+                    pollinations_model: pollinationsModel,
+                    image_count: 1
                 }),
+                signal: controller.signal
             });
 
             const data = await response.json();
@@ -212,82 +235,81 @@ const ImageGeneration = () => {
                 setError(data.error);
             }
         } catch (err) {
-            setError('Falha ao conectar com o servidor. Verifique se o backend está rodando.');
+            if (err.name === 'AbortError') {
+                setError('Geração cancelada pelo usuário.');
+            } else {
+                setError('Falha ao conectar com o servidor. Verifique se o backend está rodando.');
+            }
         }
 
         setIsLoading(false);
     };
 
-    const handleBatchGeneration = async (promptText) => {
+    const handleBatchGeneration = async (promptText, controller) => {
         setIsGeneratingBatch(true);
+        setIsLoading(true);
         setError(null);
         setImages([]);
-        setCurrentBatch(0);
+        setCurrentBatch(1);
 
-        for (let i = 0; i < batchCount; i++) {
-            setCurrentBatch(i + 1);
-            
-            try {
-                setIsLoading(true);
-                const response = await fetch('http://localhost:5000/api/images/generate', {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                    },
-                    body: JSON.stringify({ 
-                        script: promptText,
-                        api_key: apiKey,
-                        style: style,
-                        provider: provider,
-                        format: format,
-                        quality: quality,
-                        pollinations_model: pollinationsModel
-                    }),
-                });
+        try {
+            setIsLoading(true);
+            const response = await fetch('http://localhost:5000/api/images/generate', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({ 
+                    script: promptText,
+                    api_key: apiKey,
+                    style: style,
+                    provider: provider,
+                    format: format,
+                    quality: quality,
+                    pollinations_model: pollinationsModel,
+                    image_count: batchCount
+                }),
+                signal: controller.signal
+            });
 
-                const data = await response.json();
+            const data = await response.json();
 
-                if (data.success) {
-                    const newImages = data.image_urls;
-                    setImages(prev => [...prev, ...newImages]);
-                    
-                    // Salvar imagens no localStorage para uso na criação de vídeos
-                    const existingImages = JSON.parse(localStorage.getItem('generated_images') || '[]');
-                    const imagesToSave = newImages.map((url, index) => ({
-                        id: Date.now() + index + (i * 1000), // Evitar IDs duplicados em lote
-                        url: url,
-                        filename: `imagem_lote_${Date.now()}_${i + 1}_${index + 1}.png`,
-                        prompt: promptText.substring(0, 100) + (promptText.length > 100 ? '...' : ''),
-                        style: style,
-                        provider: provider,
-                        format: format,
-                        quality: quality,
-                        timestamp: new Date().toISOString(),
-                        batch: i + 1,
-                        size: 'unknown'
-                    }));
-                    
-                    const updatedImages = [...existingImages, ...imagesToSave];
-                    localStorage.setItem('generated_images', JSON.stringify(updatedImages));
-                    
-                    console.log(`✅ Imagens do lote ${i + 1} salvas no localStorage:`, imagesToSave);
-                } else {
-                    setError(`Erro na imagem ${i + 1}: ${data.error}`);
-                    break;
-                }
-            } catch (err) {
-                setError(`Erro na imagem ${i + 1}: Falha ao conectar com o servidor.`);
-                break;
+            if (data.success) {
+                const newImages = data.image_urls;
+                setImages(prev => [...prev, ...newImages]);
+                
+                // Salvar imagens no localStorage para uso na criação de vídeos
+                const existingImages = JSON.parse(localStorage.getItem('generated_images') || '[]');
+                const imagesToSave = newImages.map((url, index) => ({
+                    id: Date.now() + index,
+                    url: url,
+                    filename: `imagem_lote_${Date.now()}_${index + 1}.png`,
+                    prompt: promptText.substring(0, 100) + (promptText.length > 100 ? '...' : ''),
+                    style: style,
+                    provider: provider,
+                    format: format,
+                    quality: quality,
+                    timestamp: new Date().toISOString(),
+                    batch: 1,
+                    size: 'unknown'
+                }));
+                
+                const updatedImages = [...existingImages, ...imagesToSave];
+                localStorage.setItem('generated_images', JSON.stringify(updatedImages));
+                
+                console.log(`✅ ${batchCount} imagens geradas e salvas no localStorage:`, imagesToSave);
+            } else {
+                setError(data.error);
             }
-
-            setIsLoading(false);
-
-            // Delay entre gerações (exceto na última)
-            if (i < batchCount - 1) {
-                await new Promise(resolve => setTimeout(resolve, delayBetweenImages * 1000));
+        } catch (err) {
+            if (err.name === 'AbortError') {
+                setError('Geração cancelada pelo usuário.');
+            } else {
+                setError('Falha ao conectar com o servidor. Verifique se o backend está rodando.');
             }
         }
 
+        setIsLoading(false);
         setIsGeneratingBatch(false);
         setCurrentBatch(0);
     };
@@ -634,17 +656,28 @@ const ImageGeneration = () => {
                     </div>
                 </div>
 
-                <button 
-                    onClick={handleGenerateImages}
-                    disabled={isLoading || isGeneratingBatch || (!script && !customPrompt && !pastedText && !selectedSavedScript) || (!apiKey && provider !== 'pollinations')}
-                    className="w-full py-3 px-4 bg-blue-600 hover:bg-blue-700 rounded-md text-lg font-semibold disabled:bg-gray-500 disabled:cursor-not-allowed transition-colors"
-                >
-                    {isGeneratingBatch ? 
-                        `Gerando ${currentBatch}/${batchCount} imagens...` : 
-                        isLoading ? 'Gerando Imagem...' : 
-                        `Gerar ${batchCount > 1 ? `${batchCount} Imagens` : 'Imagem'}`
-                    }
-                </button>
+                <div className="space-y-3">
+                    <button 
+                        onClick={handleGenerateImages}
+                        disabled={isLoading || isGeneratingBatch || (!script && !customPrompt && !pastedText && !selectedSavedScript) || (!apiKey && provider !== 'pollinations')}
+                        className="w-full py-3 px-4 bg-blue-600 hover:bg-blue-700 rounded-md text-lg font-semibold disabled:bg-gray-500 disabled:cursor-not-allowed transition-colors"
+                    >
+                        {isGeneratingBatch ? 
+                            `Gerando ${currentBatch}/${batchCount} imagens...` : 
+                            isLoading ? 'Gerando Imagem...' : 
+                            `Gerar ${batchCount > 1 ? `${batchCount} Imagens` : 'Imagem'}`
+                        }
+                    </button>
+                    
+                    {(isLoading || isGeneratingBatch) && (
+                        <button 
+                            onClick={handleCancelGeneration}
+                            className="w-full py-2 px-4 bg-red-600 hover:bg-red-700 rounded-md text-sm font-semibold transition-colors"
+                        >
+                            ❌ Cancelar Geração
+                        </button>
+                    )}
+                </div>
 
                 {/* Barra de progresso para geração em lote */}
                 {isGeneratingBatch && (

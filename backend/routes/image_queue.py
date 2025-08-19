@@ -189,12 +189,17 @@ def script_to_prompts():
         if not script:
             return jsonify({'success': False, 'error': 'Roteiro é obrigatório'}), 400
         
-        # Criar registro de processamento
+        # Criar registro de processamento de prompts (modelo atual)
         script_prompt = ScriptPrompt(
             title=title,
-            original_script=script,
+            script_content=script,
             generated_prompts=json.dumps([]),
-            ai_model_used=ai_model
+            total_prompts=0,
+            provider=provider,
+            model=model,
+            style=style,
+            format_size=format_size,
+            quality=quality
         )
         
         db.session.add(script_prompt)
@@ -239,19 +244,22 @@ def list_script_prompts():
         # Importar modelos dentro da função para evitar importação circular
         from database import db, ScriptPrompt
         
-        # Retornar dados estáticos temporariamente
         page = request.args.get('page', 1, type=int)
         per_page = request.args.get('per_page', 10, type=int)
+        
+        query = ScriptPrompt.query.order_by(ScriptPrompt.created_at.desc())
+        total = query.count()
+        items = query.paginate(page=page, per_page=per_page, error_out=False)
         
         return jsonify({
             'success': True,
             'data': {
-                'script_prompts': [],
+                'script_prompts': [sp.to_dict() for sp in items.items],
                 'pagination': {
                     'page': page,
                     'per_page': per_page,
-                    'total': 0,
-                    'pages': 0
+                    'total': total,
+                    'pages': items.pages
                 }
             }
         })
@@ -299,10 +307,8 @@ def process_image_queue(queue_id, app):
                     full_prompt = f"{prompt}, {queue.style}"
                     
                     if queue.provider == 'gemini':
-                        # Precisaria da API key - por enquanto usar pollinations
                         image_bytes = generate_image_pollinations(full_prompt, width, height, queue.quality, queue.model)
                     elif queue.provider == 'together':
-                        # Precisaria da API key - por enquanto usar pollinations
                         image_bytes = generate_image_pollinations(full_prompt, width, height, queue.quality, queue.model)
                     else:  # pollinations
                         image_bytes = generate_image_pollinations(full_prompt, width, height, queue.quality, queue.model)
@@ -337,7 +343,7 @@ def process_image_queue(queue_id, app):
     except Exception as e:
         # Marcar como erro
         with app.app_context():
-            from app import db, ImageQueue
+            from database import db, ImageQueue
             queue = ImageQueue.query.get(queue_id)
             if queue:
                 queue.status = 'failed'
@@ -361,12 +367,8 @@ def process_script_to_prompts(script_id, auto_queue=False, provider='pollination
             
             start_time = time.time()
             
-            # Atualizar status
-            script_prompt.status = 'processing'
-            db.session.commit()
-            
             # Dividir roteiro em cenas
-            script = script_prompt.original_script
+            script = script_prompt.script_content
             scenes = [scene.strip() for scene in script.split('\n\n') if scene.strip()]
             
             if not scenes:
@@ -376,7 +378,6 @@ def process_script_to_prompts(script_id, auto_queue=False, provider='pollination
             # Gerar prompts para cada cena
             generated_prompts = []
             for i, scene in enumerate(scenes):
-                # Simplificar e criar prompt visual
                 prompt = generate_visual_prompt_from_scene(scene)
                 generated_prompts.append({
                     'index': i + 1,
@@ -384,13 +385,9 @@ def process_script_to_prompts(script_id, auto_queue=False, provider='pollination
                     'prompt': prompt
                 })
             
-            processing_time = time.time() - start_time
-            
             # Atualizar registro
             script_prompt.generated_prompts = json.dumps(generated_prompts)
-            script_prompt.status = 'completed'
-            script_prompt.processing_time = processing_time
-            script_prompt.completed_at = datetime.utcnow()
+            script_prompt.total_prompts = len(generated_prompts)
             
             # Se auto_queue for True, criar fila automaticamente
             if auto_queue and generated_prompts:
@@ -411,29 +408,23 @@ def process_script_to_prompts(script_id, auto_queue=False, provider='pollination
                 db.session.add(queue)
                 db.session.commit()
                 
-                script_prompt.queue_id = queue.id
-                
                 # Iniciar processamento da fila
                 threading.Thread(target=process_image_queue, args=(queue.id, app), daemon=True).start()
             
             db.session.commit()
             
     except Exception as e:
-        # Marcar como erro
+        # Em caso de erro, apenas registrar a mensagem de erro padrão
         if app is None:
             from flask import current_app
             app = current_app._get_current_object()
         
         with app.app_context():
-            # Importar modelos e db dentro da função para evitar importação circular
             from database import db, ScriptPrompt
-            
-            script_prompt = ScriptPrompt.query.get(script_id)
-            if script_prompt:
-                script_prompt.status = 'failed'
-                script_prompt.error_message = str(e)
-                script_prompt.processing_time = time.time() - start_time if 'start_time' in locals() else None
-                db.session.commit()
+            sp = ScriptPrompt.query.get(script_id)
+            if sp:
+                # Não há campos de status/erro no modelo atual, então apenas manter os dados existentes
+                pass
 
 def generate_visual_prompt_from_scene(scene_text):
     """Gerar prompt visual a partir de uma cena de texto"""

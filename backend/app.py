@@ -337,22 +337,23 @@ def register_blueprints():
     except Exception as e:
         logger.error(f"❌ Erro ao registrar rotas: {e}")
 
+# Inicializar banco de dados e registrar blueprints sempre
+init_database()
+register_blueprints()
+
+# Adicionar logs iniciais ao sistema em tempo real
+try:
+    from routes.system import add_real_time_log
+    add_real_time_log("🎬 Auto Video Producer Backend iniciado!", "success", "system")
+    add_real_time_log("📡 API disponível em: http://localhost:5000", "info", "system")
+    add_real_time_log("🌐 Frontend disponível em: http://localhost:5173", "info", "system")
+    add_real_time_log("🔧 Sistema de logs em tempo real ativo", "info", "system")
+except ImportError:
+    pass
+
+logger.info("🎬 Auto Video Producer Backend iniciado!")
+logger.info("📡 API disponível em: http://localhost:5000")
+logger.info("🌐 Frontend disponível em: http://localhost:5173")
+
 if __name__ == '__main__':
-    init_database()
-    register_blueprints()
-
-    # Adicionar logs iniciais ao sistema em tempo real
-    try:
-        from routes.system import add_real_time_log
-        add_real_time_log("🎬 Auto Video Producer Backend iniciado!", "success", "system")
-        add_real_time_log("📡 API disponível em: http://localhost:5000", "info", "system")
-        add_real_time_log("🌐 Frontend disponível em: http://localhost:5173", "info", "system")
-        add_real_time_log("🔧 Sistema de logs em tempo real ativo", "info", "system")
-    except ImportError:
-        pass
-
-    logger.info("🎬 Auto Video Producer Backend iniciado!")
-    logger.info("📡 API disponível em: http://localhost:5000")
-    logger.info("🌐 Frontend disponível em: http://localhost:5173")
-
     app.run(debug=True, host='0.0.0.0', port=5000)

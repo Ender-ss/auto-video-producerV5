@@ -8,6 +8,7 @@ import React, { useState, useEffect } from 'react'
 import { motion } from 'framer-motion'
 import CustomPromptManager from '../components/CustomPromptManager'
 import SavedChannelsManager from '../components/SavedChannelsManager'
+import ScreenplayGeneratorTest from './ScreenplayGeneratorTest'
 import {
   Play,
   Pause,
@@ -129,6 +130,8 @@ const AutomationsDev = () => {
   const [aiAgentProvider, setAiAgentProvider] = useState('openai')
   const [imageQueue, setImageQueue] = useState([])
   const [queueStatus, setQueueStatus] = useState('idle') // idle, processing, completed, error
+  const [isCancelled, setIsCancelled] = useState(false)
+  const [abortController, setAbortController] = useState(null)
 
   // Estados para o Agente IA Personalizado
   const [agentPrompt, setAgentPrompt] = useState('')
@@ -194,6 +197,10 @@ const AutomationsDev = () => {
 
   // Estados para controle de pausa
   const [isPaused, setIsPaused] = useState(false)
+
+  // Estados para roteiros salvos no TTS
+  const [savedScreenplays, setSavedScreenplays] = useState([])
+  const [showSavedScreenplaySelector, setShowSavedScreenplaySelector] = useState(false)
 
   // Carregar chaves de API do backend
   useEffect(() => {
@@ -276,6 +283,14 @@ const AutomationsDev = () => {
         setGeneratedScripts(parsed)
       }
 
+      // 1.5. Tentar carregar dados vindos do Gerador de Roteiros Longos
+      const ttsScreenplayData = localStorage.getItem('ttsScreenplayData')
+      if (ttsScreenplayData && !generatedScripts) {
+        const parsed = JSON.parse(ttsScreenplayData)
+        console.log('📚 Dados do Gerador de Roteiros Longos carregados:', parsed)
+        setGeneratedScripts(parsed)
+      }
+
       // 2. Carregar títulos gerados se não existirem
       if (!generatedTitles) {
         const savedTitles = localStorage.getItem('generated_titles')
@@ -286,7 +301,17 @@ const AutomationsDev = () => {
         }
       }
 
-      // 3. Carregar premissas geradas se não existirem
+      // 3. Carregar roteiros salvos
+      const savedScreenplaysData = localStorage.getItem('saved_screenplays')
+      if (savedScreenplaysData) {
+        const screenplaysData = JSON.parse(savedScreenplaysData)
+        if (screenplaysData && screenplaysData.length > 0) {
+          setSavedScreenplays(screenplaysData)
+          console.log('📚 Roteiros salvos carregados para TTS:', screenplaysData.length)
+        }
+      }
+
+      // 4. Carregar premissas geradas se não existirem
       if (!generatedPremises) {
         const savedPremises = localStorage.getItem('generated_premises')
         if (savedPremises) {
@@ -4063,6 +4088,21 @@ ${agentGeneratedScript.model !== 'auto' ? `Modelo: ${agentGeneratedScript.model}
     return segments
   }
 
+  // Função para carregar roteiro salvo no TTS
+  const loadSavedScreenplayToTTS = (screenplay) => {
+    const ttsData = {
+      title: screenplay.title,
+      chapters: screenplay.chapters,
+      total_words: screenplay.totalWords,
+      timestamp: screenplay.createdAt,
+      source: 'saved_screenplay'
+    }
+    
+    setGeneratedScripts(ttsData)
+    setShowSavedScreenplaySelector(false)
+    console.log('📚 Roteiro salvo carregado no TTS:', screenplay.title)
+  }
+
   // Função para recarregar chaves de API (solução simplificada)
   const reloadApiKeys = async () => {
     try {
@@ -5119,7 +5159,17 @@ ${agentGeneratedScript.model !== 'auto' ? `Modelo: ${agentGeneratedScript.model}
 
               {/* Preview do Roteiro */}
               <div className="bg-gray-700 rounded-lg p-4">
-                <h4 className="font-medium text-white mb-3">📝 Preview do Roteiro</h4>
+                <div className="flex justify-between items-center mb-3">
+                  <h4 className="font-medium text-white">📝 Preview do Roteiro</h4>
+                  {savedScreenplays.length > 0 && (
+                    <button
+                      onClick={() => setShowSavedScreenplaySelector(true)}
+                      className="px-3 py-1 bg-blue-600 text-white text-sm rounded hover:bg-blue-700 transition-colors"
+                    >
+                      📚 Carregar Roteiro Salvo
+                    </button>
+                  )}
+                </div>
                 <div className="space-y-3 max-h-96 overflow-y-auto">
                   <div className="text-sm text-gray-300">
                     <strong>Título:</strong> {generatedScripts.title || 'Sem título'}
@@ -5326,8 +5376,56 @@ ${agentGeneratedScript.model !== 'auto' ? `Modelo: ${agentGeneratedScript.model}
               </button>
             </div>
           </div>
-        )}
-      </div>
+        )}      </div>
+      
+      {/* Modal de Seleção de Roteiros Salvos */}
+      {showSavedScreenplaySelector && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+          <div className="bg-gray-800 rounded-lg p-6 max-w-2xl w-full mx-4 max-h-[80vh] overflow-y-auto">
+            <div className="flex justify-between items-center mb-4">
+              <h3 className="text-lg font-medium text-white">📚 Roteiros Salvos</h3>
+              <button
+                onClick={() => setShowSavedScreenplaySelector(false)}
+                className="text-gray-400 hover:text-white"
+              >
+                ✕
+              </button>
+            </div>
+            
+            {savedScreenplays.length === 0 ? (
+              <div className="text-center py-8">
+                <p className="text-gray-400">Nenhum roteiro salvo encontrado.</p>
+                <p className="text-sm text-gray-500 mt-2">
+                  Vá para o Gerador de Roteiros Longos para salvar roteiros.
+                </p>
+              </div>
+            ) : (
+              <div className="space-y-3">
+                {savedScreenplays.map((screenplay) => (
+                  <div key={screenplay.id} className="bg-gray-700 rounded-lg p-4">
+                    <div className="flex justify-between items-start">
+                      <div className="flex-1">
+                        <h4 className="font-medium text-white mb-1">{screenplay.title}</h4>
+                        <div className="text-sm text-gray-300 space-y-1">
+                          <p>📖 {screenplay.chapters?.length || 0} capítulos</p>
+                          <p>📝 {screenplay.totalWords || 0} palavras</p>
+                          <p>📅 {new Date(screenplay.createdAt).toLocaleDateString('pt-BR')}</p>
+                        </div>
+                      </div>
+                      <button
+                        onClick={() => loadSavedScreenplayToTTS(screenplay)}
+                        className="px-3 py-2 bg-blue-600 text-white text-sm rounded hover:bg-blue-700 transition-colors"
+                      >
+                        Carregar
+                      </button>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+        </div>
+      )}
     </div>
   )
 
@@ -5364,6 +5462,11 @@ ${agentGeneratedScript.model !== 'auto' ? `Modelo: ${agentGeneratedScript.model}
       contentToProcess = scriptText
     }
 
+    // Criar AbortController para cancelamento
+    const controller = new AbortController()
+    setAbortController(controller)
+    setIsCancelled(false)
+    
     setIsGeneratingImages(true)
     setImageGenerationError('')
     setGeneratedImages([])
@@ -5443,13 +5546,9 @@ ${agentGeneratedScript.model !== 'auto' ? `Modelo: ${agentGeneratedScript.model}
       
       // Validação final: garantir que temos prompts suficientes
       if (prompts.length < imageCount) {
-        const genericPrompt = useAiAgent ? 
-          'Uma cena cinematográfica profissional com boa iluminação e composição visual interessante' :
-          'Imagem relacionada ao conteúdo do roteiro'
-        
-        while (prompts.length < imageCount) {
-          prompts.push(`${genericPrompt} ${prompts.length + 1}`)
-        }
+        // Usar prompts existentes como base ou o conteúdo original
+        const basePrompts = prompts.length > 0 ? prompts : [contentToProcess || 'Cena cinematográfica profissional']
+        prompts = generateVariedPrompts(basePrompts, imageCount, contentToProcess)
       }
       
       // Adicionar estilo aos prompts se especificado
@@ -5473,6 +5572,12 @@ ${agentGeneratedScript.model !== 'auto' ? `Modelo: ${agentGeneratedScript.model}
       const delay = imageProvider === 'pollinations' ? 5000 : 2000 // 5s para Pollinations, 2s para outros
       
       for (let i = 0; i < queue.length; i++) {
+        // Verificar se foi cancelado
+        if (controller.signal.aborted) {
+          console.log('Geração de imagens cancelada pelo usuário')
+          break
+        }
+        
         const item = queue[i]
         
         // Atualizar status para processando
@@ -5484,6 +5589,7 @@ ${agentGeneratedScript.model !== 'auto' ? `Modelo: ${agentGeneratedScript.model}
           const response = await fetch('/api/images/generate', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
+            signal: controller.signal,
             body: JSON.stringify({
               script: item.prompt,
               api_key: togetherApiKey,
@@ -5509,6 +5615,12 @@ ${agentGeneratedScript.model !== 'auto' ? `Modelo: ${agentGeneratedScript.model}
             throw new Error(data.error || 'Falha ao gerar imagem')
           }
         } catch (err) {
+          // Verificar se foi cancelado
+          if (err.name === 'AbortError') {
+            console.log('Requisição cancelada pelo usuário')
+            break
+          }
+          
           // Atualizar status para erro
           setImageQueue(prev => prev.map(q => 
             q.id === item.id ? { ...q, status: 'error', error: err.message } : q
@@ -5549,10 +5661,86 @@ ${agentGeneratedScript.model !== 'auto' ? `Modelo: ${agentGeneratedScript.model}
       setQueueStatus('completed')
       
     } catch (err) {
-      setImageGenerationError(err.message)
-      setQueueStatus('error')
+      // Verificar se foi cancelado
+      if (err.name === 'AbortError' || isCancelled) {
+        console.log('Geração de imagens cancelada')
+        setQueueStatus('idle')
+      } else {
+        setImageGenerationError(err.message)
+        setQueueStatus('error')
+      }
     } finally {
       setIsGeneratingImages(false)
+      setAbortController(null)
+    }
+  }
+
+  // Função para gerar prompts variados e únicos
+  const generateVariedPrompts = (basePrompts, targetCount, contentToProcess) => {
+    const variations = [
+      'Uma cena cinematográfica dramática com iluminação profissional',
+      'Um momento visual impactante com composição artística', 
+      'Uma perspectiva única e criativa da narrativa',
+      'Uma cena atmosférica com detalhes visuais ricos',
+      'Um enquadramento cinematográfico com profundidade',
+      'Uma composição visual elegante e expressiva',
+      'Uma cena com iluminação natural e ambiente autêntico',
+      'Um momento visual emotivo e envolvente',
+      'Uma perspectiva cinematográfica com elementos visuais marcantes',
+      'Uma cena com atmosfera única e personalidade visual',
+      'Um plano cinematográfico com foco narrativo',
+      'Uma composição visual dinâmica e envolvente',
+      'Uma cena com elementos visuais contrastantes',
+      'Um momento visual poético e expressivo',
+      'Uma perspectiva artística da história'
+    ]
+    
+    const contexts = [
+      'mostrando o desenvolvimento da narrativa',
+      'capturando a essência emocional',
+      'destacando elementos-chave da história',
+      'revelando aspectos importantes do enredo',
+      'expressando o tom e atmosfera',
+      'ilustrando momentos significativos',
+      'representando a progressão dramática',
+      'enfatizando detalhes narrativos importantes'
+    ]
+    
+    const result = [...basePrompts]
+    let variationIndex = 0
+    let contextIndex = 0
+    
+    while (result.length < targetCount) {
+      const basePrompt = basePrompts[result.length % basePrompts.length]
+      const variation = variations[variationIndex % variations.length]
+      const context = contexts[contextIndex % contexts.length]
+      
+      let uniquePrompt
+      if (basePrompt.length > 80) {
+        // Para prompts longos, usar variação + contexto + trecho
+        uniquePrompt = `${variation} ${context}, baseada em: ${basePrompt.substring(0, 120)}...`
+      } else {
+        // Para prompts curtos, combinar tudo
+        uniquePrompt = `${variation} ${context}: ${basePrompt}`
+      }
+      
+      result.push(uniquePrompt)
+      variationIndex++
+      contextIndex++
+    }
+    
+    return result
+  }
+
+  // Função para cancelar a geração de imagens
+  const handleCancelImageGeneration = () => {
+    if (abortController) {
+      abortController.abort()
+      setIsCancelled(true)
+      setIsGeneratingImages(false)
+      setQueueStatus('idle')
+      setImageGenerationError('Geração de imagens cancelada pelo usuário.')
+      setAbortController(null)
     }
   }
 
@@ -5841,6 +6029,17 @@ ${agentGeneratedScript.model !== 'auto' ? `Modelo: ${agentGeneratedScript.model}
               </>
             )}
           </button>
+
+          {/* Botão de Cancelar */}
+          {isGeneratingImages && (
+            <button
+              onClick={handleCancelImageGeneration}
+              className="px-6 py-3 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors flex items-center justify-center space-x-2"
+            >
+              <X className="w-5 h-5" />
+              <span>Cancelar</span>
+            </button>
+          )}
 
           <button
             onClick={async () => {
@@ -6540,7 +6739,9 @@ ${agentGeneratedScript.model !== 'auto' ? `Modelo: ${agentGeneratedScript.model}
           {activeTab === 'youtube' && renderYouTubeExtraction()}
           {activeTab === 'titles' && renderTitleGeneration()}
           {activeTab === 'premise' && renderPremiseGeneration()}
-          {activeTab === 'scripts' && renderScriptGeneration()}
+          {activeTab === 'scripts' && (
+            <ScreenplayGeneratorTest />
+          )}
           {activeTab === 'tts' && renderTTSGeneration()}
           {activeTab === 'images' && renderImageGeneration()}
           {activeTab === 'video-edit' && renderVideoEditor()}

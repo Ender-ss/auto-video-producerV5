@@ -85,8 +85,8 @@ def generate_images_route():
                 if not scenes:
                     return jsonify({'success': False, 'error': 'Não foi possível encontrar cenas no roteiro'}), 400
                 
-                # Limitar ao número de imagens solicitado
-                scenes_to_use = scenes[:image_count] if image_count <= len(scenes) else scenes
+                # Distribuir cenas uniformemente ao longo do roteiro completo
+                scenes_to_use = distribute_scenes_evenly(scenes, image_count)
                 
                 for scene_text in scenes_to_use:
                     final_prompt = f"{scene_text}, {style_prompt}"
@@ -144,6 +144,72 @@ def generate_images_route():
     except Exception as e:
         return jsonify({'success': False, 'error': f'Erro interno: {str(e)}'}), 500
 
+def distribute_scenes_evenly(scenes, image_count):
+    """
+    Distribui cenas uniformemente ao longo do roteiro completo.
+    Evita repetições desnecessárias e garante distribuição inteligente.
+    """
+    total_scenes = len(scenes)
+    
+    if image_count <= 0:
+        return []
+    
+    if image_count <= total_scenes:
+        # Se queremos menos ou igual imagens que cenas, selecionar uniformemente
+        selected_scenes = []
+        step = total_scenes / image_count
+        
+        for i in range(image_count):
+            scene_index = int(i * step)
+            # Garantir que não exceda o índice
+            scene_index = min(scene_index, total_scenes - 1)
+            selected_scenes.append(scenes[scene_index])
+        
+        return selected_scenes
+    else:
+        # Se queremos mais imagens que cenas, usar estratégia inteligente
+        selected_scenes = []
+        
+        # Primeiro, incluir todas as cenas originais
+        for scene in scenes:
+            selected_scenes.append(scene)
+        
+        # Calcular quantas imagens extras precisamos
+        remaining_images = image_count - total_scenes
+        
+        # Distribuir as imagens extras uniformemente entre as cenas
+        if remaining_images > 0:
+            # Lista de variações para tornar cada prompt único
+            variations = [
+                "different angle and perspective",
+                "close-up shot", 
+                "wide angle view",
+                "dramatic lighting",
+                "soft lighting",
+                "from above perspective",
+                "from below perspective",
+                "side view",
+                "detailed focus",
+                "atmospheric mood",
+                "golden hour lighting",
+                "blue hour ambiance",
+                "high contrast",
+                "soft focus background",
+                "dynamic composition"
+            ]
+            
+            for i in range(remaining_images):
+                scene_index = i % total_scenes
+                variation_index = i % len(variations)
+                
+                # Adicionar variação ao prompt para evitar imagens idênticas
+                original_scene = scenes[scene_index]
+                variation = variations[variation_index]
+                varied_scene = f"{original_scene}, {variation}"
+                selected_scenes.append(varied_scene)
+        
+        return selected_scenes
+
 def generate_scene_prompts_with_ai(script, ai_agent_prompt, api_key, provider, image_count):
     """
     Usa IA para gerar prompts específicos de imagem baseados no roteiro.
@@ -194,15 +260,21 @@ Retorne apenas os prompts, um por linha, sem numeração ou formatação extra.
                     prompts = [line.strip() for line in content.split('\n') if line.strip()]
                     return prompts[:image_count]  # Garantir que não exceda o número solicitado
         
-        # Fallback: dividir roteiro em partes
+        # Fallback: dividir roteiro em partes e distribuir uniformemente
         scenes = [scene.strip() for scene in script.split('\n\n') if scene.strip()]
-        return scenes[:image_count] if scenes else [script]
+        if scenes:
+            return distribute_scenes_evenly(scenes, image_count)
+        else:
+            return [script] * min(image_count, 1)
         
     except Exception as e:
         print(f"Erro ao gerar prompts com IA Agent: {str(e)}")
-        # Fallback: dividir roteiro em partes
+        # Fallback: dividir roteiro em partes e distribuir uniformemente
         scenes = [scene.strip() for scene in script.split('\n\n') if scene.strip()]
-        return scenes[:image_count] if scenes else [script]
+        if scenes:
+            return distribute_scenes_evenly(scenes, image_count)
+        else:
+            return [script] * min(image_count, 1)
 
 @images_bp.route('/view/<filename>')
 def serve_image(filename):
