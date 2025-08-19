@@ -764,6 +764,15 @@ def get_rapidapi_status():
             'ttl_video': RAPIDAPI_CACHE['video_ttl']
         }
         
+        # Adicionar informação sobre o método usado
+        result_data = {
+            'videos': filtered_videos,
+            'total_videos': len(filtered_videos),
+            'channel_details': channel_details.get('data', {}),
+            'extraction_method': 'RapidAPI',
+            'extraction_time': f'{extraction_time:.2f}s'
+        }
+        
         return jsonify({
             'success': True,
             'data': {
@@ -952,8 +961,9 @@ def extract_youtube_channel_content():
         url = data.get('url', '').strip()
         channel_id_input = data.get('channel_id', '').strip()
         config = data.get('config', {})
+        extraction_method = data.get('extraction_method', 'auto')  # auto, rapidapi, ytdlp
 
-        print(f"🔍 DEBUG: Recebida requisição - URL: {url}, Channel ID: {channel_id_input}, Config: {config}")
+        print(f"🔍 DEBUG: Recebida requisição - URL: {url}, Channel ID: {channel_id_input}, Config: {config}, Método: {extraction_method}")
         
         # Priorizar channel_id se fornecido, senão usar url
         input_value = channel_id_input if channel_id_input else url
@@ -968,18 +978,85 @@ def extract_youtube_channel_content():
                 'error': 'URL ou ID do canal é obrigatório'
             }), 400
 
-        # Obter chave RapidAPI usando sistema de rotação
+        print(f"🚀 DEBUG EXTRAÇÃO: Iniciando extração do YouTube às {time.strftime('%H:%M:%S')}")
+        print(f"📊 DEBUG EXTRAÇÃO: Input type: {input_type}, Input value: {input_value}")
+        print(f"⚙️ DEBUG EXTRAÇÃO: Configuração: {config}")
+        print(f"🔧 DEBUG EXTRAÇÃO: Método de extração: {extraction_method}")
+        
+        # Se método for apenas yt-dlp, usar diretamente
+        if extraction_method == 'ytdlp':
+            print(f"🛡️ Usando yt-dlp diretamente (método selecionado)")
+            try:
+                ytdlp_result = get_channel_videos_ytdlp(input_value, config.get('max_titles', 10))
+                if ytdlp_result.get('success'):
+                    # Aplicar filtros se especificados
+                    videos = ytdlp_result['data']['videos']
+                    if config:
+                        videos = filter_videos_by_config(videos, config)
+                    
+                    # Adicionar informação sobre o método usado
+                    result_data = ytdlp_result['data']
+                    result_data['extraction_method'] = 'yt-dlp'
+                    result_data['videos'] = videos
+                    result_data['total_videos'] = len(videos)
+                    result_data['extraction_time'] = time.time() - extraction_start_time
+                    
+                    return jsonify({
+                        'success': True,
+                        'data': result_data,
+                        'message': f'✅ Extração concluída via yt-dlp. {len(videos)} vídeos encontrados.'
+                    })
+                else:
+                    return jsonify({
+                        'success': False,
+                        'error': f'Erro no yt-dlp: {ytdlp_result.get("error", "Erro desconhecido")}'
+                    }), 400
+            except Exception as ytdlp_error:
+                return jsonify({
+                    'success': False,
+                    'error': f'Erro no yt-dlp: {str(ytdlp_error)}'
+                }), 400
+        
+        # Para métodos 'rapidapi' e 'auto', precisamos de chave RapidAPI
         api_key = get_next_rapidapi_key()
-        if not api_key:
+        if not api_key and extraction_method == 'rapidapi':
             return jsonify({
                 'success': False,
                 'error': 'Nenhuma chave RapidAPI disponível. Verifique as configurações.'
             }), 400
+        elif not api_key and extraction_method == 'auto':
+            # Se não há chave RapidAPI no modo auto, usar yt-dlp diretamente
+            print(f"⚠️ Nenhuma chave RapidAPI disponível, usando yt-dlp diretamente")
+            try:
+                ytdlp_result = get_channel_videos_ytdlp(input_value, config.get('max_titles', 10))
+                if ytdlp_result.get('success'):
+                    videos = ytdlp_result['data']['videos']
+                    if config:
+                        videos = filter_videos_by_config(videos, config)
+                    
+                    result_data = ytdlp_result['data']
+                    result_data['extraction_method'] = 'yt-dlp (sem chave RapidAPI)'
+                    result_data['videos'] = videos
+                    result_data['total_videos'] = len(videos)
+                    result_data['extraction_time'] = time.time() - extraction_start_time
+                    
+                    return jsonify({
+                        'success': True,
+                        'data': result_data,
+                        'message': f'✅ Extração concluída via yt-dlp (sem chave RapidAPI). {len(videos)} vídeos encontrados.'
+                    })
+                else:
+                    return jsonify({
+                        'success': False,
+                        'error': f'Erro no yt-dlp: {ytdlp_result.get("error", "Erro desconhecido")}'
+                    }), 400
+            except Exception as ytdlp_error:
+                return jsonify({
+                    'success': False,
+                    'error': f'Erro no yt-dlp: {str(ytdlp_error)}'
+                }), 400
         
         print(f"🔑 DEBUG: Usando chave RapidAPI: {api_key[:10]}...")
-        print(f"🚀 DEBUG EXTRAÇÃO: Iniciando extração do YouTube às {time.strftime('%H:%M:%S')}")
-        print(f"📊 DEBUG EXTRAÇÃO: Input type: {input_type}, Input value: {input_value}")
-        print(f"⚙️ DEBUG EXTRAÇÃO: Configuração: {config}")
         
         # Definir número máximo de tentativas com chaves diferentes
         max_key_attempts = 3
@@ -1052,17 +1129,46 @@ def extract_youtube_channel_content():
                     else:
                         # Erro não relacionado à quota ou chave inválida, parar tentativas
                         break
-                
-                print(f"🔍 DEBUG: Resultado da busca do ID: {channel_id_result}")
-                
-                if not channel_id_result['success']:
-                    return jsonify(channel_id_result), 400
-
-                channel_id = channel_id_result['data']['channel_id']
-                print(f"🔍 DEBUG: ID do canal obtido: {channel_id}")
-                
-                # Delay removido para acelerar extração
-                print(f"⚡ Delay sequencial removido após get_channel_id_rapidapi")
+        
+        print(f"🔍 DEBUG: Resultado da busca do ID: {channel_id_result}")
+        
+        if not channel_id_result['success']:
+            # Se RapidAPI falhou e estamos no modo auto, tentar yt-dlp como fallback
+            if extraction_method == 'auto':
+                print(f"⚠️ RapidAPI falhou para busca de ID, tentando yt-dlp como fallback...")
+                try:
+                    ytdlp_result = get_channel_videos_ytdlp(input_value, config.get('max_titles', 10))
+                    if ytdlp_result.get('success'):
+                        print(f"✅ yt-dlp funcionou como fallback!")
+                        # Aplicar filtros se especificados
+                        videos = ytdlp_result['data']['videos']
+                        if config:
+                            videos = filter_videos_by_config(videos, config)
+                        
+                        # Adicionar informação sobre o método usado
+                        result_data = ytdlp_result['data']
+                        result_data['extraction_method'] = 'yt-dlp (fallback)'
+                        result_data['videos'] = videos
+                        result_data['total_videos'] = len(videos)
+                        result_data['extraction_time'] = time.time() - extraction_start_time
+                        
+                        return jsonify({
+                            'success': True,
+                            'data': result_data,
+                            'message': f'✅ Extração concluída via yt-dlp (fallback). {len(videos)} vídeos encontrados.'
+                        })
+                    else:
+                        print(f"❌ yt-dlp também falhou: {ytdlp_result.get('error', 'Erro desconhecido')}")
+                except Exception as ytdlp_error:
+                    print(f"❌ Erro no fallback yt-dlp: {str(ytdlp_error)}")
+            
+            return jsonify(channel_id_result), 400
+        
+        channel_id = channel_id_result['data']['channel_id']
+        print(f"🔍 DEBUG: ID do canal obtido: {channel_id}")
+        
+        # Delay removido para acelerar extração
+        print(f"⚡ Delay sequencial removido após get_channel_id_rapidapi")
 
         # Verificar timeout antes de buscar vídeos
         if timeout_occurred.is_set():
@@ -1108,6 +1214,35 @@ def extract_youtube_channel_content():
         print(f"⏱️ DEBUG EXTRAÇÃO: Tempo decorrido após busca de vídeos: {time.time() - extraction_start_time:.2f}s")
         print(f"🔍 DEBUG EXTRAÇÃO: Continuando para próxima etapa...")
         if not videos_result['success']:
+            # Se RapidAPI falhou e estamos no modo auto, tentar yt-dlp como fallback
+            if extraction_method == 'auto':
+                print(f"⚠️ RapidAPI falhou para busca de vídeos, tentando yt-dlp como fallback...")
+                try:
+                    ytdlp_result = get_channel_videos_ytdlp(input_value, config.get('max_titles', 10))
+                    if ytdlp_result.get('success'):
+                        print(f"✅ yt-dlp funcionou como fallback!")
+                        # Aplicar filtros se especificados
+                        videos = ytdlp_result['data']['videos']
+                        if config:
+                            videos = filter_videos_by_config(videos, config)
+                        
+                        # Adicionar informação sobre o método usado
+                        result_data = ytdlp_result['data']
+                        result_data['extraction_method'] = 'yt-dlp (fallback)'
+                        result_data['videos'] = videos
+                        result_data['total_videos'] = len(videos)
+                        result_data['extraction_time'] = time.time() - extraction_start_time
+                        
+                        return jsonify({
+                            'success': True,
+                            'data': result_data,
+                            'message': f'✅ Extração concluída via yt-dlp (fallback). {len(videos)} vídeos encontrados.'
+                        })
+                    else:
+                        print(f"❌ yt-dlp também falhou: {ytdlp_result.get('error', 'Erro desconhecido')}")
+                except Exception as ytdlp_error:
+                    print(f"❌ Erro no fallback yt-dlp: {str(ytdlp_error)}")
+            
             return jsonify(videos_result), 400
         
         # Delay removido para acelerar extração
@@ -1192,18 +1327,19 @@ def extract_youtube_channel_content():
         extraction_time = time.time() - extraction_start_time
         print(f"✅ Extração concluída em {extraction_time:.2f}s às {time.strftime('%H:%M:%S')}")
         
+        # Adicionar dados adicionais ao result_data
+        result_data.update({
+            'channel_id': channel_id,
+            'channel_name': channel_details['data']['title'] if channel_details['success'] else (channel_name or channel_id),
+            'channel_description': channel_details['data']['description'] if channel_details['success'] else '',
+            'total_views': sum(int(video.get('views', 0)) for video in filtered_videos),
+            'total_likes': sum(int(video.get('like_count', 0)) for video in filtered_videos)
+        })
+        
         return jsonify({
             'success': True,
-            'data': {
-                'channel_id': channel_id,
-                'channel_name': channel_details['data']['title'] if channel_details['success'] else (channel_name or channel_id),
-                'channel_description': channel_details['data']['description'] if channel_details['success'] else '',
-                'videos': filtered_videos,
-                'total_videos': len(filtered_videos),
-                'total_views': sum(int(video.get('views', 0)) for video in filtered_videos),
-                'total_likes': sum(int(video.get('like_count', 0)) for video in filtered_videos),
-                'extraction_time': f"{extraction_time:.2f}s"
-            }
+            'data': result_data,
+            'message': f'✅ Extração concluída via RapidAPI. {len(filtered_videos)} vídeos encontrados.'
         })
     
     except Exception as e:
@@ -4249,6 +4385,74 @@ def test_youtube_api_extraction():
             'success': False,
             'method': 'YouTube API Official',
             'error': str(e)
+        }), 500
+
+@automations_bp.route('/extract-youtube-ytdlp', methods=['POST'])
+def extract_youtube_ytdlp_endpoint():
+    """Endpoint dedicado para extração via yt-dlp"""
+    try:
+        print("🛡️ DEBUG: Iniciando endpoint /extract-youtube-ytdlp")
+        data = request.get_json()
+        print(f"🛡️ DEBUG: Dados recebidos: {data}")
+        
+        url = data.get('url', '').strip()
+        config = data.get('config', {})
+        
+        print(f"🛡️ DEBUG: URL: {url}, Config: {config}")
+        
+        if not url:
+            print("❌ DEBUG: URL não fornecida")
+            return jsonify({
+                'success': False,
+                'error': 'URL ou ID do canal é obrigatório'
+            }), 400
+        
+        print(f"🛡️ EXTRAÇÃO yt-dlp: Iniciando extração para {url}")
+        
+        # Chamar função yt-dlp
+        extraction_start_time = time.time()
+        result = get_channel_videos_ytdlp(url, config.get('max_titles', 10))
+        
+        print(f"🛡️ DEBUG: Resultado da função yt-dlp: {result.get('success', False)}")
+        
+        if result.get('success'):
+            # Aplicar filtros se especificados
+            videos = result['data']['videos']
+            if config:
+                videos = filter_videos_by_config(videos, config)
+            
+            # Preparar dados de resposta
+            result_data = result['data']
+            result_data['extraction_method'] = 'yt-dlp'
+            result_data['videos'] = videos
+            result_data['total_videos'] = len(videos)
+            result_data['extraction_time'] = time.time() - extraction_start_time
+            
+            # Calcular totais
+            total_views = sum(video.get('views', 0) for video in videos)
+            total_likes = sum(video.get('likes', 0) for video in videos)
+            result_data['total_views'] = total_views
+            result_data['total_likes'] = total_likes
+            
+            print(f"✅ yt-dlp: {len(videos)} vídeos extraídos com sucesso!")
+            
+            return jsonify({
+                'success': True,
+                'data': result_data,
+                'message': f'✅ Extração concluída via yt-dlp. {len(videos)} vídeos encontrados.'
+            })
+        else:
+            print(f"❌ yt-dlp falhou: {result.get('error', 'Erro desconhecido')}")
+            return jsonify({
+                'success': False,
+                'error': result.get('error', 'Erro na extração via yt-dlp')
+            }), 500
+            
+    except Exception as e:
+        print(f"❌ Erro no endpoint yt-dlp: {e}")
+        return jsonify({
+            'success': False,
+            'error': f'Erro interno: {str(e)}'
         }), 500
 
 @automations_bp.route('/test-ytdlp', methods=['POST'])

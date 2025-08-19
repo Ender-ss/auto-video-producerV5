@@ -111,6 +111,12 @@ const Sidebar = ({ onClose }) => {
       icon: PenSquare,
       label: '🧪 DEV: Roteiro Longo',
       description: 'Gerador de roteiros longos (teste)'
+    },
+    {
+      path: '/youtube-comparison',
+      icon: TestTube,
+      label: '🧪 DEV: YouTube Comparação',
+      description: 'Comparar métodos de extração YouTube'
     }
   ]
 

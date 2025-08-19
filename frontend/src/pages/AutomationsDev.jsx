@@ -78,6 +78,9 @@ const AutomationsDev = () => {
     max_views: '',
     days: 30
   })
+  
+  // Estado para método de extração do YouTube
+  const [extractionMethod, setExtractionMethod] = useState('auto') // auto, rapidapi, ytdlp
 
   const [apiKeys, setApiKeys] = useState({})
   const [apiStatus, setApiStatus] = useState({
@@ -641,7 +644,8 @@ Você é um roteirista profissional especializado em criar roteiros envolventes 
           min_views: parseInt(formData.min_views),
           max_views: formData.max_views ? parseInt(formData.max_views) : 0,
           days: parseInt(formData.days)
-        }
+        },
+        extraction_method: extractionMethod // auto, rapidapi, ytdlp
       }
 
       // Adicionar URL ou channel_id baseado no tipo
@@ -1805,6 +1809,26 @@ ${agentGeneratedScript.model !== 'auto' ? `Modelo: ${agentGeneratedScript.model}
             
             <div>
               <label className="block text-sm font-medium text-gray-300 mb-2">
+                Método de Extração
+              </label>
+              <select
+                value={extractionMethod}
+                onChange={(e) => setExtractionMethod(e.target.value)}
+                className="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-red-500 focus:border-transparent mb-4"
+              >
+                <option value="auto">🔄 Automático (RapidAPI → yt-dlp)</option>
+                <option value="rapidapi">⚡ RapidAPI (Rápido)</option>
+                <option value="ytdlp">🛡️ yt-dlp (Estável)</option>
+              </select>
+              <div className="text-xs text-gray-400 mb-4">
+                {extractionMethod === 'auto' && '• Tenta RapidAPI primeiro, usa yt-dlp como fallback'}
+                {extractionMethod === 'rapidapi' && '• Usa apenas RapidAPI (mais rápido, pode falhar)'}
+                {extractionMethod === 'ytdlp' && '• Usa apenas yt-dlp (mais lento, mais estável)'}
+              </div>
+            </div>
+            
+            <div>
+              <label className="block text-sm font-medium text-gray-300 mb-2">
                 Status da API RapidAPI
               </label>
               <div className="flex items-center justify-between bg-gray-700 border border-gray-600 rounded-lg p-3">
@@ -1957,6 +1981,29 @@ ${agentGeneratedScript.model !== 'auto' ? `Modelo: ${agentGeneratedScript.model}
                     <span className="text-gray-400">Total de likes:</span>
                     <span className="text-white">{formatNumber(results.total_likes)}</span>
                   </div>
+                  {results.extraction_method && (
+                    <div className="flex justify-between">
+                      <span className="text-gray-400">Método usado:</span>
+                      <span className={`font-medium ${
+                        results.extraction_method.includes('fallback') 
+                          ? 'text-yellow-400' 
+                          : results.extraction_method.includes('yt-dlp') 
+                            ? 'text-purple-400'
+                            : 'text-blue-400'
+                      }`}>
+                        {results.extraction_method === 'RapidAPI' && '🚀 RapidAPI'}
+                        {results.extraction_method === 'yt-dlp' && '🛡️ yt-dlp'}
+                        {results.extraction_method === 'yt-dlp (fallback)' && '⚡ yt-dlp (fallback)'}
+                        {!['RapidAPI', 'yt-dlp', 'yt-dlp (fallback)'].includes(results.extraction_method) && results.extraction_method}
+                      </span>
+                    </div>
+                  )}
+                  {results.extraction_time && (
+                    <div className="flex justify-between">
+                      <span className="text-gray-400">Tempo de extração:</span>
+                      <span className="text-white">{results.extraction_time.toFixed(2)}s</span>
+                    </div>
+                  )}
                 </div>
                 
                 {results.videos && results.videos.length > 0 && (

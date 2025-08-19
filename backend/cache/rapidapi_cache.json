@@ -1,366 +1,266 @@
 {
   "data": {
-    "9bfaf17d2aa6e6c520e6358df8824984": {
+    "b45126cff0ba941c58568fa2657b9e9e": {
+      "success": true,
+      "data": {
+        "videos": [
+          {
+            "video_id": "EfdQ-mI0gvU",
+            "title": "How to Use Google VEO 3 for FREE | NEW SITE!",
+            "description": "RECURRING MICRO BUSINESS: http://diogohenrique.com/mnr\n\nSHOP CASH PRO: https://diogohenrique.com/go/shop-cash-pro\n\nMy Instagram: http://instagram.com/eusouodh\n\nChannel Group: https://linktr.ee/euso...",
+            "thumbnail": "",
+            "duration": "732.0s",
+            "views": 5124,
+            "likes": 0,
+            "published_at": "",
+            "url": "https://www.youtube.com/watch?v=EfdQ-mI0gvU"
+          },
+          {
+            "video_id": "pbSWZ62uggU",
+            "title": "I Just Copied A 2M Channel For 30 Days And This Was The Result!",
+            "description": "RECURRING MICRO BUSINESS: http://diogohenrique.com/mnr\n\nSHOP CASH PRO: https://diogohenrique.com/go/shop-cash-pro\n\nMy Instagram: http://instagram.com/eusouodh\n\nChannel Group: https://linktr.ee/euso...",
+            "thumbnail": "",
+            "duration": "1521.0s",
+            "views": 2679,
+            "likes": 0,
+            "published_at": "",
+            "url": "https://www.youtube.com/watch?v=pbSWZ62uggU"
+          },
+          {
+            "video_id": "E_NtZh4g8XQ",
+            "title": "CURSO COMPLETO: 1 POST POR DIA = VIDA TRANSFORMADA. VOCÊ NÃO VAI ACREDITAR NO RESULTADO!",
+            "description": "MICRO NEGÓCIO RECORRENTE: http://diogohenrique.com/mnr\n\nSHOP CASH PRO: https://diogohenrique.com/go/shop-cash-pro\n\nMeu instagram: http://instagram.com/eusouodh\n\n1 POST POR DIA - PROMPT\nhttps://doc...",
+            "thumbnail": "",
+            "duration": "6257.0s",
+            "views": 2714,
+            "likes": 0,
+            "published_at": "",
+            "url": "https://www.youtube.com/watch?v=E_NtZh4g8XQ"
+          }
+        ],
+        "total_videos": 3,
+        "total_count": 3,
+        "message": "✅ 3 títulos extraídos com sucesso via yt-dlp!"
+      }
+    },
+    "a371e5c2b373dffcf67a1da0056f943c": {
+      "success": true,
+      "data": {
+        "videos": [
+          {
+            "video_id": "TDv56whosPQ",
+            "title": "Survive 100 Days In Prison, Win $500,000",
+            "description": "I did not expect them to do that lol\nGet your hands on the new MrBeast Lab Hybrids here:\nhttps://www.moosetoys.com/brands/mr-beast-lab\n\n\nNew Merch - https://mrbeast.store\n\nCheck out Viewstats!...",
+            "thumbnail": "",
+            "duration": "2376.0s",
+            "views": 61077622,
+            "likes": 0,
+            "published_at": "",
+            "url": "https://www.youtube.com/watch?v=TDv56whosPQ"
+          },
+          {
+            "video_id": "Z4hVGCWH1Kc",
+            "title": "2,000,000 People Get Clean Water For The First Time!",
+            "description": "$1 will provide 1 person with clean water for a year\nThanks to Shopify for supporting our mission to raise $40,000,000 for clean water for 2,000,000 people. Go to https://teamwater.org to donate...",
+            "thumbnail": "",
+            "duration": "620.0s",
+            "views": 57357700,
+            "likes": 0,
+            "published_at": "",
+            "url": "https://www.youtube.com/watch?v=Z4hVGCWH1Kc"
+          },
+          {
+            "video_id": "pzBi1nwDn8U",
+            "title": "Survive 100 Days Trapped In A Private Jet, Keep It",
+            "description": "Spending that much time in a jet is crazy\n10 people will win $10,000 thanks to DoorDash. Enter promo code JET on any grocery, convenience or retail to get $10 off your order AND to enter for...",
+            "thumbnail": "",
+            "duration": "1983.0s",
+            "views": 125803996,
+            "likes": 0,
+            "published_at": "",
+            "url": "https://www.youtube.com/watch?v=pzBi1nwDn8U"
+          },
+          {
+            "video_id": "FWAdfuPpLOc",
+            "title": "World's Fastest Car Vs Cheetah!",
+            "description": "I still can't believe we got all these animals for this\n\nCheck out the latest Lenovo Legion Pro 7i with Intel® Core™ Ultra 9 Processor: https://www.lenovo.com/legion?cid=ww:display:334qnx...",
+            "thumbnail": "",
+            "duration": "1237.0s",
+            "views": 146205140,
+            "likes": 0,
+            "published_at": "",
+            "url": "https://www.youtube.com/watch?v=FWAdfuPpLOc"
+          },
+          {
+            "video_id": "pe_ejTiIcSs",
+            "title": "Lose 100 LBs, Win $250,000!",
+            "description": "Go start the business you’ve been dreaming of and visit https://www.Shopify.com/MrBeast to start your trial now.\n\n**In Loving Memory of Coach Tyler Wall**\n\nIt is with profound sadness that...",
+            "thumbnail": "",
+            "duration": "2210.0s",
+            "views": 186184682,
+            "likes": 0,
+            "published_at": "",
+            "url": "https://www.youtube.com/watch?v=pe_ejTiIcSs"
+          }
+        ],
+        "total_videos": 5,
+        "total_count": 5,
+        "message": "✅ 5 títulos extraídos com sucesso via yt-dlp!",
+        "extraction_method": "yt-dlp",
+        "extraction_time": 1.1681416034698486
+      }
+    },
+    "2f6994800124fa2dcdab48af1b1e1e1e": {
+      "success": true,
+      "data": {
+        "videos": [
+          {
+            "video_id": "TDv56whosPQ",
+            "title": "Survive 100 Days In Prison, Win $500,000",
+            "description": "I did not expect them to do that lol\nGet your hands on the new MrBeast Lab Hybrids here:\nhttps://www.moosetoys.com/brands/mr-beast-lab\n\n\nNew Merch - https://mrbeast.store\n\nCheck out Viewstats!...",
+            "thumbnail": "",
+            "duration": "2376.0s",
+            "views": 61077622,
+            "likes": 0,
+            "published_at": "",
+            "url": "https://www.youtube.com/watch?v=TDv56whosPQ"
+          },
+          {
+            "video_id": "Z4hVGCWH1Kc",
+            "title": "2,000,000 People Get Clean Water For The First Time!",
+            "description": "$1 will provide 1 person with clean water for a year\nThanks to Shopify for supporting our mission to raise $40,000,000 for clean water for 2,000,000 people. Go to https://teamwater.org to donate...",
+            "thumbnail": "",
+            "duration": "620.0s",
+            "views": 57357700,
+            "likes": 0,
+            "published_at": "",
+            "url": "https://www.youtube.com/watch?v=Z4hVGCWH1Kc"
+          },
+          {
+            "video_id": "pzBi1nwDn8U",
+            "title": "Survive 100 Days Trapped In A Private Jet, Keep It",
+            "description": "Spending that much time in a jet is crazy\n10 people will win $10,000 thanks to DoorDash. Enter promo code JET on any grocery, convenience or retail to get $10 off your order AND to enter for...",
+            "thumbnail": "",
+            "duration": "1983.0s",
+            "views": 125803996,
+            "likes": 0,
+            "published_at": "",
+            "url": "https://www.youtube.com/watch?v=pzBi1nwDn8U"
+          },
+          {
+            "video_id": "FWAdfuPpLOc",
+            "title": "World's Fastest Car Vs Cheetah!",
+            "description": "I still can't believe we got all these animals for this\n\nCheck out the latest Lenovo Legion Pro 7i with Intel® Core™ Ultra 9 Processor: https://www.lenovo.com/legion?cid=ww:display:334qnx...",
+            "thumbnail": "",
+            "duration": "1237.0s",
+            "views": 146205140,
+            "likes": 0,
+            "published_at": "",
+            "url": "https://www.youtube.com/watch?v=FWAdfuPpLOc"
+          },
+          {
+            "video_id": "pe_ejTiIcSs",
+            "title": "Lose 100 LBs, Win $250,000!",
+            "description": "Go start the business you’ve been dreaming of and visit https://www.Shopify.com/MrBeast to start your trial now.\n\n**In Loving Memory of Coach Tyler Wall**\n\nIt is with profound sadness that...",
+            "thumbnail": "",
+            "duration": "2210.0s",
+            "views": 186184682,
+            "likes": 0,
+            "published_at": "",
+            "url": "https://www.youtube.com/watch?v=pe_ejTiIcSs"
+          },
+          {
+            "video_id": "hTSaweR8qMI",
+            "title": "$1 vs $500,000 Date",
+            "description": "Experiencing all of this was incredible\nBuy Feastables! It tastes amazing and it's ethically sourced 👉 https://fstbls.com/5mj6dv\n\nNew Merch - https://mrbeast.store\n\nCheck out Viewstats!...",
+            "thumbnail": "",
+            "duration": "1042.0s",
+            "views": 125096282,
+            "likes": 0,
+            "published_at": "",
+            "url": "https://www.youtube.com/watch?v=hTSaweR8qMI"
+          },
+          {
+            "video_id": "DZIASl9q90s",
+            "title": "Beat Neymar, Win $500,000",
+            "description": "The amount of skill in this video is insane\nIf you wanna score tons of Magenta Status perks and benefits like Aaron Judge and MrBeast, just for being a T-Mobile member, check out https://T-Mobile.c...",
+            "thumbnail": "",
+            "duration": "1673.0s",
+            "views": 151698663,
+            "likes": 0,
+            "published_at": "",
+            "url": "https://www.youtube.com/watch?v=DZIASl9q90s"
+          },
+          {
+            "video_id": "-4GmbBoYQjE",
+            "title": "I Survived 100 Hours In An Ancient Temple",
+            "description": "I can’t believe I got to do this\nHUGE thanks to @jacklinks for making this happen, without them we can’t give away this money. Visit the link to buy Jack Link’s DUOS now: https://bit.ly/4ipfW...",
+            "thumbnail": "",
+            "duration": "946.0s",
+            "views": 109339712,
+            "likes": 0,
+            "published_at": "",
+            "url": "https://www.youtube.com/watch?v=-4GmbBoYQjE"
+          },
+          {
+            "video_id": "uyiG6uw-6pA",
+            "title": "Would You Risk Drowning for $500,000?",
+            "description": "These were crazy dangerous so everything was performed under professional supervision\nJack Link’s Jerky can fuel anything. Scan the code or visit the link to buy Jack Link’s DUOS now: https://b...",
+            "thumbnail": "",
+            "duration": "1546.0s",
+            "views": 174956386,
+            "likes": 0,
+            "published_at": "",
+            "url": "https://www.youtube.com/watch?v=uyiG6uw-6pA"
+          },
+          {
+            "video_id": "figrl0aOULs",
+            "title": "Click This Video To Feed 1 Person",
+            "description": "Buying 1 Hoodie = 100 Meals for people in need! Go get it now: https://www.doordash.com/p/dashmart-near-me\n\nThank you https://youtube.com/@DoorDash for teaming up to fight food insecurity....",
+            "thumbnail": "",
+            "duration": "629.0s",
+            "views": 70850148,
+            "likes": 0,
+            "published_at": "",
+            "url": "https://www.youtube.com/watch?v=figrl0aOULs"
+          }
+        ],
+        "total_videos": 10,
+        "total_count": 10,
+        "message": "✅ 10 títulos extraídos com sucesso via yt-dlp!",
+        "extraction_method": "yt-dlp",
+        "extraction_time": 0.7603442668914795,
+        "total_views": 1208570331,
+        "total_likes": 0
+      }
+    },
+    "9bc70d2ab88189052025105c0712e392": {
       "success": true,
       "data": {
         "videos": [
           {
             "video_id": "dSGvesGrEtM",
             "title": "EMPREGADA GRÁVIDA DESMAIA NA MANSÃO DO MILIONÁRIO E O QUE ESCONDIA NO VENTRE SURPREENDE A TODOS!",
-            "description": null,
+            "description": "EMPREGADA GRÁVIDA DESMAIA NA MANSÃO DO MILIONÁRIO E O QUE ESCONDIA NO VENTRE SURPREENDE A TODOS!\n\n#historias #historiasreais #histórias #históriasemocionantes #historiasinspiradoras #história...",
             "thumbnail": "",
-            "duration": "2:04:40",
-            "views": 189,
+            "duration": "7480.0s",
+            "views": 1298,
             "likes": 0,
-            "published_at": "31 minutes ago",
-            "url": "https://youtube.com/watch?v=dSGvesGrEtM"
-          },
-          {
-            "video_id": "GSLCE9f4CKg",
-            "title": "\"SUA FILHA PODERIA ANDAR, MAS SUA NOIVA NÃO DEIXA!\"… DESABAFOU O MENINO POBRE AO MILIONÁRIO",
-            "description": null,
-            "thumbnail": "",
-            "duration": "2:04:08",
-            "views": 21322,
-            "likes": 0,
-            "published_at": "1 day ago",
-            "url": "https://youtube.com/watch?v=GSLCE9f4CKg"
-          },
-          {
-            "video_id": "D3wVC2ekfaM",
-            "title": "MENINO POBRE IMPLORA AO MILIONÁRIO POR LEITE PARA O IRMÃO... E A REAÇÃO DELE TRANSFORMA TUDO",
-            "description": null,
-            "thumbnail": "",
-            "duration": "2:13:40",
-            "views": 3280,
-            "likes": 0,
-            "published_at": "2 days ago",
-            "url": "https://youtube.com/watch?v=D3wVC2ekfaM"
-          },
-          {
-            "video_id": "7WjJ-Sd0HSk",
-            "title": "MILLIONÁRIO VÊ SEU FILHO AJUDANDO A COZINHEIRA A PREPARAR A COMIDA E PRESENCIA ALGO INESPERADO!",
-            "description": null,
-            "thumbnail": "",
-            "duration": "2:18:44",
-            "views": 3744,
-            "likes": 0,
-            "published_at": "3 days ago",
-            "url": "https://youtube.com/watch?v=7WjJ-Sd0HSk"
-          },
-          {
-            "video_id": "exfN4z55B-I",
-            "title": "\"PAI, AQUELES DOIS MENINOS DORMINDO NO LIXO SÃO PARECIDOS COMIGO\", DISSE O GAROTO AO MILIONÁRIO!",
-            "description": null,
-            "thumbnail": "",
-            "duration": "2:01:07",
-            "views": 148566,
-            "likes": 0,
-            "published_at": "4 days ago",
-            "url": "https://youtube.com/watch?v=exfN4z55B-I"
-          },
-          {
-            "video_id": "u8XYfdgQAcE",
-            "title": "MILIONÁRIO COMPRA TODA MERCADORIA DE UMA CRIANÇA VENDENDO DOCES NA RUA E FAZ UM PEDIDO INESPERADO",
-            "description": null,
-            "thumbnail": "",
-            "duration": "2:18:55",
-            "views": 3347,
-            "likes": 0,
-            "published_at": "5 days ago",
-            "url": "https://youtube.com/watch?v=u8XYfdgQAcE"
-          },
-          {
-            "video_id": "1zGtqccmwmg",
-            "title": "MILIONÁRIO, EM SEUS ÚLTIMOS DIAS, ADOTA DOIS GÊMEOS MENDIGOS… SEM IMAGINAR O IMPACTO EM SUA VIDA",
-            "description": null,
-            "thumbnail": "",
-            "duration": "2:07:17",
-            "views": 6701,
-            "likes": 0,
-            "published_at": "6 days ago",
-            "url": "https://youtube.com/watch?v=1zGtqccmwmg"
-          },
-          {
-            "video_id": "jg59niLu7sM",
-            "title": "\"ELA É IGUAL A SUA FILHA PERDIDA\", DISSE A NOIVA DO MILIONÁRIO AO VER A GAROTA DESABRIGADA…",
-            "description": null,
-            "thumbnail": "",
-            "duration": "2:20:35",
-            "views": 11402,
-            "likes": 0,
-            "published_at": "7 days ago",
-            "url": "https://youtube.com/watch?v=jg59niLu7sM"
-          },
-          {
-            "video_id": "DsoYXKFJIFU",
-            "title": "MILIONÁRIO OUVE MENINO POBRE TOCANDO SAXOFONE PARA SALVAR A MÃE… E TOMA UMA AÇÃO QUE CHOCA A TODOS!",
-            "description": null,
-            "thumbnail": "",
-            "duration": "2:18:45",
-            "views": 9990,
-            "likes": 0,
-            "published_at": "8 days ago",
-            "url": "https://youtube.com/watch?v=DsoYXKFJIFU"
-          },
-          {
-            "video_id": "0MM6NeraMFo",
-            "title": "MILIONÁRIO DISSE À FILHA PARA ESCOLHER UMA NOVA MÃE ENTRE AS RICAS — MAS ELA ESCOLHEU A JARDINEIRA!",
-            "description": null,
-            "thumbnail": "",
-            "duration": "2:07:53",
-            "views": 22876,
-            "likes": 0,
-            "published_at": "9 days ago",
-            "url": "https://youtube.com/watch?v=0MM6NeraMFo"
-          },
-          {
-            "video_id": "8lCPtFHpMR0",
-            "title": "O FILHO DO MILIONÁRIO NUNCA TINHA ANDADO… ATÉ QUE ELE VIU A BABÁ FAZER ALGO QUE MUDOU TUDO!",
-            "description": null,
-            "thumbnail": "",
-            "duration": "2:23:46",
-            "views": 53176,
-            "likes": 0,
-            "published_at": "10 days ago",
-            "url": "https://youtube.com/watch?v=8lCPtFHpMR0"
-          },
-          {
-            "video_id": "H03pcETErZI",
-            "title": "O MILIONÁRIO DECIDIU TESTAR SUA EMPREGADA GRÁVIDA E O QUE ENCONTROU NO QUARTO DELA MUDOU TUDO!",
-            "description": null,
-            "thumbnail": "",
-            "duration": "2:07:40",
-            "views": 115579,
-            "likes": 0,
-            "published_at": "11 days ago",
-            "url": "https://youtube.com/watch?v=H03pcETErZI"
-          },
-          {
-            "video_id": "lCtTkU4Knr0",
-            "title": "NINGUÉM FALAVA COM O MILIONÁRIO… ATÉ QUE A FILHA DA FAXINEIRA ENXUGOU SUAS LÁGRIMAS SEM DIZER NADA!",
-            "description": null,
-            "thumbnail": "",
-            "duration": "2:11:54",
-            "views": 121391,
-            "likes": 0,
-            "published_at": "12 days ago",
-            "url": "https://youtube.com/watch?v=lCtTkU4Knr0"
-          },
-          {
-            "video_id": "To-H8V-KGyo",
-            "title": "\"POSSO LAVAR SUAS ROUPAS EM TROCA DE COMIDA?\" — O MILIONÁRIO NÃO IMAGINAVA QUE ELA ESTAVA GRÁVIDA!",
-            "description": null,
-            "thumbnail": "",
-            "duration": "2:15:15",
-            "views": 9769,
-            "likes": 0,
-            "published_at": "13 days ago",
-            "url": "https://youtube.com/watch?v=To-H8V-KGyo"
-          },
-          {
-            "video_id": "NzUmybtAc1Y",
-            "title": "VIÚVA COM DUAS FILHAS RESGATA UM MILIONÁRIO FERIDO À BEIRA DA ESTRADA… E MUDA SUA VIDA PARA SEMPRE!",
-            "description": null,
-            "thumbnail": "",
-            "duration": "2:18:28",
-            "views": 75105,
-            "likes": 0,
-            "published_at": "2 weeks ago",
-            "url": "https://youtube.com/watch?v=NzUmybtAc1Y"
-          },
-          {
-            "video_id": "z5m1aIHoF5U",
-            "title": "MILIONÁRIO ENTRA NA COZINHA E VÊ A COZINHEIRA AMAMENTANDO SEU BEBÊ… A REAÇÃO DELE CHOCOU TODO MUNDO!",
-            "description": null,
-            "thumbnail": "",
-            "duration": "2:29:55",
-            "views": 15912,
-            "likes": 0,
-            "published_at": "2 weeks ago",
-            "url": "https://youtube.com/watch?v=z5m1aIHoF5U"
-          },
-          {
-            "video_id": "6twYZm0q7ag",
-            "title": "UM MILIONÁRIO ENCONTROU UM GAROTO CATADOR COM UM BEBÊ NO COLO E TOMOU UMA DECISÃO QUE MUDOU TUDO...",
-            "description": null,
-            "thumbnail": "",
-            "duration": "2:18:11",
-            "views": 82202,
-            "likes": 0,
-            "published_at": "2 weeks ago",
-            "url": "https://youtube.com/watch?v=6twYZm0q7ag"
-          },
-          {
-            "video_id": "342Fmwa7c0s",
-            "title": "\"VOCÊ NUNCA VAI CONSERTAR ISSO\" – ZOMBARAM DA MENINA DE 12 ANOS, MAS O MILIONÁRIO VIU O MOTOR RUGIR",
-            "description": null,
-            "thumbnail": "",
-            "duration": "2:07:46",
-            "views": 4932,
-            "likes": 0,
-            "published_at": "2 weeks ago",
-            "url": "https://youtube.com/watch?v=342Fmwa7c0s"
-          },
-          {
-            "video_id": "joTIJ_9ylZI",
-            "title": "MILIONÁRIO VIÚVO CONTRATA UMA EMPREGADA PARA CUIDAR DA FILHA, MAS O QUE ELA FEZ MUDOU TUDO…",
-            "description": null,
-            "thumbnail": "",
-            "duration": "2:17:14",
-            "views": 17091,
-            "likes": 0,
-            "published_at": "2 weeks ago",
-            "url": "https://youtube.com/watch?v=joTIJ_9ylZI"
-          },
-          {
-            "video_id": "YdSjmkecNqM",
-            "title": "\"NOSSA MÃE FOI EMBORA HOJE…\", DISSE O MENINO. O MILIONÁRIO RESPONDEU: \"VOCÊS AGORA TÊM UM LAR\"",
-            "description": null,
-            "thumbnail": "",
-            "duration": "2:23:03",
-            "views": 7304,
-            "likes": 0,
-            "published_at": "2 weeks ago",
-            "url": "https://youtube.com/watch?v=YdSjmkecNqM"
-          },
-          {
-            "video_id": "Vwssh1Fp-4g",
-            "title": "GRÁVIDA, SEM TER PRA ONDE IR, ELA DORME SOB UMA ÁRVORE… ATÉ QUE UM MILIONÁRIO APARECE E MUDA TUDO",
-            "description": null,
-            "thumbnail": "",
-            "duration": "2:20:56",
-            "views": 85988,
-            "likes": 0,
-            "published_at": "3 weeks ago",
-            "url": "https://youtube.com/watch?v=Vwssh1Fp-4g"
-          },
-          {
-            "video_id": "6FDSo4oG5IU",
-            "title": "“TE DOU 2 MILHÕES SE ME CURAR!”, IMPLOROU O MILIONÁRIO… E O TOQUE DO MENINO FEZ O INCRÍVEL ACONTECER",
-            "description": null,
-            "thumbnail": "",
-            "duration": "2:29:05",
-            "views": 92966,
-            "likes": 0,
-            "published_at": "3 weeks ago",
-            "url": "https://youtube.com/watch?v=6FDSo4oG5IU"
-          },
-          {
-            "video_id": "z5tYjrTIuB4",
-            "title": "MILIONÁRIO VIÚVO VÊ SUA FILHA COM UMA MENINA VENDEDORA DE BALAS… O QUE PRESENCIA MUDA SUA VIDA",
-            "description": null,
-            "thumbnail": "",
-            "duration": "2:43:42",
-            "views": 38545,
-            "likes": 0,
-            "published_at": "3 weeks ago",
-            "url": "https://youtube.com/watch?v=z5tYjrTIuB4"
-          },
-          {
-            "video_id": "vlEsLq4U370",
-            "title": "OS BEBÊS DO MILIONÁRIO CHORAVAM SEM PARAR… MAS BASTOU UM GESTO DELA E ELES DORMIRAM COMO ANJOS!",
-            "description": null,
-            "thumbnail": "",
-            "duration": "2:18:43",
-            "views": 62201,
-            "likes": 0,
-            "published_at": "3 weeks ago",
-            "url": "https://youtube.com/watch?v=vlEsLq4U370"
-          },
-          {
-            "video_id": "pYzbXozTnN8",
-            "title": "GAROTINHA CEGA PEDE AJUDA CANTANDO NAS RUAS... MAS A REAÇÃO DO MILIONÁRIO SURPREENDE A TODOS",
-            "description": null,
-            "thumbnail": "",
-            "duration": "2:15:10",
-            "views": 9506,
-            "likes": 0,
-            "published_at": "3 weeks ago",
-            "url": "https://youtube.com/watch?v=pYzbXozTnN8"
-          },
-          {
-            "video_id": "lc2WmCiSVe4",
-            "title": "PAIS ABANDONAM FILHO ADOTIVO NA MUDANÇA. DIAS DEPOIS, UM MILIONÁRIO COMPRA A CASA...",
-            "description": null,
-            "thumbnail": "",
-            "duration": "2:17:42",
-            "views": 10051,
-            "likes": 0,
-            "published_at": "3 weeks ago",
-            "url": "https://youtube.com/watch?v=lc2WmCiSVe4"
-          },
-          {
-            "video_id": "_ZyYDe93KWs",
-            "title": "MENINA POBRE DEVOLVE A CARTEIRA DE UM MILIONÁRIO, MAS O QUE VÊ EM SUA MÃO A FAZ CONGELAR...",
-            "description": null,
-            "thumbnail": "",
-            "duration": "2:11:39",
-            "views": 49301,
-            "likes": 0,
-            "published_at": "3 weeks ago",
-            "url": "https://youtube.com/watch?v=_ZyYDe93KWs"
-          },
-          {
-            "video_id": "9X681wJ6SuY",
-            "title": "MILIONÁRIO É CONVIDADO PARA SER O PAI DE DOIS GÊMEOS NA FESTA DO DIA DOS PAIS E SURPREENDE A TODOS",
-            "description": null,
-            "thumbnail": "",
-            "duration": "2:20:58",
-            "views": 3057,
-            "likes": 0,
-            "published_at": "4 weeks ago",
-            "url": "https://youtube.com/watch?v=9X681wJ6SuY"
-          },
-          {
-            "video_id": "Uqj9mKAKC_0",
-            "title": "\"SE VOCÊ TRADUZIR, TE DOU TODO MEU DINHEIRO\" — DISSE O MILIONÁRIO, MAS A FAXINEIRA O CALOU NA HORA",
-            "description": null,
-            "thumbnail": "",
-            "duration": "2:15:56",
-            "views": 3545,
-            "likes": 0,
-            "published_at": "4 weeks ago",
-            "url": "https://youtube.com/watch?v=Uqj9mKAKC_0"
-          },
-          {
-            "video_id": "8urMRX6OSVw",
-            "title": "MÃE SOLTEIRA PERDE O EMPREGO POR AJUDAR UMA MENINA — MAS O MILIONÁRIO PAI DELA MUDA SUA VIDA",
-            "description": null,
-            "thumbnail": "",
-            "duration": "2:18:57",
-            "views": 21694,
-            "likes": 0,
-            "published_at": "4 weeks ago",
-            "url": "https://youtube.com/watch?v=8urMRX6OSVw"
+            "published_at": "",
+            "url": "https://www.youtube.com/watch?v=dSGvesGrEtM"
           }
         ],
-        "total_videos": 30,
-        "total_count": 30,
-        "message": "✅ 30 títulos extraídos com sucesso!"
-      }
-    },
-    "814e479ee09d71846f6cddf52e51b60b": {
-      "success": true,
-      "data": {
-        "title": "Contos Falados",
-        "description": "No Contos Falados, cada história é contada com alma e vai direto ao coração — relatos reais e tocantes que inspiram, emocionam e fazem refletir sobre o que realmente importa. Se você acredita no poder de uma boa narrativa, inscreva-se e deixe que cada conto fale com você.\n",
-        "subscriber_count": "48.6K subscribers",
-        "video_count": "53 videos"
-      }
-    },
-    "130fe8da25ed250807c9fd2ca4f7b3da": {
-      "success": true,
-      "data": {
-        "channel_id": "UCQ_ixneyao7AfJu79PHwcTA",
-        "channel_name": "eusouodh"
+        "total_videos": 1,
+        "total_count": 1,
+        "message": "✅ 1 títulos extraídos com sucesso via yt-dlp!"
       }
     }
   },
   "timestamps": {
-    "9bfaf17d2aa6e6c520e6358df8824984": 1755563793.8210506,
-    "814e479ee09d71846f6cddf52e51b60b": 1755563798.6204069,
-    "130fe8da25ed250807c9fd2ca4f7b3da": 1755565688.7465158
+    "b45126cff0ba941c58568fa2657b9e9e": 1755568388.5464752,
+    "a371e5c2b373dffcf67a1da0056f943c": 1755570521.7953484,
+    "2f6994800124fa2dcdab48af1b1e1e1e": 1755570531.7105815,
+    "9bc70d2ab88189052025105c0712e392": 1755570607.1979082
   },
-  "saved_at": 1755565688.747772
+  "saved_at": 1755570607.1992006
 }
