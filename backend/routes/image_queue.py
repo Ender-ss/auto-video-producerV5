@@ -11,6 +11,7 @@ from datetime import datetime
 import sys
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 from .images import generate_image_pollinations, generate_image_together, generate_image_gemini
+from utils.error_messages import auto_format_error, format_error_response
 
 image_queue_bp = Blueprint('image_queue', __name__)
 
@@ -76,7 +77,8 @@ def create_image_queue():
         })
         
     except Exception as e:
-        return jsonify({'success': False, 'error': f'Erro interno: {str(e)}'}), 500
+        error_response = auto_format_error(str(e), 'Fila de Imagens')
+        return jsonify(error_response), 500
 
 @image_queue_bp.route('/queue/<int:queue_id>', methods=['GET'])
 def get_queue_status(queue_id):
@@ -91,7 +93,8 @@ def get_queue_status(queue_id):
             'data': queue.to_dict()
         })
     except Exception as e:
-        return jsonify({'success': False, 'error': f'Erro interno: {str(e)}'}), 500
+        error_response = auto_format_error(str(e), 'Fila de Imagens')
+        return jsonify(error_response), 500
 
 @image_queue_bp.route('/queue', methods=['GET'])
 def list_queues():
@@ -127,7 +130,8 @@ def list_queues():
             }
         })
     except Exception as e:
-        return jsonify({'success': False, 'error': f'Erro interno: {str(e)}'}), 500
+        error_response = auto_format_error(str(e), 'Geração de Prompts')
+        return jsonify(error_response), 500
 
 @image_queue_bp.route('/queue/<int:queue_id>', methods=['DELETE'])
 def delete_queue(queue_id):
@@ -157,7 +161,8 @@ def delete_queue(queue_id):
             'message': 'Fila deletada com sucesso!'
         })
     except Exception as e:
-        return jsonify({'success': False, 'error': f'Erro interno: {str(e)}'}), 500
+        error_response = auto_format_error(str(e), 'Prompts de Roteiro')
+        return jsonify(error_response), 500
 
 # ================================
 # 🤖 ROTAS DE GERAÇÃO AUTOMÁTICA

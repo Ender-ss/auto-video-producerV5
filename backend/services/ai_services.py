@@ -26,56 +26,90 @@ except ImportError:
 # 🎯 GERAÇÃO DE TÍTULOS
 # ================================
 
-def generate_titles_with_openai(source_titles, instructions, api_key):
-    """Gerar títulos usando OpenAI ChatGPT"""
+def generate_titles_with_openai(source_titles, instructions, api_key, update_callback=None):
+    """Gerar títulos usando OpenAI ChatGPT com fallback para Gemini, gerando um por vez com callback"""
     try:
         client = openai.OpenAI(api_key=api_key)
         
         titles_text = '\n'.join([f"- {title}" for title in source_titles])
         
-        prompt = f"""
-        {instructions}
-        
-        Títulos de origem:
-        {titles_text}
-        
-        Gere 5 novos títulos virais baseados nos títulos acima. Cada título deve:
-        - Ter entre 60-100 caracteres
-        - Ser chamativo e viral
-        - Manter o tema dos títulos originais
-        - Usar técnicas de copywriting para YouTube
-        - Ser adequado para o público brasileiro
-        
-        Retorne apenas os 5 títulos, um por linha, sem numeração ou formatação extra.
-        """
-        
-        response = client.chat.completions.create(
-            model="gpt-3.5-turbo",
-            messages=[{"role": "user", "content": prompt}],
-            max_tokens=500,
-            temperature=0.8
-        )
-        
-        generated_text = response.choices[0].message.content.strip()
-        titles = [title.strip() for title in generated_text.split('\n') if title.strip()]
+        generated_titles = []
+        for i in range(5):
+            prompt = f"""
+            {instructions}
+            
+            Títulos de origem:
+            {titles_text}
+            
+            Gere 1 novo título viral baseado nos títulos acima. O título deve:
+            - Ter entre 60-100 caracteres
+            - Ser chamativo e viral
+            - Manter o tema dos títulos originais
+            - Usar técnicas de copywriting para YouTube
+            - Ser adequado para o público brasileiro
+            
+            Retorne apenas o título, sem formatação extra.
+            """
+            
+            response = client.chat.completions.create(
+                model="gpt-3.5-turbo",
+                messages=[{"role": "user", "content": prompt}],
+                max_tokens=200,
+                temperature=0.8
+            )
+            
+            title = response.choices[0].message.content.strip()
+            generated_titles.append(title)
+            
+            if update_callback:
+                update_callback(generated_titles)
         
         return {
             'success': True,
             'data': {
-                'generated_titles': titles[:5],
+                'generated_titles': generated_titles,
                 'agent': 'OpenAI',
                 'processing_time': 0
             }
         }
     
     except Exception as e:
+        error_str = str(e)
+        print(f"❌ Erro OpenAI: {error_str}")
+        
+        # Verificar se é erro de quota (429)
+        if "429" in error_str or "quota" in error_str.lower() or "insufficient_quota" in error_str.lower():
+            print("🔄 Erro de quota OpenAI detectado, tentando fallback para Gemini...")
+            
+            # Tentar fallback para Gemini
+            try:
+                import sys
+                import os
+                sys.path.append(os.path.join(os.path.dirname(__file__), '..', 'routes'))
+                from routes.automations import get_next_gemini_key
+                
+                gemini_key = get_next_gemini_key()
+                if gemini_key:
+                    print("🔄 Usando Gemini como fallback...")
+                    gemini_result = generate_titles_with_gemini(source_titles, instructions, gemini_key)
+                    if gemini_result['success']:
+                        print("✅ Fallback para Gemini bem-sucedido!")
+                        gemini_result['data']['agent'] = 'Gemini (Fallback)'
+                        return gemini_result
+                    else:
+                        print(f"❌ Fallback Gemini também falhou: {gemini_result['error']}")
+                else:
+                    print("❌ Nenhuma chave Gemini disponível para fallback")
+            except Exception as fallback_error:
+                print(f"❌ Erro no fallback para Gemini: {str(fallback_error)}")
+        
         return {
             'success': False,
-            'error': f'Erro ao gerar títulos com ChatGPT: {str(e)}'
+            'error': f'Erro ao gerar títulos com ChatGPT: {error_str}'
         }
 
-def generate_titles_with_gemini(source_titles, instructions, api_key):
-    """Gerar títulos usando Google Gemini com retry automático"""
+def generate_titles_with_gemini(source_titles, instructions, api_key, update_callback=None):
+    """Gerar títulos usando Google Gemini com retry automático, gerando um por vez com callback"""
     import sys
     import os
     
@@ -86,9 +120,8 @@ def generate_titles_with_gemini(source_titles, instructions, api_key):
                 'error': 'Biblioteca google-generativeai não instalada'
             }
         
-        # Adicionar o diretório routes ao path para importar funções
-        sys.path.append(os.path.join(os.path.dirname(__file__), '..', 'routes'))
-        from automations import get_next_gemini_key, handle_gemini_429_error
+        # Importar diretamente para usar a mesma instância global
+        from routes.automations import get_next_gemini_key, handle_gemini_429_error
         
         # Tentar múltiplas chaves se necessário
         max_retries = 3  # Tentar até 3 chaves diferentes
@@ -111,38 +144,44 @@ def generate_titles_with_gemini(source_titles, instructions, api_key):
                 
                 titles_text = '\n'.join([f"- {title}" for title in source_titles])
                 
-                prompt = f"""
-                {instructions}
+                generated_titles = []
+                for i in range(5):
+                    prompt = f"""
+                    {instructions}
+                    
+                    Títulos de origem:
+                    {titles_text}
+                    
+                    Gere 1 novo título viral baseado nos títulos acima. O título deve:
+                    - Ter entre 60-100 caracteres
+                    - Ser chamativo e viral
+                    - Manter o tema dos títulos originais
+                    - Usar técnicas de copywriting para YouTube
+                    - Ser adequado para o público brasileiro
+                    
+                    Retorne apenas o título, sem formatação extra.
+                    """
+                    
+                    response = model.generate_content(prompt)
+                    
+                    if not response.text:
+                        return {
+                            'success': False,
+                            'error': 'Gemini não retornou conteúdo'
+                        }
+                    
+                    title = response.text.strip()
+                    generated_titles.append(title)
+                    
+                    if update_callback:
+                        update_callback(generated_titles)
                 
-                Títulos de origem:
-                {titles_text}
-                
-                Gere 5 novos títulos virais baseados nos títulos acima. Cada título deve:
-                - Ter entre 60-100 caracteres
-                - Ser chamativo e viral
-                - Manter o tema dos títulos originais
-                - Usar técnicas de copywriting para YouTube
-                - Ser adequado para o público brasileiro
-                
-                Retorne apenas os 5 títulos, um por linha, sem numeração ou formatação extra.
-                """
-                
-                response = model.generate_content(prompt)
-                
-                if not response.text:
-                    return {
-                        'success': False,
-                        'error': 'Gemini não retornou conteúdo'
-                    }
-                
-                generated_text = response.text.strip()
-                titles = [title.strip() for title in generated_text.split('\n') if title.strip()]
                 print(f"✅ Sucesso na geração de títulos com Gemini na tentativa {attempt + 1}")
                 
                 return {
                     'success': True,
                     'data': {
-                        'generated_titles': titles[:5],
+                        'generated_titles': generated_titles,
                         'agent': 'Gemini',
                         'processing_time': 0
                     }
@@ -157,12 +196,12 @@ def generate_titles_with_gemini(source_titles, instructions, api_key):
                 if "429" in error_str or "quota" in error_str.lower() or "rate limit" in error_str.lower():
                     if attempt < max_retries - 1:  # Not the last attempt
                         print(f"🔄 Erro de quota detectado, tentando próxima chave Gemini...")
-                        handle_gemini_429_error(error_str)
+                        handle_gemini_429_error(error_str, api_key)
                         api_key = None  # Forçar nova chave na próxima tentativa
                         continue
                     else:
                         print("❌ Todas as tentativas de retry falharam")
-                        handle_gemini_429_error(error_str)
+                        handle_gemini_429_error(error_str, api_key)
                 else:
                     # For non-quota errors, don't retry
                     print(f"❌ Erro não relacionado à quota, parando tentativas: {error_str}")
@@ -406,7 +445,7 @@ def generate_script_chapters_with_gemini(title, context, num_chapters, api_key=N
     
     # Adicionar o diretório routes ao path para importar funções
     sys.path.append(os.path.join(os.path.dirname(__file__), '..', 'routes'))
-    from automations import get_next_gemini_key, handle_gemini_429_error
+    from routes.automations import get_next_gemini_key, handle_gemini_429_error
     
     # Tentar múltiplas chaves se necessário
     max_retries = 3  # Tentar até 3 chaves diferentes

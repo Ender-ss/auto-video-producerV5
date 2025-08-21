@@ -1,0 +1,22 @@
+{
+  "channel_url": "https://www.youtube.com/@MrBeast",
+  "config": {
+    "extraction": {
+      "method": "auto",
+      "max_titles": 5,
+      "min_views": 1000,
+      "days_back": 30
+    },
+    "titles": {
+      "provider": "gemini",
+      "custom_prompt": false,
+      "count": 3,
+      "style": "viral"
+    },
+    "premises": {
+      "provider": "gemini",
+      "custom_prompt": false,
+      "word_count": 100
+    }
+  }
+}

@@ -7,7 +7,48 @@ from flask import Blueprint, request, jsonify
 import requests
 import json
 import os
+import logging
 from services.title_generator import TitleGenerator
+from utils.error_messages import auto_format_error, format_error_response
+
+# Configurar logger específico para premissas
+logger = logging.getLogger(__name__)
+logger.setLevel(logging.INFO)
+logger.propagate = True
+
+def load_api_keys_from_file():
+    """Carrega chaves de API do arquivo JSON"""
+    try:
+        config_path = os.path.join(os.path.dirname(__file__), '..', 'config', 'api_keys.json')
+        if os.path.exists(config_path):
+            with open(config_path, 'r', encoding='utf-8') as f:
+                return json.load(f)
+    except Exception as e:
+        print(f"❌ Erro ao carregar chaves de API: {e}")
+    return {}
+
+def get_default_premise_prompt():
+    """Retorna o prompt padrão para geração de premissas"""
+    return """# Gerador de Premissas Profissionais para Vídeos
+
+Você é um especialista em criação de conteúdo e storytelling para YouTube. Sua tarefa é criar premissas envolventes e profissionais baseadas nos títulos fornecidos.
+
+## Instruções:
+1. Analise cada título fornecido
+2. Crie uma premissa única e cativante para cada um
+3. A premissa deve ter entre 100-200 palavras
+4. Inclua elementos de storytelling (problema, conflito, resolução)
+5. Mantenha o tom adequado ao nicho do título
+6. Adicione ganchos emocionais e curiosidade
+
+## Formato de Resposta:
+Para cada título, forneça:
+
+**TÍTULO:** [título original]
+**PREMISSA:**
+[Premissa detalhada com storytelling envolvente]
+
+---"""
 
 premise_bp = Blueprint('premise', __name__)
 
@@ -117,6 +158,7 @@ def regenerate_chapter_if_needed(prompt, ai_provider, openrouter_model, api_keys
 def generate_premises():
     """Gerar premissas baseadas nos títulos fornecidos"""
     try:
+        logger.info(f"🎯 [PREMISE] Iniciando geração de premissas...")
         data = request.get_json()
         titles = data.get('titles', [])
         prompt = data.get('prompt', '')
@@ -124,12 +166,57 @@ def generate_premises():
         openrouter_model = data.get('openrouter_model', 'auto')
         api_keys = data.get('api_keys', {})
         script_size = data.get('script_size', 'medio')
+        use_custom_prompt = data.get('use_custom_prompt', False)
+        custom_prompt = data.get('custom_prompt', '')
+        
+        logger.info(f"🔍 [PREMISE] Parâmetros recebidos: títulos={len(titles)}, provider={ai_provider}, size={script_size}")
+        
+        # Carregar chaves de API do arquivo se não foram fornecidas
+        if not api_keys:
+            api_keys = load_api_keys_from_file()
+            logger.info(f"🔑 [PREMISE] Chaves carregadas do arquivo: {list(api_keys.keys())}")
 
         if not titles:
+            logger.error(f"❌ [PREMISE] Erro: Nenhum título fornecido")
             return jsonify({
                 'success': False,
                 'error': 'Nenhum título fornecido'
             }), 400
+        
+        # Carregar prompt personalizado se solicitado
+        if use_custom_prompt and custom_prompt:
+            # Usar prompt personalizado fornecido
+            final_prompt = custom_prompt
+            logger.info(f"🎯 [PREMISE] Usando prompt personalizado fornecido ({len(custom_prompt)} caracteres)")
+        elif use_custom_prompt:
+            # Carregar prompt personalizado do arquivo de configuração
+            try:
+                from routes.prompts_config import load_prompts_config
+                prompts_config = load_prompts_config()
+                premise_config = prompts_config.get('premises', {})
+                final_prompt = premise_config.get('prompt', '')
+                
+                if final_prompt:
+                    logger.info(f"🎯 [PREMISE] Usando prompt personalizado do arquivo de configuração")
+                else:
+                    logger.warning(f"⚠️ [PREMISE] Prompt personalizado não encontrado, usando prompt padrão")
+                    final_prompt = prompt or get_default_premise_prompt()
+            except Exception as e:
+                logger.error(f"❌ [PREMISE] Erro ao carregar prompt personalizado: {e}")
+                final_prompt = prompt or get_default_premise_prompt()
+        else:
+            # Usar prompt fornecido ou padrão
+            final_prompt = prompt or get_default_premise_prompt()
+            logger.info(f"🎯 [PREMISE] Usando prompt padrão")
+        
+        # Substituir variáveis no prompt se necessário
+        if '{titles}' in final_prompt:
+            titles_text = '\n'.join(f'{i+1}. {title}' for i, title in enumerate(titles))
+            final_prompt = final_prompt.replace('{titles}', titles_text)
+        elif not final_prompt.endswith('\n\n'):
+            # Adicionar títulos ao final se não estão incluídos no prompt
+            titles_text = '\n'.join(f'{i+1}. {title}' for i, title in enumerate(titles))
+            final_prompt = f"{final_prompt}\n\n## Títulos para análise:\n{titles_text}"
 
         # Inicializar o gerador de títulos (que também pode gerar premissas)
         title_generator = TitleGenerator()
@@ -151,6 +238,8 @@ def generate_premises():
         # Gerar premissas usando o provider especificado
         premises = []
         
+        logger.info(f"🚀 [PREMISE] Iniciando geração com provider: {ai_provider}")
+        
         if ai_provider == 'auto':
             # Tentar em ordem de prioridade
             providers = ['openrouter', 'gemini', 'openai']
@@ -158,23 +247,35 @@ def generate_premises():
             
             for provider in providers:
                 try:
+                    logger.info(f"🔄 [PREMISE] Tentando provider: {provider}")
                     if provider == 'openrouter' and api_keys.get('openrouter'):
-                        premises = generate_premises_openrouter(titles, prompt, openrouter_model, api_keys['openrouter'], script_size)
+                        logger.info(f"🔑 [PREMISE] Usando OpenRouter com modelo: {openrouter_model}")
+                        premises = generate_premises_openrouter(titles, final_prompt, openrouter_model, api_keys['openrouter'], script_size)
+                        logger.info(f"✅ [PREMISE] OpenRouter gerou {len(premises)} premissas")
                         success = True
                         break
                     elif provider == 'gemini' and (api_keys.get('gemini') or api_keys.get('gemini_1')):
-                        premises = generate_premises_gemini(titles, prompt, title_generator, script_size)
+                        logger.info(f"🔑 [PREMISE] Usando Gemini")
+                        premises = generate_premises_gemini(titles, final_prompt, title_generator, script_size)
+                        logger.info(f"✅ [PREMISE] Gemini gerou {len(premises)} premissas")
                         success = True
                         break
                     elif provider == 'openai' and api_keys.get('openai'):
-                        premises = generate_premises_openai(titles, prompt, title_generator, script_size)
+                        logger.info(f"🔑 [PREMISE] Usando OpenAI")
+                        premises = generate_premises_openai(titles, final_prompt, title_generator, script_size)
+                        logger.info(f"✅ [PREMISE] OpenAI gerou {len(premises)} premissas")
                         success = True
                         break
+                    else:
+                        logger.warning(f"⚠️ [PREMISE] Provider {provider} não disponível ou sem chave")
                 except Exception as e:
-                    print(f"❌ Erro com {provider}: {e}")
+                    logger.error(f"❌ [PREMISE] Erro com {provider}: {e}")
+                    import traceback
+                    logger.error(f"📋 [PREMISE] Traceback: {traceback.format_exc()}")
                     continue
             
             if not success:
+                logger.error(f"❌ [PREMISE] Nenhum provider conseguiu gerar premissas")
                 return jsonify({
                     'success': False,
                     'error': 'Nenhuma IA disponível conseguiu gerar premissas'
@@ -182,28 +283,34 @@ def generate_premises():
                 
         elif ai_provider == 'openrouter':
             if not api_keys.get('openrouter'):
+                logger.error(f"❌ [PREMISE] Chave OpenRouter não configurada")
                 return jsonify({
                     'success': False,
                     'error': 'Chave da API OpenRouter não configurada'
                 }), 400
-            premises = generate_premises_openrouter(titles, prompt, openrouter_model, api_keys['openrouter'], script_size)
+            logger.info(f"🔑 [PREMISE] Usando OpenRouter exclusivamente")
+            premises = generate_premises_openrouter(titles, final_prompt, openrouter_model, api_keys['openrouter'], script_size)
             
         elif ai_provider == 'gemini':
             gemini_key = api_keys.get('gemini') or api_keys.get('gemini_1')
             if not gemini_key:
+                logger.error(f"❌ [PREMISE] Chave Gemini não configurada")
                 return jsonify({
                     'success': False,
                     'error': 'Chave da API Gemini não configurada'
                 }), 400
-            premises = generate_premises_gemini(titles, prompt, title_generator, script_size)
+            print(f"🔑 [PREMISE] Usando Gemini exclusivamente")
+            premises = generate_premises_gemini(titles, final_prompt, title_generator, script_size)
             
         elif ai_provider == 'openai':
             if not api_keys.get('openai'):
+                print(f"❌ [PREMISE] Chave OpenAI não configurada")
                 return jsonify({
                     'success': False,
                     'error': 'Chave da API OpenAI não configurada'
                 }), 400
-            premises = generate_premises_openai(titles, prompt, title_generator, script_size)
+            print(f"🔑 [PREMISE] Usando OpenAI exclusivamente")
+            premises = generate_premises_openai(titles, final_prompt, title_generator, script_size)
 
         print(f"🔍 DEBUG: Premissas geradas: {len(premises)}")
         for i, premise in enumerate(premises):
@@ -217,7 +324,9 @@ def generate_premises():
         })
 
     except Exception as e:
-        print(f"❌ Erro na geração de premissas: {e}")
+        print(f"❌ [PREMISE] Erro na geração de premissas: {e}")
+        import traceback
+        print(f"📋 [PREMISE] Traceback completo: {traceback.format_exc()}")
         return jsonify({
             'success': False,
             'error': str(e)
@@ -316,7 +425,7 @@ def generate_content_with_gemini_retry(prompt):
             # Se é erro 429 (quota exceeded), tentar próxima chave
             if "429" in error_str or "quota" in error_str.lower() or "exceeded" in error_str.lower():
                 print(f"🔄 Erro de cota detectado, tentando próxima chave...")
-                handle_gemini_429_error(error_str)
+                handle_gemini_429_error(error_str, api_key)
                 continue
             else:
                 # Outros erros, não tentar novamente
@@ -410,7 +519,8 @@ def generate_premises_gemini(titles, prompt, title_generator, script_size='medio
         # Tratar erro 429 especificamente
         if '429' in error_str or 'quota' in error_str.lower() or 'exceeded' in error_str.lower():
             print(f"🚫 [GEMINI] Erro 429 detectado nas premissas: {error_str}")
-            handle_gemini_429_error(error_str)
+            # Não temos acesso à api_key específica aqui, então passamos None
+            handle_gemini_429_error(error_str, None)
             
             # Tentar fallback automático
             try:
@@ -1140,7 +1250,8 @@ def generate_script_gemini(prompt, title_generator):
         # Tratar erro 429 especificamente
         if '429' in error_str or 'quota' in error_str.lower() or 'exceeded' in error_str.lower():
             print(f"🚫 [GEMINI] Erro 429 detectado: {error_str}")
-            handle_gemini_429_error(error_str)
+            # Não temos acesso à api_key específica aqui, então passamos None
+            handle_gemini_429_error(error_str, None)
             
             # Tentar fallback automático
             try:
@@ -1555,7 +1666,8 @@ def generate_script_part_gemini(prompt, title_generator):
         # Tratar erro 429 especificamente
         if '429' in error_str or 'quota' in error_str.lower() or 'exceeded' in error_str.lower():
             print(f"🚫 [GEMINI] Erro 429 detectado na parte: {error_str}")
-            handle_gemini_429_error(error_str)
+            # Não temos acesso à api_key específica aqui, então passamos None
+            handle_gemini_429_error(error_str, None)
             
             # Tentar fallback automático
             try:

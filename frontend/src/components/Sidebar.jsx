@@ -21,7 +21,8 @@ import {
   TrendingUp,
   FileText,
   TestTube,
-  PenSquare
+  PenSquare,
+  MessageSquare
 } from 'lucide-react'
 
 const Sidebar = ({ onClose }) => {
@@ -71,6 +72,12 @@ const Sidebar = ({ onClose }) => {
       description: 'Biblioteca de vídeos'
     },
     {
+      path: '/conteudos-gerados',
+      icon: FileText,
+      label: 'Conteúdos Gerados',
+      description: 'Visualizar arquivos gerados'
+    },
+    {
       path: '/analytics',
       icon: BarChart3,
       label: 'Analytics',
@@ -93,6 +100,12 @@ const Sidebar = ({ onClose }) => {
       icon: Settings,
       label: 'Configurações',
       description: 'APIs e preferências'
+    },
+    {
+      path: '/prompts-config',
+      icon: MessageSquare,
+      label: 'Configuração de Prompts',
+      description: 'Personalizar prompts da automação'
     },
     {
       path: '/automations-dev',

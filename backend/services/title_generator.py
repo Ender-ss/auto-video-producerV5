@@ -39,6 +39,7 @@ class TitleGenerator:
                 return True
             except Exception as test_error:
                 print(f"❌ Erro no teste de conexão OpenAI: {test_error}")
+                self.openai_client = None
                 return False
 
         except ImportError as e:
@@ -48,6 +49,7 @@ class TitleGenerator:
         except Exception as e:
             print(f"❌ Erro ao configurar OpenAI: {e}")
             print(f"🔍 DEBUG: Tipo do erro: {type(e)}")
+            self.openai_client = None
             return False
             
     def configure_gemini(self, api_key: str):
@@ -63,6 +65,7 @@ class TitleGenerator:
         except Exception as e:
             print(f"❌ Erro ao configurar Gemini: {e}")
             print(f"🔍 DEBUG: Tipo do erro: {type(e)}")
+            self.gemini_model = None
             # Tentar modelo alternativo
             try:
                 self.gemini_model = genai.GenerativeModel('gemini-1.5-pro')
@@ -70,6 +73,7 @@ class TitleGenerator:
                 return True
             except Exception as e2:
                 print(f"❌ Erro ao configurar Gemini (modelo alternativo): {e2}")
+                self.gemini_model = None
                 return False
 
     def configure_openrouter(self, api_key: str):
@@ -80,6 +84,7 @@ class TitleGenerator:
             return True
         except Exception as e:
             print(f"❌ Erro ao configurar OpenRouter: {e}")
+            self.openrouter_api_key = None
             return False
     
     def analyze_viral_patterns(self, titles: List[str]) -> Dict:
@@ -249,7 +254,7 @@ class TitleGenerator:
 
             # Usar função centralizada de retry
             from routes.automations import generate_content_with_gemini_retry
-            response_text = generate_content_with_gemini_retry(self, prompt)
+            response_text = generate_content_with_gemini_retry(prompt)
             print(f"🔍 DEBUG: Resposta bruta do Gemini: {response_text[:200]}...")
 
             titles = self.parse_generated_titles(response_text)
@@ -282,7 +287,12 @@ class TitleGenerator:
             # Tratar erro 429 especificamente
             if '429' in error_str or 'quota' in error_str.lower() or 'exceeded' in error_str.lower():
                 print(f"🚫 [GEMINI] Erro 429 detectado nos títulos: {error_str}")
-                handle_gemini_429_error(error_str)
+                # Obter a chave atual para passar para handle_gemini_429_error
+                from routes.automations import GEMINI_KEYS_ROTATION
+                current_key = None
+                if GEMINI_KEYS_ROTATION['keys'] and GEMINI_KEYS_ROTATION['current_index'] < len(GEMINI_KEYS_ROTATION['keys']):
+                    current_key = GEMINI_KEYS_ROTATION['keys'][GEMINI_KEYS_ROTATION['current_index']]
+                handle_gemini_429_error(error_str, current_key)
                 
                 # Tentar fallback automático
                 try:

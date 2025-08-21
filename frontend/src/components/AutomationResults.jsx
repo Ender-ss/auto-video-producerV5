@@ -280,7 +280,7 @@ const AutomationResults = ({ results, isVisible, onClose }) => {
                             <div className="bg-white/70 rounded-lg p-3 border border-green-200">
                               <h4 className="font-semibold text-green-700 text-sm mb-1">💡 PREMISSA:</h4>
                               <p className="text-gray-800 text-sm">
-                                {(bestPremise.premise || bestPremise).substring(0, 150)}...
+                                {(bestPremise.premise || bestPremise) && (bestPremise.premise || bestPremise).substring(0, 150)}...
                               </p>
                             </div>
                           )}

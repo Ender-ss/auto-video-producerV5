@@ -1,0 +1,9 @@
+{
+    "script_size":  "medio",
+    "titles":  [
+                   "Como fazer café perfeito",
+                   "Dicas de produtividade"
+               ],
+    "use_custom_prompt":  true,
+    "ai_provider":  "auto"
+}

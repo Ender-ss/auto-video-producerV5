@@ -8,6 +8,8 @@ import os
 import requests
 import base64
 import time
+from utils.error_messages import auto_format_error, format_error_response
+from routes.prompts_config import load_prompts_config
 
 images_bp = Blueprint('images', __name__)
 
@@ -38,19 +40,24 @@ def generate_images_route():
         ai_agent_prompt = data.get('ai_agent_prompt', '')
         use_custom_prompt = data.get('use_custom_prompt', False)
         custom_prompt = data.get('custom_prompt', '').strip()
+        use_custom_image_prompt = data.get('use_custom_image_prompt', False)
+        custom_image_prompt = data.get('custom_image_prompt', '').strip()
         image_count = data.get('image_count', 1)
         
         # Validações
         if use_custom_prompt:
             if not custom_prompt:
-                return jsonify({'success': False, 'error': 'Prompt personalizado é obrigatório quando selecionado'}), 400
+                error_response = format_error_response('validation_error', 'Prompt personalizado é obrigatório quando selecionado', 'Geração de Imagens')
+                return jsonify(error_response), 400
         else:
             if not script:
-                return jsonify({'success': False, 'error': 'Roteiro é obrigatório'}), 400
+                error_response = format_error_response('validation_error', 'Roteiro é obrigatório para gerar imagens baseadas no conteúdo', 'Geração de Imagens')
+                return jsonify(error_response), 400
 
         # Pollinations.ai não requer chave de API (é gratuito)
         if not api_key and provider != 'pollinations':
-            return jsonify({'success': False, 'error': f'Chave da API ({provider}) é obrigatória'}), 400
+            error_response = format_error_response('api_key_missing', f'Chave da API ({provider}) é obrigatória', 'Geração de Imagens')
+            return jsonify(error_response), 400
 
         # Processar formato da imagem
         try:
@@ -71,9 +78,10 @@ def generate_images_route():
             # Modo: Baseado em roteiro
             if use_ai_agent and ai_agent_prompt:
                 # Usar IA Agent para criar prompts específicos
-                scene_prompts = generate_scene_prompts_with_ai(script, ai_agent_prompt, api_key, provider, image_count)
+                scene_prompts = generate_scene_prompts_with_ai(script, ai_agent_prompt, api_key, provider, image_count, use_custom_image_prompt, custom_image_prompt)
                 if not scene_prompts:
-                    return jsonify({'success': False, 'error': 'Erro ao gerar prompts com IA Agent'}), 500
+                    error_response = format_error_response('internal_error', 'Não foi possível gerar prompts automaticamente com IA', 'IA Agent para Imagens')
+                    return jsonify(error_response), 500
                 
                 for scene_prompt in scene_prompts:
                     final_prompt = f"{scene_prompt}, {style_prompt}"
@@ -83,7 +91,8 @@ def generate_images_route():
                 scenes = [scene.strip() for scene in script.split('\n\n') if scene.strip()]
                 
                 if not scenes:
-                    return jsonify({'success': False, 'error': 'Não foi possível encontrar cenas no roteiro'}), 400
+                    error_response = format_error_response('content_too_long', 'O roteiro precisa ter parágrafos separados para gerar imagens', 'Análise de Roteiro')
+                    return jsonify(error_response), 400
                 
                 # Distribuir cenas uniformemente ao longo do roteiro completo
                 scenes_to_use = distribute_scenes_evenly(scenes, image_count)
@@ -131,7 +140,8 @@ def generate_images_route():
                 continue
 
         if not generated_images:
-            return jsonify({'success': False, 'error': 'Não foi possível gerar nenhuma imagem'}), 500
+            error_response = format_error_response('internal_error', 'Todas as tentativas de geração de imagem falharam', 'Geração de Imagens')
+            return jsonify(error_response), 500
 
         return jsonify({
             'success': True,
@@ -142,7 +152,8 @@ def generate_images_route():
         })
 
     except Exception as e:
-        return jsonify({'success': False, 'error': f'Erro interno: {str(e)}'}), 500
+        error_response = auto_format_error(str(e), 'Geração de Imagens')
+        return jsonify(error_response), 500
 
 def distribute_scenes_evenly(scenes, image_count):
     """
@@ -210,14 +221,30 @@ def distribute_scenes_evenly(scenes, image_count):
         
         return selected_scenes
 
-def generate_scene_prompts_with_ai(script, ai_agent_prompt, api_key, provider, image_count):
+def generate_scene_prompts_with_ai(script, ai_agent_prompt, api_key, provider, image_count, use_custom_image_prompt=False, custom_image_prompt=None):
     """
     Usa IA para gerar prompts específicos de imagem baseados no roteiro.
     """
     try:
+        # Carregar prompt personalizado se solicitado
+        if use_custom_image_prompt and custom_image_prompt:
+            base_prompt = custom_image_prompt
+        elif use_custom_image_prompt:
+            # Carregar prompt personalizado do arquivo de configuração
+            try:
+                prompts_config = load_prompts_config()
+                image_config = prompts_config.get('image_prompts', {})
+                base_prompt = image_config.get('prompt', ai_agent_prompt)
+                print(f"Usando prompt personalizado de imagem: {base_prompt[:100]}...")
+            except Exception as e:
+                print(f"Erro ao carregar prompt personalizado de imagem: {e}")
+                base_prompt = ai_agent_prompt
+        else:
+            base_prompt = ai_agent_prompt
+        
         # Prompt para o IA Agent
         system_prompt = f"""
-{ai_agent_prompt}
+{base_prompt}
 
 Roteiro:
 {script}
@@ -285,7 +312,104 @@ def serve_image(filename):
         from flask import send_from_directory
         return send_from_directory(OUTPUT_DIR, filename)
     except Exception as e:
-        return jsonify({'success': False, 'error': str(e)}), 404
+        error_response = auto_format_error(str(e), 'Visualização de Imagem')
+        return jsonify(error_response), 404
+
+@images_bp.route('/list-generated', methods=['GET'])
+def list_generated_content():
+    """
+    Lista todos os conteúdos gerados (imagens, áudios, vídeos)
+    """
+    try:
+        import glob
+        from datetime import datetime
+        
+        # Diretórios de conteúdo
+        base_dir = os.path.join(os.path.dirname(__file__), '..')
+        images_dir = os.path.join(base_dir, 'output', 'images')
+        audio_dir = os.path.join(base_dir, 'output', 'audio')
+        videos_dir = os.path.join(base_dir, 'output', 'videos')
+        outputs_dir = os.path.join(base_dir, 'outputs')
+        temp_dir = os.path.join(base_dir, 'temp')
+        
+        content = {
+            'images': [],
+            'audios': [],
+            'videos': [],
+            'total_files': 0
+        }
+        
+        # Listar imagens
+        if os.path.exists(images_dir):
+            for ext in ['*.png', '*.jpg', '*.jpeg', '*.gif', '*.webp']:
+                for filepath in glob.glob(os.path.join(images_dir, ext)):
+                    filename = os.path.basename(filepath)
+                    file_stats = os.stat(filepath)
+                    content['images'].append({
+                        'filename': filename,
+                        'path': filepath,
+                        'url': f'/api/images/view/{filename}',
+                        'size': file_stats.st_size,
+                        'created_at': datetime.fromtimestamp(file_stats.st_ctime).isoformat(),
+                        'modified_at': datetime.fromtimestamp(file_stats.st_mtime).isoformat()
+                    })
+        
+        # Listar áudios (verificar múltiplos diretórios)
+        audio_dirs = [audio_dir, temp_dir]
+        for audio_search_dir in audio_dirs:
+            if os.path.exists(audio_search_dir):
+                for ext in ['*.wav', '*.mp3', '*.m4a', '*.ogg', '*.flac']:
+                    for filepath in glob.glob(os.path.join(audio_search_dir, ext)):
+                        filename = os.path.basename(filepath)
+                        file_stats = os.stat(filepath)
+                        content['audios'].append({
+                            'filename': filename,
+                            'path': filepath,
+                            'directory': os.path.basename(audio_search_dir),
+                            'size': file_stats.st_size,
+                            'created_at': datetime.fromtimestamp(file_stats.st_ctime).isoformat(),
+                            'modified_at': datetime.fromtimestamp(file_stats.st_mtime).isoformat()
+                        })
+        
+        # Listar vídeos (verificar múltiplos diretórios)
+        video_dirs = [videos_dir, outputs_dir]
+        for video_search_dir in video_dirs:
+            if os.path.exists(video_search_dir):
+                for ext in ['*.mp4', '*.avi', '*.mov', '*.mkv', '*.webm']:
+                    for filepath in glob.glob(os.path.join(video_search_dir, ext)):
+                        filename = os.path.basename(filepath)
+                        file_stats = os.stat(filepath)
+                        content['videos'].append({
+                            'filename': filename,
+                            'path': filepath,
+                            'directory': os.path.basename(video_search_dir),
+                            'size': file_stats.st_size,
+                            'created_at': datetime.fromtimestamp(file_stats.st_ctime).isoformat(),
+                            'modified_at': datetime.fromtimestamp(file_stats.st_mtime).isoformat()
+                        })
+        
+        # Ordenar por data de criação (mais recentes primeiro)
+        content['images'].sort(key=lambda x: x['created_at'], reverse=True)
+        content['audios'].sort(key=lambda x: x['created_at'], reverse=True)
+        content['videos'].sort(key=lambda x: x['created_at'], reverse=True)
+        
+        # Calcular total
+        content['total_files'] = len(content['images']) + len(content['audios']) + len(content['videos'])
+        
+        return jsonify({
+            'success': True,
+            'content': content,
+            'summary': {
+                'total_images': len(content['images']),
+                'total_audios': len(content['audios']),
+                'total_videos': len(content['videos']),
+                'total_files': content['total_files']
+            }
+        })
+        
+    except Exception as e:
+        error_response = auto_format_error(str(e), 'Listagem de Conteúdos')
+        return jsonify(error_response), 500
 
 def generate_image_together(prompt, api_key, width, height, quality, model):
     """
@@ -385,7 +509,7 @@ def generate_image_gemini(prompt, api_key, width, height, quality):
             if "429" in error_str or "quota" in error_str.lower() or "rate limit" in error_str.lower():
                 if attempt < max_retries - 1:  # Not the last attempt
                     print(f"🔄 Erro de quota detectado, tentando próxima chave Gemini...")
-                    handle_gemini_429_error(error_str)
+                    handle_gemini_429_error(error_str, current_api_key)
                     current_api_key = get_next_gemini_key()
                     if current_api_key:
                         print(f"🔑 Nova chave Gemini obtida para tentativa {attempt + 2}")
@@ -395,7 +519,7 @@ def generate_image_gemini(prompt, api_key, width, height, quality):
                         break
                 else:
                     print("❌ Todas as tentativas de retry falharam")
-                    handle_gemini_429_error(error_str)
+                    handle_gemini_429_error(error_str, current_api_key)
             else:
                 # For non-quota errors, don't retry
                 print(f"❌ Erro não relacionado à quota, parando tentativas: {error_str}")

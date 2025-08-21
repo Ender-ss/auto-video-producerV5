@@ -1,266 +1,487 @@
 {
   "data": {
-    "b45126cff0ba941c58568fa2657b9e9e": {
+    "130fe8da25ed250807c9fd2ca4f7b3da": {
+      "success": true,
+      "data": {
+        "channel_id": "UCQ_ixneyao7AfJu79PHwcTA",
+        "channel_name": "eusouodh"
+      }
+    },
+    "2f819cf4414c9e9aaffbab97688b679b": {
       "success": true,
       "data": {
         "videos": [
           {
+            "video_id": "aXZRXyYgW5E",
+            "title": "NEW 3D NICHE | STEP-BY-STEP GUIDE TO STRUCTURE AND CREATION",
+            "description": null,
+            "thumbnail": "",
+            "duration": "36:02",
+            "views": 642,
+            "likes": 0,
+            "published_at": "23 hours ago",
+            "url": "https://youtube.com/watch?v=aXZRXyYgW5E"
+          },
+          {
             "video_id": "EfdQ-mI0gvU",
             "title": "How to Use Google VEO 3 for FREE | NEW SITE!",
-            "description": "RECURRING MICRO BUSINESS: http://diogohenrique.com/mnr\n\nSHOP CASH PRO: https://diogohenrique.com/go/shop-cash-pro\n\nMy Instagram: http://instagram.com/eusouodh\n\nChannel Group: https://linktr.ee/euso...",
+            "description": null,
             "thumbnail": "",
-            "duration": "732.0s",
-            "views": 5124,
+            "duration": "12:12",
+            "views": 9112,
             "likes": 0,
-            "published_at": "",
-            "url": "https://www.youtube.com/watch?v=EfdQ-mI0gvU"
+            "published_at": "3 days ago",
+            "url": "https://youtube.com/watch?v=EfdQ-mI0gvU"
           },
           {
             "video_id": "pbSWZ62uggU",
             "title": "I Just Copied A 2M Channel For 30 Days And This Was The Result!",
-            "description": "RECURRING MICRO BUSINESS: http://diogohenrique.com/mnr\n\nSHOP CASH PRO: https://diogohenrique.com/go/shop-cash-pro\n\nMy Instagram: http://instagram.com/eusouodh\n\nChannel Group: https://linktr.ee/euso...",
+            "description": null,
             "thumbnail": "",
-            "duration": "1521.0s",
-            "views": 2679,
+            "duration": "25:21",
+            "views": 2920,
             "likes": 0,
-            "published_at": "",
-            "url": "https://www.youtube.com/watch?v=pbSWZ62uggU"
+            "published_at": "8 days ago",
+            "url": "https://youtube.com/watch?v=pbSWZ62uggU"
           },
           {
             "video_id": "E_NtZh4g8XQ",
             "title": "CURSO COMPLETO: 1 POST POR DIA = VIDA TRANSFORMADA. VOCÊ NÃO VAI ACREDITAR NO RESULTADO!",
-            "description": "MICRO NEGÓCIO RECORRENTE: http://diogohenrique.com/mnr\n\nSHOP CASH PRO: https://diogohenrique.com/go/shop-cash-pro\n\nMeu instagram: http://instagram.com/eusouodh\n\n1 POST POR DIA - PROMPT\nhttps://doc...",
+            "description": null,
             "thumbnail": "",
-            "duration": "6257.0s",
-            "views": 2714,
+            "duration": "1:44:17",
+            "views": 2869,
             "likes": 0,
-            "published_at": "",
-            "url": "https://www.youtube.com/watch?v=E_NtZh4g8XQ"
+            "published_at": "13 days ago",
+            "url": "https://youtube.com/watch?v=E_NtZh4g8XQ"
+          },
+          {
+            "video_id": "b_dVPHwwksk",
+            "title": "How to Gain Followers on Tiktok with an Unfair Advantage!",
+            "description": null,
+            "thumbnail": "",
+            "duration": "17:32",
+            "views": 2183,
+            "likes": 0,
+            "published_at": "2 weeks ago",
+            "url": "https://youtube.com/watch?v=b_dVPHwwksk"
+          },
+          {
+            "video_id": "eRuzPDVt19Q",
+            "title": "ULTIMATE GUIDE: Create AI Commercials with Google VEO 3 JSON Prompts + FREE PROMPT MASTER!",
+            "description": null,
+            "thumbnail": "",
+            "duration": "21:39",
+            "views": 24371,
+            "likes": 0,
+            "published_at": "2 weeks ago",
+            "url": "https://youtube.com/watch?v=eRuzPDVt19Q"
+          },
+          {
+            "video_id": "p-sXfcYuffU",
+            "title": "I SEE 3 Tutorial AUGUST 25 | How to Use Google Veo 3 NEW METHOD!",
+            "description": null,
+            "thumbnail": "",
+            "duration": "10:30",
+            "views": 5149,
+            "likes": 0,
+            "published_at": "2 weeks ago",
+            "url": "https://youtube.com/watch?v=p-sXfcYuffU"
+          },
+          {
+            "video_id": "0YatNlSJPzo",
+            "title": "How to Sell on Tiktok Shop The ONLY ACTION PLAN You Need to Get Started TODAY!",
+            "description": null,
+            "thumbnail": "",
+            "duration": "26:26",
+            "views": 1326,
+            "likes": 0,
+            "published_at": "3 weeks ago",
+            "url": "https://youtube.com/watch?v=0YatNlSJPzo"
+          },
+          {
+            "video_id": "We0nwILH14w",
+            "title": "How I Make Easy Money Online With AI-Made Videos and Automate the Entire Process",
+            "description": null,
+            "thumbnail": "",
+            "duration": "23:04",
+            "views": 1220,
+            "likes": 0,
+            "published_at": "3 weeks ago",
+            "url": "https://youtube.com/watch?v=We0nwILH14w"
+          },
+          {
+            "video_id": "7mtBdb8BRF4",
+            "title": "How to Create Up to 20 Videos a Day Without Spending Your VEO3 Credits!",
+            "description": null,
+            "thumbnail": "",
+            "duration": "11:01",
+            "views": 3773,
+            "likes": 0,
+            "published_at": "3 weeks ago",
+            "url": "https://youtube.com/watch?v=7mtBdb8BRF4"
+          },
+          {
+            "video_id": "wp9XjC9_EJE",
+            "title": "Runway ACT-TWO'S NEW AI IS HERE AND IT WILL CHANGE EVERYTHING!",
+            "description": null,
+            "thumbnail": "",
+            "duration": "16:30",
+            "views": 2257,
+            "likes": 0,
+            "published_at": "4 weeks ago",
+            "url": "https://youtube.com/watch?v=wp9XjC9_EJE"
+          },
+          {
+            "video_id": "bh6QTyB2e9E",
+            "title": "Discover the Power of NEW CHINESE AI for Product Review Video Generation!",
+            "description": null,
+            "thumbnail": "",
+            "duration": "25:20",
+            "views": 2596,
+            "likes": 0,
+            "published_at": "4 weeks ago",
+            "url": "https://youtube.com/watch?v=bh6QTyB2e9E"
+          },
+          {
+            "video_id": "oR2ULabRixY",
+            "title": "Tiktok Shop Brazil | R$168,000 in 30 days with 3D DOLL videos (WITHOUT APPEARANCE)",
+            "description": null,
+            "thumbnail": "",
+            "duration": "33:40",
+            "views": 2179,
+            "likes": 0,
+            "published_at": "4 weeks ago",
+            "url": "https://youtube.com/watch?v=oR2ULabRixY"
+          },
+          {
+            "video_id": "uYgptH_PNHA",
+            "title": "6 VIRAL NICHES on TIKTOK | Just Copy and Paste and be Happy",
+            "description": null,
+            "thumbnail": "",
+            "duration": "13:32",
+            "views": 1031,
+            "likes": 0,
+            "published_at": "1 month ago",
+            "url": "https://youtube.com/watch?v=uYgptH_PNHA"
+          },
+          {
+            "video_id": "xQsu07wcDQQ",
+            "title": "This Viral Video Generated R$95,000 in 7 Days (Automatically!)",
+            "description": null,
+            "thumbnail": "",
+            "duration": "12:03",
+            "views": 1219,
+            "likes": 0,
+            "published_at": "1 month ago",
+            "url": "https://youtube.com/watch?v=xQsu07wcDQQ"
+          },
+          {
+            "video_id": "oCGbInc4LG8",
+            "title": "TIKTOK SHOP | How This Ridiculous Video Generated 30K Views Effortlessly (And It Was AI That Did ...",
+            "description": null,
+            "thumbnail": "",
+            "duration": "12:08",
+            "views": 1772,
+            "likes": 0,
+            "published_at": "1 month ago",
+            "url": "https://youtube.com/watch?v=oCGbInc4LG8"
+          },
+          {
+            "video_id": "bHHR84FEigg",
+            "title": "How to Use VEO 3 | UNLIMITED ACCESS + Gemini Pro (New Method!)",
+            "description": null,
+            "thumbnail": "",
+            "duration": "15:48",
+            "views": 11323,
+            "likes": 0,
+            "published_at": "1 month ago",
+            "url": "https://youtube.com/watch?v=bHHR84FEigg"
+          },
+          {
+            "video_id": "Z-ELlmZfEHI",
+            "title": "$284 PER VIDEO | NEW VIRAL NICHE ON TIKTOK PART 2",
+            "description": null,
+            "thumbnail": "",
+            "duration": "18:31",
+            "views": 1377,
+            "likes": 0,
+            "published_at": "1 month ago",
+            "url": "https://youtube.com/watch?v=Z-ELlmZfEHI"
+          },
+          {
+            "video_id": "QSDRbQA30Bg",
+            "title": "NEW VIRAL NICHE ON TIKTOK | $284 PER VIDEO",
+            "description": null,
+            "thumbnail": "",
+            "duration": "17:45",
+            "views": 1909,
+            "likes": 0,
+            "published_at": "1 month ago",
+            "url": "https://youtube.com/watch?v=QSDRbQA30Bg"
+          },
+          {
+            "video_id": "9vaP-3Jy158",
+            "title": "CAPCUT'S NEW AI for Automatic Video Creation is a Revolution for NICHE STORYTELLING!",
+            "description": null,
+            "thumbnail": "",
+            "duration": "26:47",
+            "views": 3546,
+            "likes": 0,
+            "published_at": "1 month ago",
+            "url": "https://youtube.com/watch?v=9vaP-3Jy158"
+          },
+          {
+            "video_id": "J8IAh5Zp-lM",
+            "title": "VEO 3: Faça seu Clone EXTREMAMENTE REALISTA com Sua Imagem e Voz Real (CURSO COMPLETO)",
+            "description": null,
+            "thumbnail": "",
+            "duration": "24:27",
+            "views": 1637,
+            "likes": 0,
+            "published_at": "1 month ago",
+            "url": "https://youtube.com/watch?v=J8IAh5Zp-lM"
+          },
+          {
+            "video_id": "SmAWO-hkYJg",
+            "title": "NOVO VEO3 Garante Sincronia Labial e Criação de Vídeo PREMIUM Apartir de Qualquer Imagem",
+            "description": null,
+            "thumbnail": "",
+            "duration": "19:42",
+            "views": 4647,
+            "likes": 0,
+            "published_at": "1 month ago",
+            "url": "https://youtube.com/watch?v=SmAWO-hkYJg"
+          },
+          {
+            "video_id": "6y0QYrglr2o",
+            "title": "If you want to make money online (or get out of the CLT), this video is for you",
+            "description": null,
+            "thumbnail": "",
+            "duration": "31:06",
+            "views": 1315,
+            "likes": 0,
+            "published_at": "1 month ago",
+            "url": "https://youtube.com/watch?v=6y0QYrglr2o"
+          },
+          {
+            "video_id": "NOhmS_pF5ck",
+            "title": "This AI unlocks FULL access to ChatGPT, Claude, Perplexity and Grok – FOR FREE!",
+            "description": null,
+            "thumbnail": "",
+            "duration": "13:10",
+            "views": 5155,
+            "likes": 0,
+            "published_at": "1 month ago",
+            "url": "https://youtube.com/watch?v=NOhmS_pF5ck"
+          },
+          {
+            "video_id": "V4qFAXInZmg",
+            "title": "How to Use Veo 3 FREE to Create UNLIMITED Videos Per Day",
+            "description": null,
+            "thumbnail": "",
+            "duration": "11:51",
+            "views": 20195,
+            "likes": 0,
+            "published_at": "1 month ago",
+            "url": "https://youtube.com/watch?v=V4qFAXInZmg"
+          },
+          {
+            "video_id": "Nz6Zy2OuouE",
+            "title": "Google VEO Tutorial 3: How to Create INSANE VIRAL VLOGS (MASTER Prompts Included)",
+            "description": null,
+            "thumbnail": "",
+            "duration": "14:08",
+            "views": 1009,
+            "likes": 0,
+            "published_at": "1 month ago",
+            "url": "https://youtube.com/watch?v=Nz6Zy2OuouE"
+          },
+          {
+            "video_id": "3tP53OeGx1U",
+            "title": "Google VEO Tutorial 3: How to Create INSANE INTERVIEWS VIRAL Format (Prompts Included)",
+            "description": null,
+            "thumbnail": "",
+            "duration": "15:23",
+            "views": 2263,
+            "likes": 0,
+            "published_at": "1 month ago",
+            "url": "https://youtube.com/watch?v=3tP53OeGx1U"
+          },
+          {
+            "video_id": "7SH6b0_eXwk",
+            "title": "GOODBYE VEO3! Better than Veo 3, FREE and unlimited... (SECRET ACCESS) 🤯",
+            "description": null,
+            "thumbnail": "",
+            "duration": "18:34",
+            "views": 29617,
+            "likes": 0,
+            "published_at": "1 month ago",
+            "url": "https://youtube.com/watch?v=7SH6b0_eXwk"
+          },
+          {
+            "video_id": "SWFrTZRE3zk",
+            "title": "DO THIS!",
+            "description": null,
+            "thumbnail": "",
+            "duration": "22:32",
+            "views": 854,
+            "likes": 0,
+            "published_at": "1 month ago",
+            "url": "https://youtube.com/watch?v=SWFrTZRE3zk"
+          },
+          {
+            "video_id": "NX2OOjLLMWs",
+            "title": "5 Niches with VEO3 on TikTok That Can Generate R$10k/Month",
+            "description": null,
+            "thumbnail": "",
+            "duration": "14:09",
+            "views": 1570,
+            "likes": 0,
+            "published_at": "1 month ago",
+            "url": "https://youtube.com/watch?v=NX2OOjLLMWs"
           }
         ],
-        "total_videos": 3,
-        "total_count": 3,
-        "message": "✅ 3 títulos extraídos com sucesso via yt-dlp!"
+        "total_videos": 30,
+        "total_count": 30,
+        "message": "✅ 30 títulos extraídos com sucesso!"
       }
     },
-    "a371e5c2b373dffcf67a1da0056f943c": {
+    "0e0681cfc4699c8aa76c48900858e85a": {
       "success": true,
       "data": {
         "videos": [
           {
-            "video_id": "TDv56whosPQ",
-            "title": "Survive 100 Days In Prison, Win $500,000",
-            "description": "I did not expect them to do that lol\nGet your hands on the new MrBeast Lab Hybrids here:\nhttps://www.moosetoys.com/brands/mr-beast-lab\n\n\nNew Merch - https://mrbeast.store\n\nCheck out Viewstats!...",
+            "video_id": "dLGBChmJ6Pc",
+            "title": "\"PODEMOS COMER COM VOCÊ?\" — MENINA COM SUA IRMÃ NO COLO OLHA PARA O MILIONÁRIO E ELE MUDA TUDO!",
+            "description": "\"PODEMOS COMER COM VOCÊ?\" — MENINA COM SUA IRMÃ NO COLO OLHA PARA O MILIONÁRIO E ELE MUDA TUDO!\n\n#historias #historiasreais #histórias #históriasemocionantes #historiasinspiradoras #históri...",
             "thumbnail": "",
-            "duration": "2376.0s",
-            "views": 61077622,
+            "duration": "7989.0s",
+            "views": 2487,
             "likes": 0,
             "published_at": "",
-            "url": "https://www.youtube.com/watch?v=TDv56whosPQ"
+            "url": "https://www.youtube.com/watch?v=dLGBChmJ6Pc"
           },
           {
-            "video_id": "Z4hVGCWH1Kc",
-            "title": "2,000,000 People Get Clean Water For The First Time!",
-            "description": "$1 will provide 1 person with clean water for a year\nThanks to Shopify for supporting our mission to raise $40,000,000 for clean water for 2,000,000 people. Go to https://teamwater.org to donate...",
+            "video_id": "f8heWcgZ7Zc",
+            "title": "\"EU FALO 8 IDIOMAS\" – A MENINA DISSE ORGULHOSA, TODOS RIRAM… MENOS O MILIONÁRIO, QUE FICOU EM CHOQUE",
+            "description": "\"EU FALO 8 IDIOMAS\" – A MENINA DISSE ORGULHOSA, TODOS RIRAM… MENOS O MILIONÁRIO, QUE FICOU EM CHOQUE\n\n#historias #historiasreais #histórias #históriasemocionantes #historiasinspiradoras...",
             "thumbnail": "",
-            "duration": "620.0s",
-            "views": 57357700,
+            "duration": "7907.0s",
+            "views": 1398,
             "likes": 0,
             "published_at": "",
-            "url": "https://www.youtube.com/watch?v=Z4hVGCWH1Kc"
+            "url": "https://www.youtube.com/watch?v=f8heWcgZ7Zc"
           },
-          {
-            "video_id": "pzBi1nwDn8U",
-            "title": "Survive 100 Days Trapped In A Private Jet, Keep It",
-            "description": "Spending that much time in a jet is crazy\n10 people will win $10,000 thanks to DoorDash. Enter promo code JET on any grocery, convenience or retail to get $10 off your order AND to enter for...",
-            "thumbnail": "",
-            "duration": "1983.0s",
-            "views": 125803996,
-            "likes": 0,
-            "published_at": "",
-            "url": "https://www.youtube.com/watch?v=pzBi1nwDn8U"
-          },
-          {
-            "video_id": "FWAdfuPpLOc",
-            "title": "World's Fastest Car Vs Cheetah!",
-            "description": "I still can't believe we got all these animals for this\n\nCheck out the latest Lenovo Legion Pro 7i with Intel® Core™ Ultra 9 Processor: https://www.lenovo.com/legion?cid=ww:display:334qnx...",
-            "thumbnail": "",
-            "duration": "1237.0s",
-            "views": 146205140,
-            "likes": 0,
-            "published_at": "",
-            "url": "https://www.youtube.com/watch?v=FWAdfuPpLOc"
-          },
-          {
-            "video_id": "pe_ejTiIcSs",
-            "title": "Lose 100 LBs, Win $250,000!",
-            "description": "Go start the business you’ve been dreaming of and visit https://www.Shopify.com/MrBeast to start your trial now.\n\n**In Loving Memory of Coach Tyler Wall**\n\nIt is with profound sadness that...",
-            "thumbnail": "",
-            "duration": "2210.0s",
-            "views": 186184682,
-            "likes": 0,
-            "published_at": "",
-            "url": "https://www.youtube.com/watch?v=pe_ejTiIcSs"
-          }
-        ],
-        "total_videos": 5,
-        "total_count": 5,
-        "message": "✅ 5 títulos extraídos com sucesso via yt-dlp!",
-        "extraction_method": "yt-dlp",
-        "extraction_time": 1.1681416034698486
-      }
-    },
-    "2f6994800124fa2dcdab48af1b1e1e1e": {
-      "success": true,
-      "data": {
-        "videos": [
-          {
-            "video_id": "TDv56whosPQ",
-            "title": "Survive 100 Days In Prison, Win $500,000",
-            "description": "I did not expect them to do that lol\nGet your hands on the new MrBeast Lab Hybrids here:\nhttps://www.moosetoys.com/brands/mr-beast-lab\n\n\nNew Merch - https://mrbeast.store\n\nCheck out Viewstats!...",
-            "thumbnail": "",
-            "duration": "2376.0s",
-            "views": 61077622,
-            "likes": 0,
-            "published_at": "",
-            "url": "https://www.youtube.com/watch?v=TDv56whosPQ"
-          },
-          {
-            "video_id": "Z4hVGCWH1Kc",
-            "title": "2,000,000 People Get Clean Water For The First Time!",
-            "description": "$1 will provide 1 person with clean water for a year\nThanks to Shopify for supporting our mission to raise $40,000,000 for clean water for 2,000,000 people. Go to https://teamwater.org to donate...",
-            "thumbnail": "",
-            "duration": "620.0s",
-            "views": 57357700,
-            "likes": 0,
-            "published_at": "",
-            "url": "https://www.youtube.com/watch?v=Z4hVGCWH1Kc"
-          },
-          {
-            "video_id": "pzBi1nwDn8U",
-            "title": "Survive 100 Days Trapped In A Private Jet, Keep It",
-            "description": "Spending that much time in a jet is crazy\n10 people will win $10,000 thanks to DoorDash. Enter promo code JET on any grocery, convenience or retail to get $10 off your order AND to enter for...",
-            "thumbnail": "",
-            "duration": "1983.0s",
-            "views": 125803996,
-            "likes": 0,
-            "published_at": "",
-            "url": "https://www.youtube.com/watch?v=pzBi1nwDn8U"
-          },
-          {
-            "video_id": "FWAdfuPpLOc",
-            "title": "World's Fastest Car Vs Cheetah!",
-            "description": "I still can't believe we got all these animals for this\n\nCheck out the latest Lenovo Legion Pro 7i with Intel® Core™ Ultra 9 Processor: https://www.lenovo.com/legion?cid=ww:display:334qnx...",
-            "thumbnail": "",
-            "duration": "1237.0s",
-            "views": 146205140,
-            "likes": 0,
-            "published_at": "",
-            "url": "https://www.youtube.com/watch?v=FWAdfuPpLOc"
-          },
-          {
-            "video_id": "pe_ejTiIcSs",
-            "title": "Lose 100 LBs, Win $250,000!",
-            "description": "Go start the business you’ve been dreaming of and visit https://www.Shopify.com/MrBeast to start your trial now.\n\n**In Loving Memory of Coach Tyler Wall**\n\nIt is with profound sadness that...",
-            "thumbnail": "",
-            "duration": "2210.0s",
-            "views": 186184682,
-            "likes": 0,
-            "published_at": "",
-            "url": "https://www.youtube.com/watch?v=pe_ejTiIcSs"
-          },
-          {
-            "video_id": "hTSaweR8qMI",
-            "title": "$1 vs $500,000 Date",
-            "description": "Experiencing all of this was incredible\nBuy Feastables! It tastes amazing and it's ethically sourced 👉 https://fstbls.com/5mj6dv\n\nNew Merch - https://mrbeast.store\n\nCheck out Viewstats!...",
-            "thumbnail": "",
-            "duration": "1042.0s",
-            "views": 125096282,
-            "likes": 0,
-            "published_at": "",
-            "url": "https://www.youtube.com/watch?v=hTSaweR8qMI"
-          },
-          {
-            "video_id": "DZIASl9q90s",
-            "title": "Beat Neymar, Win $500,000",
-            "description": "The amount of skill in this video is insane\nIf you wanna score tons of Magenta Status perks and benefits like Aaron Judge and MrBeast, just for being a T-Mobile member, check out https://T-Mobile.c...",
-            "thumbnail": "",
-            "duration": "1673.0s",
-            "views": 151698663,
-            "likes": 0,
-            "published_at": "",
-            "url": "https://www.youtube.com/watch?v=DZIASl9q90s"
-          },
-          {
-            "video_id": "-4GmbBoYQjE",
-            "title": "I Survived 100 Hours In An Ancient Temple",
-            "description": "I can’t believe I got to do this\nHUGE thanks to @jacklinks for making this happen, without them we can’t give away this money. Visit the link to buy Jack Link’s DUOS now: https://bit.ly/4ipfW...",
-            "thumbnail": "",
-            "duration": "946.0s",
-            "views": 109339712,
-            "likes": 0,
-            "published_at": "",
-            "url": "https://www.youtube.com/watch?v=-4GmbBoYQjE"
-          },
-          {
-            "video_id": "uyiG6uw-6pA",
-            "title": "Would You Risk Drowning for $500,000?",
-            "description": "These were crazy dangerous so everything was performed under professional supervision\nJack Link’s Jerky can fuel anything. Scan the code or visit the link to buy Jack Link’s DUOS now: https://b...",
-            "thumbnail": "",
-            "duration": "1546.0s",
-            "views": 174956386,
-            "likes": 0,
-            "published_at": "",
-            "url": "https://www.youtube.com/watch?v=uyiG6uw-6pA"
-          },
-          {
-            "video_id": "figrl0aOULs",
-            "title": "Click This Video To Feed 1 Person",
-            "description": "Buying 1 Hoodie = 100 Meals for people in need! Go get it now: https://www.doordash.com/p/dashmart-near-me\n\nThank you https://youtube.com/@DoorDash for teaming up to fight food insecurity....",
-            "thumbnail": "",
-            "duration": "629.0s",
-            "views": 70850148,
-            "likes": 0,
-            "published_at": "",
-            "url": "https://www.youtube.com/watch?v=figrl0aOULs"
-          }
-        ],
-        "total_videos": 10,
-        "total_count": 10,
-        "message": "✅ 10 títulos extraídos com sucesso via yt-dlp!",
-        "extraction_method": "yt-dlp",
-        "extraction_time": 0.7603442668914795,
-        "total_views": 1208570331,
-        "total_likes": 0
-      }
-    },
-    "9bc70d2ab88189052025105c0712e392": {
-      "success": true,
-      "data": {
-        "videos": [
           {
             "video_id": "dSGvesGrEtM",
             "title": "EMPREGADA GRÁVIDA DESMAIA NA MANSÃO DO MILIONÁRIO E O QUE ESCONDIA NO VENTRE SURPREENDE A TODOS!",
             "description": "EMPREGADA GRÁVIDA DESMAIA NA MANSÃO DO MILIONÁRIO E O QUE ESCONDIA NO VENTRE SURPREENDE A TODOS!\n\n#historias #historiasreais #histórias #históriasemocionantes #historiasinspiradoras #história...",
             "thumbnail": "",
             "duration": "7480.0s",
-            "views": 1298,
+            "views": 19530,
             "likes": 0,
             "published_at": "",
             "url": "https://www.youtube.com/watch?v=dSGvesGrEtM"
+          },
+          {
+            "video_id": "GSLCE9f4CKg",
+            "title": "\"SUA FILHA PODERIA ANDAR, MAS SUA NOIVA NÃO DEIXA!\"… DESABAFOU O MENINO POBRE AO MILIONÁRIO",
+            "description": "\"SUA FILHA PODERIA ANDAR, MAS SUA NOIVA NÃO DEIXA!\"… DESABAFOU O MENINO POBRE AO MILIONÁRIO\n\n#historias #historiasreais #histórias #históriasemocionantes #historiasinspiradoras #históriasdes...",
+            "thumbnail": "",
+            "duration": "7448.0s",
+            "views": 38490,
+            "likes": 0,
+            "published_at": "",
+            "url": "https://www.youtube.com/watch?v=GSLCE9f4CKg"
+          },
+          {
+            "video_id": "D3wVC2ekfaM",
+            "title": "MENINO POBRE IMPLORA AO MILIONÁRIO POR LEITE PARA O IRMÃO... E A REAÇÃO DELE TRANSFORMA TUDO",
+            "description": "MENINO POBRE IMPLORA AO MILIONÁRIO POR LEITE PARA O IRMÃO... E A REAÇÃO DELE TRANSFORMA TUDO\n\n#historias #historiasreais #histórias #históriasemocionantes #historiasinspiradoras #históriasde...",
+            "thumbnail": "",
+            "duration": "8020.0s",
+            "views": 4000,
+            "likes": 0,
+            "published_at": "",
+            "url": "https://www.youtube.com/watch?v=D3wVC2ekfaM"
+          },
+          {
+            "video_id": "7WjJ-Sd0HSk",
+            "title": "MILLIONÁRIO VÊ SEU FILHO AJUDANDO A COZINHEIRA A PREPARAR A COMIDA E PRESENCIA ALGO INESPERADO!",
+            "description": "MILLIONÁRIO VÊ SEU FILHO AJUDANDO A COZINHEIRA A PREPARAR A COMIDA E PRESENCIA ALGO INESPERADO!\n\n#historias #historiasreais #histórias #históriasemocionantes #historiasinspiradoras #históriasd...",
+            "thumbnail": "",
+            "duration": "8324.0s",
+            "views": 4081,
+            "likes": 0,
+            "published_at": "",
+            "url": "https://www.youtube.com/watch?v=7WjJ-Sd0HSk"
+          },
+          {
+            "video_id": "exfN4z55B-I",
+            "title": "\"PAI, AQUELES DOIS MENINOS DORMINDO NO LIXO SÃO PARECIDOS COMIGO\", DISSE O GAROTO AO MILIONÁRIO!",
+            "description": "\"PAI, AQUELES DOIS MENINOS DORMINDO NO LIXO SÃO PARECIDOS COMIGO\", DISSE O GAROTO AO MILIONÁRIO!\n\n#historias #historiasreais #histórias #históriasemocionantes #historiasinspiradoras #histórias...",
+            "thumbnail": "",
+            "duration": "7267.0s",
+            "views": 177971,
+            "likes": 0,
+            "published_at": "",
+            "url": "https://www.youtube.com/watch?v=exfN4z55B-I"
+          },
+          {
+            "video_id": "u8XYfdgQAcE",
+            "title": "MILIONÁRIO COMPRA TODA MERCADORIA DE UMA CRIANÇA VENDENDO DOCES NA RUA E FAZ UM PEDIDO INESPERADO",
+            "description": "MILIONÁRIO COMPRA TODA MERCADORIA DE UMA CRIANÇA VENDENDO DOCES NA RUA E FAZ UM PEDIDO INESPERADO\n\n#historias #historiasreais #histórias #históriasemocionantes #historiasinspiradoras #história...",
+            "thumbnail": "",
+            "duration": "8335.0s",
+            "views": 3534,
+            "likes": 0,
+            "published_at": "",
+            "url": "https://www.youtube.com/watch?v=u8XYfdgQAcE"
+          },
+          {
+            "video_id": "1zGtqccmwmg",
+            "title": "MILIONÁRIO, EM SEUS ÚLTIMOS DIAS, ADOTA DOIS GÊMEOS MENDIGOS… SEM IMAGINAR O IMPACTO EM SUA VIDA",
+            "description": "MILIONÁRIO, EM SEUS ÚLTIMOS DIAS, ADOTA DOIS GÊMEOS MENDIGOS… SEM IMAGINAR O IMPACTO EM SUA VIDA\n\n#historias #historiasreais #histórias #históriasemocionantes #historiasinspiradoras...",
+            "thumbnail": "",
+            "duration": "7637.0s",
+            "views": 7588,
+            "likes": 0,
+            "published_at": "",
+            "url": "https://www.youtube.com/watch?v=1zGtqccmwmg"
+          },
+          {
+            "video_id": "jg59niLu7sM",
+            "title": "\"ELA É IGUAL A SUA FILHA PERDIDA\", DISSE A NOIVA DO MILIONÁRIO AO VER A GAROTA DESABRIGADA…",
+            "description": "\"ELA É IGUAL A SUA FILHA PERDIDA\", DISSE A NOIVA DO MILIONÁRIO AO VER A GAROTA DESABRIGADA…\n\n#historias #historiasreais #histórias #históriasemocionantes #historiasinspiradoras #históriasdes...",
+            "thumbnail": "",
+            "duration": "8435.0s",
+            "views": 12852,
+            "likes": 0,
+            "published_at": "",
+            "url": "https://www.youtube.com/watch?v=jg59niLu7sM"
           }
         ],
-        "total_videos": 1,
-        "total_count": 1,
-        "message": "✅ 1 títulos extraídos com sucesso via yt-dlp!"
+        "total_videos": 10,
+        "total_count": 10,
+        "message": "✅ 10 títulos extraídos com sucesso via yt-dlp!"
+      }
+    },
+    "fe5ba4e02385c0c1f950628777c812f6": {
+      "success": true,
+      "data": {
+        "videos": [],
+        "total_videos": 0,
+        "total_count": 0,
+        "message": "✅ 0 títulos extraídos com sucesso via yt-dlp!"
       }
     }
   },
   "timestamps": {
-    "b45126cff0ba941c58568fa2657b9e9e": 1755568388.5464752,
-    "a371e5c2b373dffcf67a1da0056f943c": 1755570521.7953484,
-    "2f6994800124fa2dcdab48af1b1e1e1e": 1755570531.7105815,
-    "9bc70d2ab88189052025105c0712e392": 1755570607.1979082
+    "130fe8da25ed250807c9fd2ca4f7b3da": 1755809680.783621,
+    "2f819cf4414c9e9aaffbab97688b679b": 1755809684.6803083,
+    "0e0681cfc4699c8aa76c48900858e85a": 1755811628.0183055,
+    "fe5ba4e02385c0c1f950628777c812f6": 1755813692.3151448
   },
-  "saved_at": 1755570607.1992006
+  "saved_at": 1755813692.3168476
 }

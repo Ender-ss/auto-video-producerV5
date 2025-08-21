@@ -12,7 +12,7 @@ from services.title_generator import TitleGenerator
 scripts_bp = Blueprint('scripts', __name__)
 
 @scripts_bp.route('/generate', methods=['POST'])
-def generate_scripts():
+def generate_long_script(update_callback=None):
     """Gerar roteiros usando pipeline de 3 prompts"""
     try:
         data = request.get_json()
@@ -22,6 +22,14 @@ def generate_scripts():
         openrouter_model = data.get('openrouter_model', 'auto')
         number_of_chapters = data.get('number_of_chapters', 8)
         api_keys = data.get('api_keys', {})
+        
+        # Carregar chaves de API do arquivo se não fornecidas
+        if not api_keys:
+            import os
+            config_path = os.path.join(os.path.dirname(__file__), '..', 'config', 'api_keys.json')
+            if os.path.exists(config_path):
+                with open(config_path, 'r') as f:
+                    api_keys = json.load(f)
 
         if not title or not premise:
             return jsonify({
@@ -232,7 +240,7 @@ Cada prompt deve começar com: "Escreva uma história de aproximadamente 500 pal
         print(f"❌ Erro no Prompt 2: {e}")
         return None
 
-def execute_prompt_3(title, context, narrative_structure, number_of_chapters, ai_provider, openrouter_model, api_keys, title_generator):
+def execute_prompt_3(title, context, narrative_result, number_of_chapters, ai_provider, openrouter_model, api_keys, title_generator, update_callback=None, custom_inicio='', custom_meio='', custom_fim=''):
     """Prompt 3: Geração dos Capítulos"""
     chapters = []
 
@@ -242,42 +250,50 @@ def execute_prompt_3(title, context, narrative_structure, number_of_chapters, ai
         print(f"🔍 DEBUG: APIs disponíveis: {list(api_keys.keys())}")
 
         # Verificar se há pelo menos uma API configurada
-        has_openrouter = api_keys.get('openrouter') is not None
+        has_openrouter = api_keys.get('openrouter') is not None and title_generator.openrouter_api_key is not None
         has_gemini = title_generator.gemini_model is not None
         has_openai = title_generator.openai_client is not None
 
-        print(f"🔍 DEBUG: OpenRouter: {'✅' if has_openrouter else '❌'}")
-        print(f"🔍 DEBUG: Gemini: {'✅' if has_gemini else '❌'}")
-        print(f"🔍 DEBUG: OpenAI: {'✅' if has_openai else '❌'}")
+        print(f"🔍 DEBUG: OpenRouter configurado: {'✅' if has_openrouter else '❌'}")
+        print(f"🔍 DEBUG: Gemini configurado: {'✅' if has_gemini else '❌'}")
+        print(f"🔍 DEBUG: OpenAI configurado: {'✅' if has_openai else '❌'}")
 
         if not (has_openrouter or has_gemini or has_openai):
             print("❌ ERRO: Nenhuma API de IA configurada para geração de roteiros")
             return []
 
         # Extrair o prompt base da estrutura narrativa
-        base_prompt = extract_base_prompt(narrative_structure)
+        base_prompt = extract_base_prompt(narrative_result)
         print(f"🔍 DEBUG: Base prompt extraído: {base_prompt[:100]}...")
+        
+        # Importar funções auxiliares para prompts de roteiro
+        import sys
+        import os
+        sys.path.append(os.path.dirname(os.path.dirname(__file__)))
+        from routes.premise import create_inicio_prompt, create_capitulo_prompt, create_final_prompt
         
         for i in range(number_of_chapters):
             print(f"📖 Gerando Capítulo {i + 1}/{number_of_chapters}")
             
+            # Determinar qual prompt usar baseado na posição do capítulo
             if i == 0:
-                # Primeiro capítulo usa o prompt base
-                chapter_prompt = base_prompt
+                # Primeiro capítulo - usar prompt de início
+                if custom_inicio:
+                    chapter_prompt = custom_inicio
+                else:
+                    chapter_prompt = create_inicio_prompt(title, context, base_prompt, 'medio')
+            elif i == number_of_chapters - 1:
+                # Último capítulo - usar prompt de fim
+                if custom_fim:
+                    chapter_prompt = custom_fim
+                else:
+                    chapter_prompt = create_final_prompt(title, context, base_prompt, 'medio')
             else:
-                # Capítulos seguintes continuam a história
-                previous_chapter = chapters[i-1]['content'] if chapters else ""
-                chapter_prompt = f"""Continue a história a partir do capítulo anterior. Escreva o próximo capítulo de aproximadamente 500 palavras.
-
-Capítulo anterior:
-{previous_chapter}
-
-Instruções:
-- Continue a narrativa de forma natural
-- Mantenha a consistência dos personagens
-- Adicione novos elementos de tensão
-- Termine com um gancho para o próximo capítulo
-- NÃO resolva o conflito principal ainda"""
+                # Capítulos do meio - usar prompt de meio
+                if custom_meio:
+                    chapter_prompt = custom_meio
+                else:
+                    chapter_prompt = create_capitulo_prompt(title, context, base_prompt, i, number_of_chapters, 'medio')
 
             # Gerar o capítulo
             chapter_content = None
@@ -330,6 +346,8 @@ Instruções:
                     'content': chapter_content,
                     'word_count': len(chapter_content.split())
                 })
+                if update_callback:
+                    update_callback(chapters)
             else:
                 print(f"❌ Falha ao gerar capítulo {i + 1}")
                 # Se é o primeiro capítulo e falhou, retornar erro
@@ -443,11 +461,11 @@ def call_gemini(prompt, title_generator=None):
             if "429" in error_str or "quota" in error_str.lower() or "rate limit" in error_str.lower():
                 if attempt < max_retries - 1:  # Not the last attempt
                     print(f"🔄 Erro de quota detectado, tentando próxima chave Gemini...")
-                    handle_gemini_429_error(error_str)
+                    handle_gemini_429_error(error_str, api_key)
                     continue
                 else:
                     print("❌ Todas as tentativas de retry falharam")
-                    handle_gemini_429_error(error_str)
+                    handle_gemini_429_error(error_str, api_key)
             else:
                 # For non-quota errors, don't retry
                 print(f"❌ Erro não relacionado à quota, parando tentativas: {error_str}")
@@ -476,3 +494,139 @@ def call_openai(prompt, title_generator):
     except Exception as e:
         print(f"❌ DEBUG: Erro detalhado no OpenAI: {str(e)}")
         raise Exception(f'Erro OpenAI: {str(e)}')
+
+def generate_long_script(script_data, update_callback=None):
+    """Função principal para geração de roteiros longos - compatível com pipeline_service.py"""
+    try:
+        print("🎬 Iniciando geração de roteiro longo...")
+        
+        # Extrair dados do script_data
+        title = script_data.get('title', '')
+        premise = script_data.get('premise', '')
+        chapters = script_data.get('chapters', 8)
+        style = script_data.get('style', 'inicio')
+        duration_target = script_data.get('duration_target', 300)
+        include_hooks = script_data.get('include_hooks', True)
+        custom_inicio = script_data.get('custom_inicio', '')
+        custom_meio = script_data.get('custom_meio', '')
+        custom_fim = script_data.get('custom_fim', '')
+        
+        if not title or not premise:
+            return {
+                'success': False,
+                'error': 'Título e premissa são obrigatórios para geração de roteiro'
+            }
+        
+        # Usar diretamente as funções de geração sem Flask request
+        print(f"📝 Gerando roteiro: {title}")
+        print(f"📖 Premissa: {premise}")
+        print(f"📊 Capítulos: {chapters}")
+        
+        # Inicializar o gerador de títulos para ter acesso às APIs
+        title_generator = TitleGenerator()
+        
+        # Configurar APIs automaticamente
+        def load_api_keys_from_file():
+            """Carrega chaves de API do arquivo JSON"""
+            import os
+            import json
+            try:
+                config_path = os.path.join(os.path.dirname(__file__), '..', 'config', 'api_keys.json')
+                print(f"🔍 DEBUG: Caminho do config: {config_path}")
+                if os.path.exists(config_path):
+                    print("🔍 DEBUG: Arquivo de config encontrado")
+                    with open(config_path, 'r') as f:
+                        keys = json.load(f)
+                        print(f"🔍 DEBUG: Chaves carregadas: {list(keys.keys())}")
+                        return keys
+                print("❌ DEBUG: Arquivo de config não encontrado")
+                return {}
+            except Exception as e:
+                print(f"❌ Erro ao carregar chaves de API: {e}")
+                return {}
+        
+        api_keys = load_api_keys_from_file()
+        
+        if api_keys.get('openai'):
+            print("🔍 DEBUG: Configurando OpenAI")
+            title_generator.configure_openai(api_keys['openai'])
+        else:
+            print("❌ DEBUG: Chave OpenAI não encontrada")
+
+        gemini_key = api_keys.get('gemini') or api_keys.get('gemini_1')
+        if gemini_key:
+            print("🔍 DEBUG: Configurando Gemini com chave: {gemini_key[:5]}...")
+            title_generator.configure_gemini(gemini_key)
+        else:
+            print("❌ DEBUG: Chave Gemini não encontrada")
+
+        if api_keys.get('openrouter'):
+            print("🔍 DEBUG: Configurando OpenRouter")
+            title_generator.configure_openrouter(api_keys['openrouter'])
+        else:
+            print("❌ DEBUG: Chave OpenRouter não encontrada")
+        
+        # Pipeline de 3 prompts
+        print("🎬 Iniciando pipeline de geração de roteiros...")
+        
+        # PROMPT 1: Tradução e Contexto
+        print("📝 Executando Prompt 1: Tradução e Contexto")
+        context_result = execute_prompt_1(title, premise, 'auto', 'auto', api_keys, title_generator)
+        
+        if not context_result:
+            raise Exception("Falha no Prompt 1: Tradução e Contexto")
+        
+        # PROMPT 2: Estrutura Narrativa
+        print("📖 Executando Prompt 2: Estrutura Narrativa")
+        narrative_result = execute_prompt_2(title, context_result, 'auto', 'auto', api_keys, title_generator)
+        
+        if not narrative_result:
+            raise Exception("Falha no Prompt 2: Estrutura Narrativa")
+        
+        # PROMPT 3: Geração dos Capítulos
+        print(f"✍️ Executando Prompt 3: Geração de {chapters} Capítulos")
+        chapters_list = execute_prompt_3(title, context_result, narrative_result, chapters, 'auto', 'auto', api_keys, title_generator, update_callback, custom_inicio, custom_meio, custom_fim)
+        
+        if not chapters_list:
+            raise Exception("Falha no Prompt 3: Geração dos Capítulos")
+        
+        # Combinar todos os capítulos em um roteiro único
+        full_script = ""
+        for chapter in chapters_list:
+            full_script += f"\n\n{chapter.get('title', '')}\n\n"
+            full_script += chapter.get('content', '')
+        
+        # Calcular duração estimada (aproximadamente 150 palavras por minuto)
+        word_count = len(full_script.split())
+        # Garantir que duration_target seja um número - extrair apenas números
+        if isinstance(duration_target, str):
+            # Extrair números da string (ex: "5-7 minutes" -> 5)
+            import re
+            numbers = re.findall(r'\d+', duration_target)
+            duration_target_num = int(numbers[0]) if numbers else 5
+        else:
+            duration_target_num = duration_target
+        estimated_duration = max(word_count / 150, duration_target_num / 60)  # em minutos
+        
+        print(f"✅ Roteiro gerado com sucesso: {len(chapters_list)} capítulos, {word_count} palavras")
+        
+        return {
+            'success': True,
+            'data': {
+                'script': full_script.strip(),
+                'chapters': chapters_list,
+                'estimated_duration': estimated_duration,
+                'word_count': word_count,
+                'style': style,
+                'provider_used': 'auto',
+                'context': context_result,
+                'narrative_structure': narrative_result
+            }
+        }
+                
+    except Exception as e:
+        print(f"❌ Erro na geração de roteiro longo: {e}")
+        return {
+            'success': False,
+            'error': str(e)
+        }

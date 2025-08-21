@@ -17,7 +17,18 @@ from dotenv import load_dotenv
 load_dotenv()
 
 # Configurar logging
-logging.basicConfig(level=logging.INFO)
+log_dir = 'logs'
+os.makedirs(log_dir, exist_ok=True)
+log_file = os.path.join(log_dir, 'app.log')
+
+logging.basicConfig(
+    level=logging.INFO,
+    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
+    handlers=[
+        logging.FileHandler(log_file, encoding='utf-8'),
+        logging.StreamHandler()
+    ]
+)
 logger = logging.getLogger(__name__)
 
 # Inicializar Flask
@@ -306,12 +317,15 @@ def register_blueprints():
         from routes.workflow import workflow_bp
         from routes.channels import channels_bp
         from routes.pipelines import pipelines_bp
+        from routes.pipeline_complete import pipeline_complete_bp
         from routes.videos import videos_bp
         from routes.settings import settings_bp
         from routes.system import system_bp
         from routes.tests import tests_bp
         from routes.images import images_bp
         from routes.image_queue import image_queue_bp
+        from routes.prompts_config import prompts_config_bp
+        from routes.test_gemini import test_gemini_bp
 
         # Carregar chaves na inicialização
         load_rapidapi_keys()
@@ -326,12 +340,15 @@ def register_blueprints():
         app.register_blueprint(workflow_bp, url_prefix='/api/workflow')
         app.register_blueprint(channels_bp, url_prefix='/api/channels')
         app.register_blueprint(pipelines_bp, url_prefix='/api/pipelines')
+        app.register_blueprint(pipeline_complete_bp, url_prefix='/api/pipeline')
         app.register_blueprint(videos_bp, url_prefix='/api/videos')
         app.register_blueprint(settings_bp, url_prefix='/api/settings')
         app.register_blueprint(system_bp, url_prefix='/api/system')
         app.register_blueprint(tests_bp, url_prefix='/api/tests')
         app.register_blueprint(images_bp, url_prefix='/api/images')
         app.register_blueprint(image_queue_bp, url_prefix='/api/image-queue')
+        app.register_blueprint(prompts_config_bp, url_prefix='/api')
+        app.register_blueprint(test_gemini_bp, url_prefix='/api/test/gemini')
 
         logger.info("✅ Rotas registradas com sucesso!")
     except Exception as e:

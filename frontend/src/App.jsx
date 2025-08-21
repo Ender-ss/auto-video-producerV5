@@ -33,6 +33,8 @@ import ImageQueue from './pages/ImageQueue';
 import YouTubeExtractTest from './pages/YouTubeExtractTest';
 import YouTubeExtractComparison from './pages/YouTubeExtractComparison';
 import ScreenplayGeneratorTest from './pages/ScreenplayGeneratorTest';
+import PromptsConfig from './pages/PromptsConfig';
+import ConteudosGerados from './pages/ConteudosGerados';
 
 // Mock system status for demo
 const mockSystemStatus = {
@@ -232,6 +234,21 @@ function App() {
                 />
                 
                 <Route 
+                  path="/conteudos-gerados" 
+                  element={
+                    <motion.div
+                      key="conteudos-gerados"
+                      initial={{ opacity: 0, y: 20 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      exit={{ opacity: 0, y: -20 }}
+                      transition={{ duration: 0.3 }}
+                    >
+                      <ConteudosGerados />
+                    </motion.div>
+                  } 
+                />
+                
+                <Route 
                   path="/analytics" 
                   element={
                     <motion.div
@@ -257,6 +274,21 @@ function App() {
                       transition={{ duration: 0.3 }}
                     >
                       <Settings />
+                    </motion.div>
+                  }
+                />
+
+                <Route
+                  path="/prompts-config"
+                  element={
+                    <motion.div
+                      key="prompts-config"
+                      initial={{ opacity: 0, y: 20 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      exit={{ opacity: 0, y: -20 }}
+                      transition={{ duration: 0.3 }}
+                    >
+                      <PromptsConfig />
                     </motion.div>
                   }
                 />

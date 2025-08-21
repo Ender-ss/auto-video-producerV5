@@ -1,0 +1,18 @@
+{
+  "channel_url": "https://www.youtube.com/@MrBeast",
+  "config": {
+    "extraction": {
+      "provider": "rapidapi",
+      "max_duration": 300
+    },
+    "titles": {
+      "provider": "gemini",
+      "count": 3
+    },
+    "tts": {
+      "provider": "gemini",
+      "voice_name": "Aoede",
+      "model": "gemini-2.5-flash-preview-tts"
+    }
+  }
+}

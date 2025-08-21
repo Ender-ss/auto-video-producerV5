@@ -33,6 +33,8 @@ logging.basicConfig(
 )
 
 logger = logging.getLogger(__name__)
+logger.propagate = True
+logger.setLevel(logging.INFO)
 
 def add_real_time_log(message, level="info", source="system"):
     """Adicionar log ao sistema em tempo real"""

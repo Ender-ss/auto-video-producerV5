@@ -15,6 +15,7 @@ import base64
 import wave
 import io
 import threading
+from utils.error_messages import auto_format_error, format_error_response
 
 # Importar sistema de logs em tempo real
 try:
@@ -273,7 +274,7 @@ def get_next_gemini_key():
 
     return selected_key
 
-def handle_gemini_429_error(error_message):
+def handle_gemini_429_error(error_message, current_key=None):
     """Tratar erro 429 específico do Gemini com logs detalhados"""
     print(f"🚫 ERRO 429 GEMINI: {error_message}")
     add_real_time_log(f"🚫 ERRO 429 GEMINI: Quota excedida - {error_message}", "error", "gemini-429")
@@ -285,14 +286,26 @@ def handle_gemini_429_error(error_message):
     print(f"📊 Estado das chaves Gemini: {total_usage} requisições usadas com {num_keys} chaves")
     add_real_time_log(f"📊 Estado Gemini: {total_usage} req usadas, {num_keys} chaves disponíveis", "info", "gemini-status")
     
-    # Marcar todas as chaves como esgotadas para forçar fallback
+    # Marcar apenas a chave atual como esgotada, não todas
+    if current_key and current_key in GEMINI_KEYS_ROTATION['keys']:
+        GEMINI_KEYS_ROTATION['usage_count'][current_key] = 8  # Marcar como limite atingido
+        print(f"⚠️ Chave Gemini {current_key[:20]}... marcada como esgotada.")
+        add_real_time_log(f"⚠️ Chave Gemini marcada como esgotada: {current_key[:20]}...", "warning", "gemini-key-exhausted")
+    
+    # Verificar se ainda há chaves disponíveis
+    available_keys = 0
     for key in GEMINI_KEYS_ROTATION['keys']:
-        GEMINI_KEYS_ROTATION['usage_count'][key] = 8  # Marcar como limite atingido
+        if GEMINI_KEYS_ROTATION['usage_count'].get(key, 0) < 8:
+            available_keys += 1
     
-    print("⚠️ Todas as chaves Gemini marcadas como esgotadas. Fallback automático ativado.")
-    add_real_time_log("⚠️ Fallback automático ativado para Gemini", "warning", "gemini-fallback")
-    
-    return False
+    if available_keys == 0:
+        print("⚠️ Todas as chaves Gemini esgotadas. Fallback automático ativado.")
+        add_real_time_log("⚠️ Fallback automático ativado para Gemini", "warning", "gemini-fallback")
+        return False
+    else:
+        print(f"✅ Ainda há {available_keys} chaves Gemini disponíveis.")
+        add_real_time_log(f"✅ {available_keys} chaves Gemini ainda disponíveis", "info", "gemini-available")
+        return True
 
 def check_gemini_availability():
     """Verificar se há chaves Gemini disponíveis"""
@@ -1591,12 +1604,12 @@ Por favor, crie uma premissa narrativa envolvente baseada no título e resumo fo
             if "429" in error_str or "quota" in error_str.lower() or "rate limit" in error_str.lower():
                 if attempt < max_retries - 1:  # Not the last attempt
                     print(f"🔄 Erro de quota detectado, tentando próxima chave Gemini...")
-                    handle_gemini_429_error(error_str)
+                    handle_gemini_429_error(error_str, api_key)
                     api_key = None  # Forçar nova chave na próxima tentativa
                     continue
                 else:
                     print("❌ Todas as tentativas de retry falharam")
-                    handle_gemini_429_error(error_str)
+                    handle_gemini_429_error(error_str, api_key)
             else:
                 # For non-quota errors, don't retry
                 print(f"❌ Erro não relacionado à quota, parando tentativas: {error_str}")
@@ -1643,7 +1656,7 @@ def generate_script_chapters_with_gemini_retry(title, context, num_chapters, api
             # Se é erro 429 (quota exceeded), tentar próxima chave
             if "429" in error_str or "quota" in error_str.lower() or "exceeded" in error_str.lower():
                 print(f"🔄 Erro de cota detectado, tentando próxima chave...")
-                handle_gemini_429_error(error_str)
+                handle_gemini_429_error(error_str, api_key)
                 api_key = None  # Forçar nova chave na próxima tentativa
                 continue
             else:
@@ -1659,7 +1672,7 @@ def generate_script_chapters_with_gemini_retry(title, context, num_chapters, api
             # Se é erro 429 (quota exceeded), tentar próxima chave
             if "429" in error_str or "quota" in error_str.lower() or "exceeded" in error_str.lower():
                 print(f"🔄 Erro de cota detectado, tentando próxima chave...")
-                handle_gemini_429_error(error_str)
+                handle_gemini_429_error(error_str, api_key)
                 api_key = None  # Forçar nova chave na próxima tentativa
                 continue
             else:
@@ -2895,7 +2908,7 @@ def get_channel_videos_ytdlp(channel_url, max_results=50):
         ydl_opts = {
             'quiet': True,
             'no_warnings': True,
-            'extract_flat': True,  # Extrair apenas metadados para ser mais rápido
+            'extract_flat': 'in_playlist',  # Extrair metadados da playlist diretamente
             'playlistend': min(max_results, 50),
             'ignoreerrors': True,
             'socket_timeout': 20,
@@ -2934,34 +2947,26 @@ def get_channel_videos_ytdlp(channel_url, max_results=50):
                     import threading
                     import time
                     
-                    result_container = {'result': None, 'error': None}
-                    
-                    def extract_with_timeout():
-                        try:
-                            print(f"🔍 DEBUG: Thread iniciada para extract_info")
-                            result_container['result'] = ydl.extract_info(url, download=False)
-                            print(f"🔍 DEBUG: extract_info concluído com sucesso")
-                        except Exception as e:
-                            print(f"🔍 DEBUG: Erro em extract_info: {e}")
-                            result_container['error'] = str(e)
-                    
-                    print(f"🔍 DEBUG: Criando thread para extract_info...")
-                    thread = threading.Thread(target=extract_with_timeout)
-                    thread.daemon = True
-                    thread.start()
-                    
-                    print(f"🔍 DEBUG: Aguardando thread por 30 segundos...")
-                    thread.join(timeout=30)  # Timeout de 30 segundos
-                    
-                    if thread.is_alive():
-                        print(f"⏰ TIMEOUT: extract_info travou após 30 segundos para {url}")
-                        last_error = "Timeout na extração de informações"
+                    try:
+                        print(f"🔍 DEBUG: Iniciando extract_info diretamente para {url}")
+                        channel_info = ydl.extract_info(url, download=False)
+                        print(f"🔍 DEBUG: extract_info concluído com sucesso")
+                    except Exception as e:
+                        print(f"❌ Erro em extract_info: {str(e)}")
+                        last_error = str(e)
                         continue
                     
-                    if result_container['error']:
-                        raise Exception(result_container['error'])
-                    
-                    channel_info = result_container['result']
+                    # Handle channel redirect to playlist
+                    if channel_info and channel_info.get('_type') == 'url':
+                        playlist_url = channel_info['url']
+                        print(f"🔄 Detectado redirecionamento para playlist: {playlist_url}")
+                        try:
+                            channel_info = ydl.extract_info(playlist_url, download=False)
+                            print(f"🔍 DEBUG: extract_info da playlist concluído com sucesso")
+                        except Exception as e:
+                            print(f"❌ Erro ao extrair playlist: {str(e)}")
+                            last_error = str(e)
+                            continue
                     
                     if channel_info and 'entries' in channel_info:
                         print(f"✅ Sucesso com URL: {url}")
@@ -2974,6 +2979,11 @@ def get_channel_videos_ytdlp(channel_url, max_results=50):
                     print(f"❌ Tentativa falhou para URL {url}: {last_error}")
                     continue
             
+            if channel_info:
+                print(f"DEBUG: Channel info type: {channel_info.get('_type')}")
+                print(f"DEBUG: Keys in channel_info: {list(channel_info.keys())}")
+                print(f"DEBUG: Has entries: {'entries' in channel_info}")
+                print(f"DEBUG: Number of entries: {len(channel_info.get('entries', []))}")
             if not channel_info or 'entries' not in channel_info:
                 error_msg = f'Não foi possível extrair informações do canal. Último erro: {last_error}'
                 print(f"❌ ERRO: {error_msg}")
@@ -3115,14 +3125,40 @@ def generate_titles():
 
         print(f"🤖 Gerando títulos sobre '{topic}' baseado em {len(source_titles)} títulos de referência")
 
-        # Gerar títulos baseado no provider escolhido
+        # Gerar títulos baseado no provider escolhido com fallback automático
+        results = None
+        
         if ai_provider == 'openai' and openai_configured:
-            generated_titles = title_generator.generate_titles_openai(source_titles, topic, count, style)
-            results = {
-                'generated_titles': generated_titles,
-                'ai_provider_used': 'openai',
-                'patterns_analysis': title_generator.analyze_viral_patterns(source_titles)
-            }
+            try:
+                generated_titles = title_generator.generate_titles_openai(source_titles, topic, count, style)
+                results = {
+                    'generated_titles': generated_titles,
+                    'ai_provider_used': 'openai',
+                    'patterns_analysis': title_generator.analyze_viral_patterns(source_titles)
+                }
+                add_real_time_log("✅ Títulos gerados com OpenAI", "info", "titles-openai")
+            except Exception as e:
+                error_msg = str(e).lower()
+                if '429' in error_msg or 'quota' in error_msg or 'insufficient_quota' in error_msg:
+                    add_real_time_log(f"⚠️ OpenAI quota excedida, tentando Gemini como fallback: {e}", "warning", "titles-fallback")
+                    if gemini_configured:
+                        try:
+                            generated_titles = title_generator.generate_titles_gemini(source_titles, topic, count, style)
+                            results = {
+                                'generated_titles': generated_titles,
+                                'ai_provider_used': 'gemini (fallback)',
+                                'patterns_analysis': title_generator.analyze_viral_patterns(source_titles)
+                            }
+                            add_real_time_log("✅ Títulos gerados com Gemini (fallback)", "info", "titles-gemini-fallback")
+                        except Exception as gemini_error:
+                            add_real_time_log(f"❌ Gemini fallback também falhou: {gemini_error}", "error", "titles-fallback-failed")
+                            raise e  # Re-raise o erro original do OpenAI
+                    else:
+                        add_real_time_log("❌ Gemini não configurado para fallback", "error", "titles-no-fallback")
+                        raise e
+                else:
+                    add_real_time_log(f"❌ Erro OpenAI (não quota): {e}", "error", "titles-openai-error")
+                    raise e
         elif ai_provider == 'gemini' and gemini_configured:
             generated_titles = title_generator.generate_titles_gemini(source_titles, topic, count, style)
             results = {
@@ -3130,9 +3166,42 @@ def generate_titles():
                 'ai_provider_used': 'gemini',
                 'patterns_analysis': title_generator.analyze_viral_patterns(source_titles)
             }
+            add_real_time_log("✅ Títulos gerados com Gemini", "info", "titles-gemini")
         else:
-            # Modo automático - usar híbrido ou o que estiver disponível
-            results = title_generator.generate_titles_hybrid(source_titles, topic, count, style)
+            # Modo automático - tentar OpenAI primeiro, depois Gemini se falhar
+            if openai_configured:
+                try:
+                    results = title_generator.generate_titles_hybrid(source_titles, topic, count, style)
+                    add_real_time_log("✅ Títulos gerados com modo híbrido (OpenAI)", "info", "titles-hybrid")
+                except Exception as e:
+                    error_msg = str(e).lower()
+                    if ('429' in error_msg or 'quota' in error_msg or 'insufficient_quota' in error_msg) and gemini_configured:
+                        add_real_time_log(f"⚠️ Modo híbrido falhou (quota), tentando Gemini: {e}", "warning", "titles-hybrid-fallback")
+                        try:
+                            generated_titles = title_generator.generate_titles_gemini(source_titles, topic, count, style)
+                            results = {
+                                'generated_titles': generated_titles,
+                                'ai_provider_used': 'gemini (auto-fallback)',
+                                'patterns_analysis': title_generator.analyze_viral_patterns(source_titles)
+                            }
+                            add_real_time_log("✅ Títulos gerados com Gemini (auto-fallback)", "info", "titles-auto-fallback")
+                        except Exception as gemini_error:
+                            add_real_time_log(f"❌ Auto-fallback para Gemini falhou: {gemini_error}", "error", "titles-auto-fallback-failed")
+                            raise e
+                    else:
+                        raise e
+            elif gemini_configured:
+                # Se só Gemini estiver configurado
+                generated_titles = title_generator.generate_titles_gemini(source_titles, topic, count, style)
+                results = {
+                    'generated_titles': generated_titles,
+                    'ai_provider_used': 'gemini (only available)',
+                    'patterns_analysis': title_generator.analyze_viral_patterns(source_titles)
+                }
+                add_real_time_log("✅ Títulos gerados com Gemini (única opção)", "info", "titles-gemini-only")
+            else:
+                # Usar híbrido como último recurso
+                results = title_generator.generate_titles_hybrid(source_titles, topic, count, style)
 
         if results.get('success', True) and (results.get('generated_titles') or results.get('combined_titles')):
             final_titles = results.get('combined_titles') or results.get('generated_titles', [])
@@ -3631,12 +3700,14 @@ def serve_tts_audio(filename):
         else:
             print(f"❌ Arquivo não encontrado: {filepath}")
             add_real_time_log(f"❌ Arquivo de áudio não encontrado: {filename}", "error", "audio-server")
-            return jsonify({'error': 'Arquivo não encontrado'}), 404
+            error_response = format_error_response('validation_error', 'Arquivo de áudio não encontrado', 'Servidor de Áudio')
+            return jsonify(error_response), 404
 
     except Exception as e:
         print(f"❌ Erro ao servir áudio: {str(e)}")
         add_real_time_log(f"❌ Erro ao servir áudio: {str(e)}", "error", "audio-server")
-        return jsonify({'error': f'Erro ao servir áudio: {str(e)}'}), 500
+        error_response = auto_format_error(str(e), 'Servidor de Áudio')
+        return jsonify(error_response), 500
 
 def get_audio_duration(filepath):
     """Obter duração do arquivo de áudio"""
@@ -4590,7 +4661,8 @@ def generate_content_with_gemini_retry(prompt, max_retries=3):
             # Se é erro 429 (quota exceeded) e não é a última tentativa, tentar próxima chave
             if ("429" in error_str or "quota" in error_str.lower() or "exceeded" in error_str.lower()) and attempt < max_retries - 1:
                 print(f"🔄 Erro de cota detectado, tentando próxima chave...")
-                handle_gemini_429_error(error_str)
+                # Não temos acesso à api_key específica aqui, então passamos None
+                handle_gemini_429_error(error_str, None)
                 continue
             else:
                 # Outros erros ou última tentativa, parar

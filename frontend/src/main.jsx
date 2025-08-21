@@ -93,11 +93,21 @@ class ErrorBoundary extends React.Component {
           <div className="max-w-md w-full bg-gray-800 rounded-lg p-6 text-center">
             <div className="text-6xl mb-4">🚨</div>
             <h1 className="text-2xl font-bold text-white mb-2">
-              Oops! Algo deu errado
+              🚨 Ops! Algo não saiu como esperado
             </h1>
             <p className="text-gray-400 mb-4">
-              Ocorreu um erro inesperado na aplicação.
+              Encontramos um problema técnico. Não se preocupe, isso pode acontecer!
             </p>
+            <div className="bg-blue-900/30 border border-blue-600/50 rounded-lg p-3 mb-4">
+              <p className="text-blue-300 text-sm">
+                💡 <strong>O que você pode fazer:</strong>
+              </p>
+              <ul className="text-blue-200 text-sm mt-2 space-y-1">
+                <li>• Recarregue a página (botão abaixo)</li>
+                <li>• Verifique sua conexão com a internet</li>
+                <li>• Tente novamente em alguns minutos</li>
+              </ul>
+            </div>
             
             {import.meta.env.DEV && this.state.error && (
               <details className="text-left bg-gray-900 p-3 rounded mb-4">

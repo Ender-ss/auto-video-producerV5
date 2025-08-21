@@ -279,7 +279,7 @@ const TTSGenerator = ({ scriptData, isVisible, onClose }) => {
         size: segment.audio.size,
         voice_used: segment.audio.voice_used,
         provider: currentProvider,
-        text_segment: segment.text.substring(0, 100) + (segment.text.length > 100 ? '...' : '')
+        text_segment: segment.text ? segment.text.substring(0, 100) + (segment.text.length > 100 ? '...' : '') : ''
       }))
       
       localStorage.setItem('generated_audio_files', JSON.stringify(audioData))
@@ -947,7 +947,7 @@ const TTSGenerator = ({ scriptData, isVisible, onClose }) => {
                           {formatFileSize(segment.audio.size)} • {formatDuration(segment.duration)}
                         </div>
                         <div className="text-xs text-gray-500 line-clamp-2">
-                          {segment.text.substring(0, 100)}...
+                          {segment.text ? segment.text.substring(0, 100) + '...' : ''}
                         </div>
                       </div>
                     ))}

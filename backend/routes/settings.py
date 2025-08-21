@@ -9,6 +9,7 @@ import os
 import json
 import requests
 import logging
+from utils.error_messages import auto_format_error, format_error_response
 
 settings_bp = Blueprint('settings', __name__)
 
@@ -151,11 +152,14 @@ def get_single_api_key(api_name):
             if key_value:
                 return jsonify({'success': True, 'api_key': key_value})
             else:
-                return jsonify({'success': False, 'error': f'Chave para {api_name} não encontrada'}), 404
+                error_response = format_error_response('api_key_missing', f'Chave para {api_name} não encontrada', 'Configurações de API')
+                return jsonify(error_response), 404
         else:
-            return jsonify({'success': False, 'error': 'Arquivo de configuração não encontrado'}), 404
+            error_response = format_error_response('internal_error', 'Arquivo de configuração não encontrado', 'Configurações de API')
+            return jsonify(error_response), 404
     except Exception as e:
-        return jsonify({'success': False, 'error': str(e)}), 500
+        error_response = auto_format_error(str(e), 'Configurações de API')
+        return jsonify(error_response), 500
 
 @settings_bp.route('/apis', methods=['GET'])
 def get_api_configs():

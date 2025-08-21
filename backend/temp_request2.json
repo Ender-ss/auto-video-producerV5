@@ -1,0 +1,10 @@
+{
+    "script_size":  "medio",
+    "titles":  [
+                   "Segredos da culinária italiana",
+                   "Tecnologia do futuro"
+               ],
+    "custom_prompt":  "Crie premissas criativas e envolventes para os seguintes títulos de vídeos. Para cada título, desenvolva uma premissa que: 1) Capture a atenção do público, 2) Defina claramente o objetivo do vídeo, 3) Identifique o público-alvo, 4) Estabeleça o tom e estilo. Títulos: {titles}",
+    "use_custom_prompt":  true,
+    "ai_provider":  "auto"
+}

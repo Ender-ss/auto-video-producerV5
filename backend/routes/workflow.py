@@ -781,14 +781,44 @@ def execute_title_generation(title_generator, source_videos, ai_provider, api_ke
             add_workflow_log(f"📝 Prompt: {custom_prompt[:100]}...")
             check_workflow_status()  # Verificar cancelamento antes da geração
 
-            result = title_generator.generate_titles_with_custom_prompt(
-                source_titles=source_titles,
-                custom_prompt=custom_prompt,
-                count=titles_count,
-                ai_provider=ai_provider
-            )
+            # Implementar fallback automático para prompt personalizado
+            result = None
+            if ai_provider == 'openai' and has_openai:
+                try:
+                    result = title_generator.generate_titles_with_custom_prompt(
+                        source_titles=source_titles,
+                        custom_prompt=custom_prompt,
+                        count=titles_count,
+                        ai_provider='openai'
+                    )
+                    add_workflow_log("✅ Títulos gerados com OpenAI (prompt personalizado)", "info")
+                except Exception as e:
+                    error_msg = str(e).lower()
+                    if ('429' in error_msg or 'quota' in error_msg or 'insufficient_quota' in error_msg) and has_gemini:
+                        add_workflow_log(f"⚠️ OpenAI quota excedida, tentando Gemini: {e}", "warning")
+                        try:
+                            result = title_generator.generate_titles_with_custom_prompt(
+                                source_titles=source_titles,
+                                custom_prompt=custom_prompt,
+                                count=titles_count,
+                                ai_provider='gemini'
+                            )
+                            add_workflow_log("✅ Títulos gerados com Gemini (fallback)", "info")
+                        except Exception as gemini_error:
+                            add_workflow_log(f"❌ Gemini fallback falhou: {gemini_error}", "error")
+                            raise e
+                    else:
+                        raise e
+            else:
+                # Usar provider especificado ou auto
+                result = title_generator.generate_titles_with_custom_prompt(
+                    source_titles=source_titles,
+                    custom_prompt=custom_prompt,
+                    count=titles_count,
+                    ai_provider=ai_provider
+                )
         else:
-            # Gerar títulos usando o método híbrido padrão
+            # Gerar títulos usando o método híbrido padrão com fallback
             add_workflow_log("🔄 Usando método padrão para geração de títulos...")
             check_workflow_status()  # Verificar cancelamento antes da geração
 
@@ -796,12 +826,83 @@ def execute_title_generation(title_generator, source_videos, ai_provider, api_ke
             main_topic = source_titles[0] if source_titles else "conteúdo viral"
             add_workflow_log(f"🎯 Título de referência: {main_topic}")
 
-            result = title_generator.generate_titles_hybrid(
-                source_titles=source_titles,
-                topic=f"títulos similares e melhorados baseados em: {main_topic}",
-                count=titles_count,  # Usar quantidade configurada pelo usuário
-                style='viral'
-            )
+            # Implementar fallback automático para método híbrido
+            result = None
+            if ai_provider == 'openai' and has_openai:
+                try:
+                    result = title_generator.generate_titles_hybrid(
+                        source_titles=source_titles,
+                        topic=f"títulos similares e melhorados baseados em: {main_topic}",
+                        count=titles_count,
+                        style='viral'
+                    )
+                    add_workflow_log("✅ Títulos gerados com modo híbrido (OpenAI)", "info")
+                except Exception as e:
+                    error_msg = str(e).lower()
+                    if ('429' in error_msg or 'quota' in error_msg or 'insufficient_quota' in error_msg) and has_gemini:
+                        add_workflow_log(f"⚠️ Modo híbrido falhou (quota), tentando Gemini: {e}", "warning")
+                        try:
+                            result = title_generator.generate_titles_gemini(
+                                source_titles=source_titles,
+                                topic=f"títulos similares e melhorados baseados em: {main_topic}",
+                                count=titles_count,
+                                style='viral'
+                            )
+                            # Formatar resultado para compatibilidade
+                            if isinstance(result, list):
+                                result = {
+                                    'success': True,
+                                    'combined_titles': result,
+                                    'ai_provider_used': 'gemini (fallback)'
+                                }
+                            add_workflow_log("✅ Títulos gerados com Gemini (fallback)", "info")
+                        except Exception as gemini_error:
+                            add_workflow_log(f"❌ Gemini fallback falhou: {gemini_error}", "error")
+                            raise e
+                    else:
+                        raise e
+            elif ai_provider == 'auto' and has_openai:
+                # Modo auto: tentar OpenAI primeiro, depois Gemini
+                try:
+                    result = title_generator.generate_titles_hybrid(
+                        source_titles=source_titles,
+                        topic=f"títulos similares e melhorados baseados em: {main_topic}",
+                        count=titles_count,
+                        style='viral'
+                    )
+                    add_workflow_log("✅ Títulos gerados com modo híbrido (auto)", "info")
+                except Exception as e:
+                    error_msg = str(e).lower()
+                    if ('429' in error_msg or 'quota' in error_msg or 'insufficient_quota' in error_msg) and has_gemini:
+                        add_workflow_log(f"⚠️ Auto-híbrido falhou (quota), tentando Gemini: {e}", "warning")
+                        try:
+                            result = title_generator.generate_titles_gemini(
+                                source_titles=source_titles,
+                                topic=f"títulos similares e melhorados baseados em: {main_topic}",
+                                count=titles_count,
+                                style='viral'
+                            )
+                            # Formatar resultado para compatibilidade
+                            if isinstance(result, list):
+                                result = {
+                                    'success': True,
+                                    'combined_titles': result,
+                                    'ai_provider_used': 'gemini (auto-fallback)'
+                                }
+                            add_workflow_log("✅ Títulos gerados com Gemini (auto-fallback)", "info")
+                        except Exception as gemini_error:
+                            add_workflow_log(f"❌ Auto-fallback para Gemini falhou: {gemini_error}", "error")
+                            raise e
+                    else:
+                        raise e
+            else:
+                # Usar método padrão sem fallback
+                result = title_generator.generate_titles_hybrid(
+                    source_titles=source_titles,
+                    topic=f"títulos similares e melhorados baseados em: {main_topic}",
+                    count=titles_count,
+                    style='viral'
+                )
 
         check_workflow_status()  # Verificar cancelamento após a geração
 

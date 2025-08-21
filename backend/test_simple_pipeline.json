@@ -1,0 +1,16 @@
+{
+  "channel_url": "https://www.youtube.com/@MrBeast",
+  "config": {
+    "extraction": {
+      "method": "auto",
+      "max_titles": 5
+    },
+    "titles": {
+      "provider": "gemini",
+      "count": 3
+    },
+    "tts": {
+      "provider": "elevenlabs"
+    }
+  }
+}

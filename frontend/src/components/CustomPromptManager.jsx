@@ -365,9 +365,9 @@ const CustomPromptManager = ({
               
               <div className="text-sm text-gray-700 bg-gray-50 p-3 rounded border">
                 <div className="max-h-20 overflow-y-auto">
-                  {prompt.prompt_text.length > 200 
+                  {prompt.prompt_text && prompt.prompt_text.length > 200 
                     ? `${prompt.prompt_text.substring(0, 200)}...`
-                    : prompt.prompt_text
+                    : prompt.prompt_text || ''
                   }
                 </div>
               </div>

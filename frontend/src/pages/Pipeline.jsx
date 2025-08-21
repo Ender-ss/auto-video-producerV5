@@ -4,7 +4,7 @@
  * Página de monitoramento do pipeline de produção
  */
 
-import React, { useState } from 'react'
+import React, { useState, useEffect, useRef, useCallback } from 'react'
 import { motion } from 'framer-motion'
 import {
   Play,
@@ -21,15 +21,25 @@ import {
   Search,
   MoreVertical,
   Zap,
-  Activity
+  Activity,
+  Settings,
+  Youtube,
+  Bot,
+  Sparkles
 } from 'lucide-react'
 
 import ImageGenerationStep from '../components/ImageGenerationStep';
+import AutomationCompleteForm from '../components/AutomationCompleteForm';
+import PipelineProgress from '../components/PipelineProgress';
+import VideoPreview from '../components/VideoPreview';
 
 const Pipeline = () => {
   const [searchTerm, setSearchTerm] = useState('')
-    const [statusFilter, setStatusFilter] = useState('all')
+  const [statusFilter, setStatusFilter] = useState('all')
   const [activePipeline, setActivePipeline] = useState(null)
+  const [activeTab, setActiveTab] = useState('monitoring') // 'monitoring' ou 'automation'
+  const [automationPipelines, setAutomationPipelines] = useState([])
+  const [isPolling, setIsPolling] = useState(false)
 
   // Mock data
   const mockPipelines = [
@@ -104,22 +114,57 @@ const Pipeline = () => {
         <div>
           <h1 className="text-3xl font-bold text-white">Pipeline de Produção</h1>
           <p className="text-gray-400 mt-1">
-            Monitore o progresso da produção automática de vídeos
+            Monitore e configure a produção automática de vídeos
           </p>
         </div>
         <div className="flex items-center space-x-3">
-          <button className="px-4 py-2 bg-gray-700 text-gray-300 rounded-lg hover:bg-gray-600 transition-colors flex items-center space-x-2">
+          <button 
+            onClick={() => window.location.reload()}
+            className="px-4 py-2 bg-gray-700 text-gray-300 rounded-lg hover:bg-gray-600 transition-colors flex items-center space-x-2"
+          >
             <RefreshCw size={18} />
             <span>Atualizar</span>
           </button>
-          <button className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors flex items-center space-x-2">
-            <Play size={18} />
-            <span>Nova Produção</span>
+          <button 
+            onClick={() => setActiveTab('automation')}
+            className="px-4 py-2 bg-gradient-to-r from-purple-600 to-blue-600 text-white rounded-lg hover:from-purple-700 hover:to-blue-700 transition-colors flex items-center space-x-2"
+          >
+            <Bot size={18} />
+            <span>Automação Completa</span>
           </button>
         </div>
       </div>
 
-      {/* Queue Status */}
+      {/* Tabs */}
+      <div className="flex space-x-1 bg-gray-800 p-1 rounded-lg border border-gray-700">
+        <button
+          onClick={() => setActiveTab('monitoring')}
+          className={`flex-1 px-4 py-2 rounded-md text-sm font-medium transition-colors flex items-center justify-center space-x-2 ${
+            activeTab === 'monitoring'
+              ? 'bg-blue-600 text-white'
+              : 'text-gray-400 hover:text-white hover:bg-gray-700'
+          }`}
+        >
+          <Activity size={16} />
+          <span>Monitoramento</span>
+        </button>
+        <button
+          onClick={() => setActiveTab('automation')}
+          className={`flex-1 px-4 py-2 rounded-md text-sm font-medium transition-colors flex items-center justify-center space-x-2 ${
+            activeTab === 'automation'
+              ? 'bg-gradient-to-r from-purple-600 to-blue-600 text-white'
+              : 'text-gray-400 hover:text-white hover:bg-gray-700'
+          }`}
+        >
+          <Sparkles size={16} />
+          <span>Automação Completa</span>
+        </button>
+      </div>
+
+      {/* Conteúdo baseado na aba ativa */}
+      {activeTab === 'monitoring' ? (
+        <>
+          {/* Queue Status */}
       <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
         <div className="bg-gray-800 rounded-lg p-6 border border-gray-700">
           <div className="flex items-center justify-between">
@@ -308,6 +353,410 @@ const Pipeline = () => {
           </div>
         </div>
       </div>
+        </>
+      ) : (
+        <AutomationSection 
+          automationPipelines={automationPipelines}
+          setAutomationPipelines={setAutomationPipelines}
+          isPolling={isPolling}
+          setIsPolling={setIsPolling}
+        />
+      )}
+    </div>
+  )
+}
+
+// Componente da seção de Automação Completa
+const AutomationSection = ({ automationPipelines, setAutomationPipelines, isPolling, setIsPolling }) => {
+  const [showForm, setShowForm] = useState(false)
+  const [selectedPipeline, setSelectedPipeline] = useState(null)
+
+  // Função para validar se um pipeline é válido
+  const isValidPipeline = useCallback((pipeline) => {
+    return pipeline && 
+           typeof pipeline === 'object' && 
+           pipeline.pipeline_id && 
+           typeof pipeline.pipeline_id === 'string' && 
+           pipeline.pipeline_id.trim() !== '' &&
+           pipeline.status &&
+           typeof pipeline.status === 'string'
+  }, [])
+
+
+
+  // Ref para acessar o estado atual sem criar dependências
+  const automationPipelinesRef = useRef(automationPipelines)
+  
+  // Atualizar ref sempre que o estado mudar
+  useEffect(() => {
+    automationPipelinesRef.current = automationPipelines
+  }, [automationPipelines])
+  
+  // Função de limpeza com useCallback
+  const cleanInvalidPipelinesCallback = useCallback(() => {
+    setAutomationPipelines(prev => {
+      const validPipelines = prev.filter(pipeline => {
+        const isValid = isValidPipeline(pipeline)
+        if (!isValid) {
+          console.warn('CLEANUP: Removendo pipeline inválido do estado:', pipeline)
+        }
+        return isValid
+      })
+      
+      if (validPipelines.length !== prev.length) {
+        console.log(`CLEANUP: Removidos ${prev.length - validPipelines.length} pipelines inválidos`)
+      }
+      
+      return validPipelines
+    })
+  }, [setAutomationPipelines, isValidPipeline])
+  
+  // Polling para atualizar status dos pipelines
+  useEffect(() => {
+    let interval
+    
+    if (isPolling) {
+      interval = setInterval(async () => {
+        try {
+          const currentPipelines = automationPipelinesRef.current
+          
+          if (currentPipelines.length === 0) {
+            return
+          }
+          
+          // Limpar pipelines inválidos antes do polling
+          cleanInvalidPipelinesCallback()
+          
+          // Filtrar apenas pipelines válidos e ativos
+          const validPipelines = currentPipelines.filter(isValidPipeline)
+          const activePipelines = validPipelines.filter(p => 
+            !['completed', 'failed', 'cancelled'].includes(p.status)
+          )
+          
+          console.log(`POLLING: Processando ${activePipelines.length} pipelines ativos de ${currentPipelines.length} total`)
+          
+          for (const pipeline of activePipelines) {
+            try {
+              console.log('POLLING: Atualizando status do pipeline:', pipeline.pipeline_id)
+              const response = await fetch(`/api/pipeline/status/${pipeline.pipeline_id}`)
+              
+              if (response.ok) {
+                const result = await response.json()
+                if (result.success && result.data && isValidPipeline(result.data)) {
+                  setAutomationPipelines(prev => 
+                    prev.map(p => 
+                      p.pipeline_id === pipeline.pipeline_id ? result.data : p
+                    )
+                  )
+                } else {
+                  console.warn('POLLING: Resposta inválida para pipeline:', pipeline.pipeline_id, result)
+                }
+              } else {
+                console.error('POLLING: Erro HTTP ao buscar status do pipeline:', pipeline.pipeline_id, response.status)
+              }
+            } catch (pipelineError) {
+              console.error('POLLING: Erro ao processar pipeline:', pipeline.pipeline_id, pipelineError)
+            }
+          }
+        } catch (error) {
+          console.error('POLLING: Erro geral no polling:', error)
+        }
+      }, 3000) // Atualizar a cada 3 segundos
+    }
+    
+    return () => {
+      if (interval) clearInterval(interval)
+    }
+  }, [isPolling, cleanInvalidPipelinesCallback, setAutomationPipelines])
+
+  const handleStartAutomation = async (config) => {
+    try {
+      console.log('START_AUTOMATION: Iniciando nova automação com config:', config)
+      
+      const response = await fetch('/api/pipeline/complete', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify(config)
+      })
+      
+      if (response.ok) {
+        const result = await response.json()
+        console.log('START_AUTOMATION: Resposta da API /api/pipeline/complete:', result)
+        
+        // Validar se a resposta contém pipeline_id válido
+        if (!result.pipeline_id || typeof result.pipeline_id !== 'string' || result.pipeline_id.trim() === '') {
+          console.error('START_AUTOMATION: pipeline_id inválido na resposta:', result)
+          alert('Erro: Pipeline criado sem ID válido')
+          return
+        }
+        
+        console.log('START_AUTOMATION: Buscando status completo do pipeline:', result.pipeline_id)
+        
+        // Buscar o pipeline completo
+        const statusResponse = await fetch(`/api/pipeline/status/${result.pipeline_id}`)
+        if (statusResponse.ok) {
+          const statusResult = await statusResponse.json()
+          console.log('START_AUTOMATION: Resposta do status:', statusResult)
+          
+          // Validar pipeline completo antes de adicionar ao estado
+          if (statusResult.success && statusResult.data && isValidPipeline(statusResult.data)) {
+            console.log('START_AUTOMATION: Pipeline válido, adicionando ao estado:', statusResult.data.pipeline_id)
+            
+            // Verificar se o pipeline já existe no estado (evitar duplicatas)
+            setAutomationPipelines(prev => {
+              const exists = prev.some(p => p.pipeline_id === statusResult.data.pipeline_id)
+              if (exists) {
+                console.warn('START_AUTOMATION: Pipeline já existe no estado, atualizando:', statusResult.data.pipeline_id)
+                return prev.map(p => 
+                  p.pipeline_id === statusResult.data.pipeline_id ? statusResult.data : p
+                )
+              } else {
+                console.log('START_AUTOMATION: Adicionando novo pipeline ao estado:', statusResult.data.pipeline_id)
+                return [...prev, statusResult.data]
+              }
+            })
+            
+            setIsPolling(true)
+            setShowForm(false)
+            console.log('START_AUTOMATION: Automação iniciada com sucesso')
+          } else {
+            console.error('START_AUTOMATION: Dados do pipeline inválidos:', statusResult)
+            alert('Erro: Dados do pipeline são inválidos')
+          }
+        } else {
+          console.error('START_AUTOMATION: Erro ao buscar status do pipeline:', statusResponse.status)
+          alert(`Erro ao buscar status do pipeline: ${statusResponse.status}`)
+        }
+      } else {
+        const error = await response.json()
+        const errorMessage = error.error || error.message || 'Erro desconhecido'
+        console.error('START_AUTOMATION: Erro na API:', errorMessage)
+        alert(`Erro ao iniciar automação: ${errorMessage}`)
+      }
+    } catch (error) {
+      console.error('START_AUTOMATION: Erro geral:', error)
+      alert('Erro ao conectar com o servidor')
+    }
+  }
+
+  const handlePausePipeline = async (pipelineId) => {
+    try {
+      // Validar pipeline_id antes da requisição
+      if (!pipelineId || typeof pipelineId !== 'string' || pipelineId.trim() === '') {
+        console.error('PAUSE_PIPELINE: pipeline_id inválido:', pipelineId)
+        alert('Erro: ID do pipeline inválido')
+        return
+      }
+      
+      console.log('PAUSE_PIPELINE: Pausando pipeline:', pipelineId)
+      
+      const response = await fetch(`/api/pipeline/pause/${pipelineId}`, {
+        method: 'POST'
+      })
+      
+      if (response.ok) {
+        const result = await response.json()
+        console.log('PAUSE_PIPELINE: Resposta da API:', result)
+        
+        if (result.success && result.data && isValidPipeline(result.data)) {
+          setAutomationPipelines(prev => 
+            prev.map(p => 
+              p.pipeline_id === pipelineId ? result.data : p
+            )
+          )
+          console.log('PAUSE_PIPELINE: Pipeline pausado com sucesso:', pipelineId)
+        } else {
+          console.error('PAUSE_PIPELINE: Dados inválidos na resposta:', result)
+        }
+      } else {
+        console.error('PAUSE_PIPELINE: Erro HTTP:', response.status)
+      }
+    } catch (error) {
+      console.error('PAUSE_PIPELINE: Erro geral:', error)
+    }
+  }
+
+  const handleCancelPipeline = async (pipelineId) => {
+    try {
+      // Validar pipeline_id antes da requisição
+      if (!pipelineId || typeof pipelineId !== 'string' || pipelineId.trim() === '') {
+        console.error('CANCEL_PIPELINE: pipeline_id inválido:', pipelineId)
+        alert('Erro: ID do pipeline inválido')
+        return
+      }
+      
+      console.log('CANCEL_PIPELINE: Cancelando pipeline:', pipelineId)
+      
+      const response = await fetch(`/api/pipeline/cancel/${pipelineId}`, {
+        method: 'POST'
+      })
+      
+      if (response.ok) {
+        const result = await response.json()
+        console.log('CANCEL_PIPELINE: Resposta da API:', result)
+        
+        if (result.success && result.data && isValidPipeline(result.data)) {
+          setAutomationPipelines(prev => 
+            prev.map(p => 
+              p.pipeline_id === pipelineId ? result.data : p
+            )
+          )
+          console.log('CANCEL_PIPELINE: Pipeline cancelado com sucesso:', pipelineId)
+        } else {
+          console.error('CANCEL_PIPELINE: Dados inválidos na resposta:', result)
+        }
+      } else {
+        console.error('CANCEL_PIPELINE: Erro HTTP:', response.status)
+      }
+    } catch (error) {
+      console.error('CANCEL_PIPELINE: Erro geral:', error)
+    }
+  }
+
+  // useEffect para limpeza automática de pipelines inválidos
+  useEffect(() => {
+    if (automationPipelines.length > 0) {
+      const invalidPipelines = automationPipelines.filter(p => !isValidPipeline(p))
+      if (invalidPipelines.length > 0) {
+        console.warn('AUTO_CLEANUP: Encontrados pipelines inválidos, executando limpeza automática')
+        cleanInvalidPipelinesCallback()
+      }
+    }
+  }, [automationPipelines, cleanInvalidPipelinesCallback, isValidPipeline])
+
+  return (
+    <div className="space-y-6">
+      {/* Header da Automação */}
+      <div className="bg-gradient-to-r from-purple-900/50 to-blue-900/50 rounded-lg p-6 border border-purple-500/30">
+        <div className="flex items-center justify-between">
+          <div>
+            <h2 className="text-2xl font-bold text-white flex items-center space-x-3">
+              <Bot size={28} className="text-purple-400" />
+              <span>Automação Completa</span>
+            </h2>
+            <p className="text-gray-300 mt-2">
+              Configure e execute o pipeline completo: YouTube → Títulos → Premissas → Roteiros → TTS → Imagens → Vídeo Final
+            </p>
+          </div>
+          <button
+            onClick={() => setShowForm(true)}
+            className="px-6 py-3 bg-gradient-to-r from-purple-600 to-blue-600 text-white rounded-lg hover:from-purple-700 hover:to-blue-700 transition-colors flex items-center space-x-2 font-medium"
+          >
+            <Sparkles size={20} />
+            <span>Nova Automação</span>
+          </button>
+        </div>
+      </div>
+
+      {/* Estatísticas da Automação */}
+      <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
+        <div className="bg-gray-800 rounded-lg p-6 border border-gray-700">
+          <div className="flex items-center justify-between">
+            <div>
+              <p className="text-gray-400 text-sm">Automações Ativas</p>
+              <p className="text-2xl font-bold text-white">
+                {automationPipelines.filter(p => !['completed', 'failed', 'cancelled'].includes(p.status)).length}
+              </p>
+            </div>
+            <Bot size={24} className="text-purple-400" />
+          </div>
+        </div>
+        <div className="bg-gray-800 rounded-lg p-6 border border-gray-700">
+          <div className="flex items-center justify-between">
+            <div>
+              <p className="text-gray-400 text-sm">Concluídas</p>
+              <p className="text-2xl font-bold text-white">
+                {automationPipelines.filter(p => p.status === 'completed').length}
+              </p>
+            </div>
+            <CheckCircle size={24} className="text-green-400" />
+          </div>
+        </div>
+        <div className="bg-gray-800 rounded-lg p-6 border border-gray-700">
+          <div className="flex items-center justify-between">
+            <div>
+              <p className="text-gray-400 text-sm">Com Erro</p>
+              <p className="text-2xl font-bold text-white">
+                {automationPipelines.filter(p => p.status === 'failed').length}
+              </p>
+            </div>
+            <XCircle size={24} className="text-red-400" />
+          </div>
+        </div>
+        <div className="bg-gray-800 rounded-lg p-6 border border-gray-700">
+          <div className="flex items-center justify-between">
+            <div>
+              <p className="text-gray-400 text-sm">Tempo Médio</p>
+              <p className="text-2xl font-bold text-white">45min</p>
+            </div>
+            <Clock size={24} className="text-blue-400" />
+          </div>
+        </div>
+      </div>
+
+      {/* Lista de Automações */}
+      <div className="bg-gray-800 rounded-lg border border-gray-700">
+        <div className="p-6 border-b border-gray-700">
+          <div className="flex items-center justify-between">
+            <h3 className="text-xl font-semibold text-white">Automações em Execução</h3>
+            {isPolling && (
+              <div className="flex items-center space-x-2">
+                <div className="w-2 h-2 bg-green-400 rounded-full animate-pulse"></div>
+                <span className="text-sm text-gray-400">Atualizando em tempo real</span>
+              </div>
+            )}
+          </div>
+        </div>
+        <div className="p-6">
+          {automationPipelines.length === 0 ? (
+            <div className="text-center py-12">
+              <Bot size={48} className="text-gray-600 mx-auto mb-4" />
+              <h3 className="text-lg font-medium text-gray-400 mb-2">Nenhuma automação em execução</h3>
+              <p className="text-gray-500 mb-6">Inicie uma nova automação completa para começar</p>
+              <button
+                onClick={() => setShowForm(true)}
+                className="px-6 py-3 bg-gradient-to-r from-purple-600 to-blue-600 text-white rounded-lg hover:from-purple-700 hover:to-blue-700 transition-colors flex items-center space-x-2 mx-auto"
+              >
+                <Sparkles size={20} />
+                <span>Iniciar Primeira Automação</span>
+              </button>
+            </div>
+          ) : (
+            <div className="space-y-4">
+              {automationPipelines
+                .filter(pipeline => pipeline.pipeline_id) // Filtrar apenas pipelines com ID válido
+                .map((pipeline, index) => (
+                  <PipelineProgress
+                    key={pipeline.pipeline_id}
+                    pipeline={pipeline}
+                    onPause={() => handlePausePipeline(pipeline.pipeline_id)}
+                    onCancel={() => handleCancelPipeline(pipeline.pipeline_id)}
+                    onViewDetails={() => setSelectedPipeline(pipeline)}
+                    index={index}
+                  />
+                ))}
+            </div>
+          )}
+        </div>
+      </div>
+
+      {/* Modal do Formulário */}
+      {showForm && (
+        <AutomationCompleteForm
+          onSubmit={handleStartAutomation}
+          onClose={() => setShowForm(false)}
+        />
+      )}
+
+      {/* Modal de Detalhes do Pipeline */}
+      {selectedPipeline && (
+        <VideoPreview
+          pipeline={selectedPipeline}
+          onClose={() => setSelectedPipeline(null)}
+        />
+      )}
     </div>
   )
 }
