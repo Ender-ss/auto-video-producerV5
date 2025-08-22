@@ -20,8 +20,10 @@ try:
         VideoFileClip, ImageClip, AudioFileClip, CompositeVideoClip,
         TextClip, concatenate_videoclips, ColorClip
     )
-    from moviepy.video.fx import resize, fadein, fadeout
-    from moviepy.audio.fx import volumex
+    from moviepy.video.fx.resize import resize
+    from moviepy.video.fx.fadein import fadein
+    from moviepy.video.fx.fadeout import fadeout
+    from moviepy.audio.fx.volumex import volumex
 except ImportError:
     # MoviePy não está instalado - será tratado no método de criação
     pass
@@ -48,6 +50,27 @@ class VideoCreationService:
         except Exception as e:
             logger.error(f"Erro ao adicionar log: {str(e)}")
     
+    def _normalize_resolution(self, resolution: str) -> str:
+        """Normalizar resolução convertendo qualidades para resoluções válidas"""
+        # Mapeamento de qualidades para resoluções
+        quality_to_resolution = {
+            '720p': '1280x720',
+            '1080p': '1920x1080',
+            '4k': '3840x2160',
+            'hd': '1280x720',
+            'full_hd': '1920x1080',
+            'ultra_hd': '3840x2160'
+        }
+        
+        # Se já é uma resolução válida (formato WxH), retornar como está
+        if 'x' in resolution and resolution.replace('x', '').replace('0', '').replace('1', '').replace('2', '').replace('3', '').replace('4', '').replace('5', '').replace('6', '').replace('7', '').replace('8', '').replace('9', '') == '':
+            return resolution
+        
+        # Converter qualidade para resolução
+        normalized = quality_to_resolution.get(resolution.lower(), '1920x1080')
+        self._log('info', f'Resolução normalizada: {resolution} -> {normalized}')
+        return normalized
+    
     def create_video(self, audio_path: str, images: List[Dict[str, Any]], 
                     script_text: str, resolution: str = '1920x1080', 
                     fps: int = 30, quality: str = 'high', 
@@ -56,6 +79,9 @@ class VideoCreationService:
         """Criar vídeo final"""
         try:
             self._log('info', 'Iniciando criação do vídeo final')
+            
+            # Normalizar resolução (converter qualidades para resoluções válidas)
+            resolution = self._normalize_resolution(resolution)
             
             # Verificar se MoviePy está disponível
             self._check_moviepy_availability()
@@ -68,28 +94,35 @@ class VideoCreationService:
             self._log('info', f'Duração do áudio: {audio_duration:.2f} segundos')
             
             # Calcular timing das imagens com base no script
+            self._log('info', f'Calculando timing para {len(images)} imagens')
             image_timings = self._calculate_image_timings(images, audio_duration, script_text)
             
             # Criar clipes de imagem
+            self._log('info', 'Criando clipes de imagem')
             image_clips = self._create_image_clips(images, image_timings, resolution)
             
             # Adicionar transições se solicitado
             if transitions:
+                self._log('info', 'Adicionando transições entre imagens')
                 image_clips = self._add_transitions(image_clips)
             
             # Combinar clipes de imagem
+            self._log('info', 'Combinando clipes de imagem')
             video_clip = concatenate_videoclips(image_clips, method='compose')
             
             # Adicionar áudio
+            self._log('info', 'Adicionando áudio ao vídeo')
             audio_clip = AudioFileClip(audio_path)
             video_clip = video_clip.set_audio(audio_clip)
             
             # Ajustar duração do vídeo para corresponder ao áudio
             if video_clip.duration != audio_duration:
+                self._log('info', f'Ajustando duração do vídeo: {video_clip.duration:.2f}s -> {audio_duration:.2f}s')
                 video_clip = video_clip.set_duration(audio_duration)
             
             # Adicionar legendas se solicitado
             if subtitles:
+                self._log('info', 'Adicionando legendas ao vídeo')
                 video_clip = self._add_subtitles(video_clip, script_text, audio_duration, tts_segments)
             
             # Definir configurações de qualidade adaptativas
@@ -149,24 +182,48 @@ class VideoCreationService:
     
     def _validate_input_files(self, audio_path: str, images: List[Dict[str, Any]]):
         """Validar arquivos de entrada"""
+        self._log('info', 'Iniciando validação de arquivos de entrada')
+        
         # Verificar áudio
+        self._log('info', f'Verificando arquivo de áudio: {audio_path}')
         if not os.path.exists(audio_path):
             raise Exception(f"Arquivo de áudio não encontrado: {audio_path}")
+        
+        # Verificar tamanho do arquivo de áudio
+        audio_size = os.path.getsize(audio_path)
+        if audio_size == 0:
+            raise Exception(f"Arquivo de áudio está vazio: {audio_path}")
+        
+        self._log('info', f'Arquivo de áudio válido: {audio_size} bytes')
         
         # Verificar imagens
         if not images:
             raise Exception("Nenhuma imagem fornecida")
         
+        self._log('info', f'Verificando {len(images)} imagens')
         missing_images = []
-        for img in images:
+        valid_images = 0
+        
+        for i, img in enumerate(images):
             img_path = img.get('file_path', '')
-            if not os.path.exists(img_path):
+            if not img_path:
+                self._log('warning', f'Imagem {i+1}: caminho não especificado')
+                missing_images.append(f'Imagem {i+1}: sem caminho')
+            elif not os.path.exists(img_path):
+                self._log('warning', f'Imagem {i+1}: arquivo não encontrado - {img_path}')
                 missing_images.append(img_path)
+            else:
+                img_size = os.path.getsize(img_path)
+                if img_size == 0:
+                    self._log('warning', f'Imagem {i+1}: arquivo vazio - {img_path}')
+                    missing_images.append(f'{img_path} (vazio)')
+                else:
+                    valid_images += 1
         
         if missing_images:
-            raise Exception(f"Imagens não encontradas: {missing_images}")
+            raise Exception(f"Problemas com imagens: {missing_images}")
         
-        self._log('info', f'Validação concluída: {len(images)} imagens válidas')
+        self._log('info', f'Validação concluída: {valid_images} imagens válidas')
     
     def _get_audio_duration(self, audio_path: str) -> float:
         """Obter duração do áudio"""
@@ -359,6 +416,8 @@ class VideoCreationService:
                 img_path = img_data['file_path']
                 duration = end_time - start_time
                 
+                self._log('info', f'Processando imagem {i + 1}/{len(images)}: {os.path.basename(img_path)}')
+                
                 # Criar clipe de imagem
                 img_clip = ImageClip(img_path, duration=duration)
                 
@@ -379,7 +438,7 @@ class VideoCreationService:
                 
                 image_clips.append(img_clip)
                 
-                self._log('info', f'Clipe {i+1}/{len(images)} criado: {duration:.2f}s')
+                self._log('info', f'Imagem {i + 1}/{len(images)} processada com sucesso (duração: {duration:.2f}s)')
                 
             except Exception as e:
                 self._log('warning', f'Erro ao criar clipe {i+1}: {str(e)}')
@@ -405,13 +464,13 @@ class VideoCreationService:
         for i, clip in enumerate(clips):
             if i == 0:
                 # Primeiro clipe: apenas fade in
-                clip = clip.fx(fadein, transition_duration)
+                clip = fadein(clip, transition_duration)
             elif i == len(clips) - 1:
                 # Último clipe: apenas fade out
-                clip = clip.fx(fadeout, transition_duration)
+                clip = fadeout(clip, transition_duration)
             else:
                 # Clipes do meio: fade in e fade out
-                clip = clip.fx(fadein, transition_duration).fx(fadeout, transition_duration)
+                clip = fadeout(fadein(clip, transition_duration), transition_duration)
             
             transitioned_clips.append(clip)
         
@@ -726,19 +785,30 @@ class VideoCreationService:
             self._log('info', 'Renderização otimizada concluída')
             
         except Exception as e:
-            self._log('error', f'Erro na renderização otimizada: {str(e)}')
+            error_msg = str(e)
+            self._log('error', f'Erro na renderização otimizada: {error_msg}')
+            
+            # Verificar se é erro de FFmpeg
+            if 'ffmpeg' in error_msg.lower() or 'codec' in error_msg.lower():
+                self._log('warning', 'Erro relacionado ao FFmpeg detectado')
+            
             # Fallback para renderização básica
             self._log('info', 'Tentando renderização básica como fallback')
-            video_clip.write_videofile(
-                output_path,
-                fps=fps,
-                codec='libx264',
-                audio_codec='aac',
-                bitrate=codec_settings.get('bitrate', '5500k'),
-                preset=codec_settings.get('preset', 'medium'),
-                verbose=False,
-                logger=None
-            )
+            try:
+                video_clip.write_videofile(
+                    output_path,
+                    fps=fps,
+                    codec='libx264',
+                    audio_codec='aac',
+                    bitrate=codec_settings.get('bitrate', '5500k'),
+                    preset=codec_settings.get('preset', 'medium'),
+                    verbose=False,
+                    logger=None
+                )
+                self._log('info', 'Renderização básica concluída com sucesso')
+            except Exception as fallback_error:
+                self._log('error', f'Falha também na renderização básica: {str(fallback_error)}')
+                raise
     
     def create_preview(self, video_path: str, duration: int = 30) -> Optional[str]:
         """Criar preview do vídeo"""

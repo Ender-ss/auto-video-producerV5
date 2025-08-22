@@ -11,6 +11,7 @@ from moviepy.editor import ImageClip, AudioFileClip, CompositeVideoClip, concate
 from PIL import Image
 import tempfile
 import shutil
+from services.video_creation_service import VideoCreationService
 
 videos_bp = Blueprint('videos', __name__)
 
@@ -278,15 +279,26 @@ def create_video():
                     'error': f'Imagem não encontrada: {img_path}'
                 }), 400
         
-        # Criar vídeo
-        video_path = _create_video_from_assets(
-            audio_file=audio_file,
-            images=images,
-            title=title,
+        # Criar vídeo usando VideoCreationService
+        # O pipeline_id é necessário para o serviço de vídeo. Como esta rota é para criação avulsa,
+        # vamos gerar um ID temporário ou usar um padrão.
+        # Para um uso mais robusto, esta rota deveria ser integrada ao fluxo de pipeline.
+        temp_pipeline_id = f"manual_video_{datetime.now().strftime('%Y%m%d%H%M%S')}"
+        video_service = VideoCreationService(temp_pipeline_id)
+
+        # Preparar lista de imagens no formato esperado pelo VideoCreationService
+        formatted_images = [{'file_path': img_path} for img_path in images]
+
+        video_result = video_service.create_video(
+            audio_path=audio_file,
+            images=formatted_images,
+            script_text=title, # Usar o título como script_text para o serviço
             resolution=resolution,
             fps=fps,
-            transition_duration=transition_duration
+            transitions=True, # Sempre adicionar transições para vídeos avulsos
+            subtitles=False # Não adicionar legendas por padrão para vídeos avulsos
         )
+        video_path = video_result['video_path']
         
         # Salvar no banco de dados
         from app import Video, db
@@ -323,92 +335,6 @@ def create_video():
             'error': f'Erro ao criar vídeo: {str(e)}'
         }), 500
 
-
-def _create_video_from_assets(audio_file, images, title, resolution='1920x1080', fps=30, transition_duration=0.5):
-    """Função auxiliar para criar vídeo a partir de áudio e imagens"""
-    try:
-        # Carregar áudio
-        audio = AudioFileClip(audio_file)
-        audio_duration = audio.duration
-        
-        # Calcular duração por imagem
-        num_images = len(images)
-        if num_images == 0:
-            raise ValueError("Nenhuma imagem fornecida")
-        
-        duration_per_image = audio_duration / num_images
-        
-        # Processar resolução
-        width, height = map(int, resolution.split('x'))
-        
-        # Criar clips de vídeo para cada imagem
-        video_clips = []
-        
-        for i, img_path in enumerate(images):
-            # Redimensionar imagem para a resolução desejada
-            img = Image.open(img_path)
-            img = img.resize((width, height), Image.Resampling.LANCZOS)
-            
-            # Salvar imagem redimensionada temporariamente
-            temp_img_path = f"temp_resized_{i}_{os.path.basename(img_path)}"
-            img.save(temp_img_path)
-            
-            # Criar clip de vídeo
-            clip = ImageClip(temp_img_path, duration=duration_per_image)
-            clip = clip.set_fps(fps)
-            
-            video_clips.append(clip)
-            
-            # Limpar arquivo temporário
-            os.remove(temp_img_path)
-        
-        # Concatenar clips
-        if transition_duration > 0:
-            # Adicionar transições suaves
-            final_clips = []
-            for i, clip in enumerate(video_clips):
-                if i > 0:
-                    # Fade in
-                    clip = clip.fadein(transition_duration)
-                if i < len(video_clips) - 1:
-                    # Fade out
-                    clip = clip.fadeout(transition_duration)
-                final_clips.append(clip)
-            
-            video = concatenate_videoclips(final_clips, method="compose")
-        else:
-            video = concatenate_videoclips(video_clips)
-        
-        # Adicionar áudio
-        final_video = video.set_audio(audio)
-        
-        # Definir caminho de saída
-        output_dir = "output/videos"
-        os.makedirs(output_dir, exist_ok=True)
-        
-        timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
-        safe_title = "".join(c for c in title if c.isalnum() or c in (' ', '-', '_')).rstrip()
-        output_path = os.path.join(output_dir, f"{safe_title}_{timestamp}.mp4")
-        
-        # Renderizar vídeo
-        final_video.write_videofile(
-            output_path,
-            fps=fps,
-            codec='libx264',
-            audio_codec='aac',
-            temp_audiofile='temp-audio.m4a',
-            remove_temp=True
-        )
-        
-        # Limpar recursos
-        audio.close()
-        video.close()
-        final_video.close()
-        
-        return output_path
-    
-    except Exception as e:
-        raise Exception(f"Erro na criação do vídeo: {str(e)}")
 
 
 def _get_video_duration(video_path):

@@ -226,7 +226,13 @@ def get_pipeline_status(pipeline_id: str):
                 'error': 'Pipeline não encontrado'
             }), 404
         
-        pipeline_state = active_pipelines[pipeline_id]
+        pipeline_state = active_pipelines[pipeline_id].copy()
+        
+        # Incluir logs no estado do pipeline para o frontend
+        if pipeline_id in pipeline_logs:
+            pipeline_state['logs'] = pipeline_logs[pipeline_id]
+        else:
+            pipeline_state['logs'] = []
         
         return jsonify({
             'success': True,
@@ -307,6 +313,48 @@ def pause_pipeline(pipeline_id: str):
         
     except Exception as e:
         logger.error(f"Erro ao pausar pipeline {pipeline_id}: {str(e)}")
+        return jsonify({
+            'success': False,
+            'error': str(e)
+        }), 500
+
+@pipeline_complete_bp.route('/resume/<pipeline_id>', methods=['POST'])
+def resume_pipeline(pipeline_id: str):
+    """Retomar pipeline pausado"""
+    try:
+        if pipeline_id not in active_pipelines:
+            return jsonify({
+                'success': False,
+                'error': 'Pipeline não encontrado'
+            }), 404
+        
+        pipeline_state = active_pipelines[pipeline_id]
+        
+        if pipeline_state['status'] != PipelineStatus.PAUSED:
+            return jsonify({
+                'success': False,
+                'error': 'Pipeline não está pausado'
+            }), 400
+        
+        # Retomar pipeline em thread separada
+        pipeline_state['status'] = PipelineStatus.PROCESSING
+        add_pipeline_log(pipeline_id, 'info', 'Pipeline retomado pelo usuário')
+        
+        # Iniciar thread para continuar processamento
+        thread = threading.Thread(
+            target=process_complete_pipeline,
+            args=(pipeline_id,),
+            daemon=True
+        )
+        thread.start()
+        
+        return jsonify({
+            'success': True,
+            'message': 'Pipeline retomado com sucesso'
+        })
+        
+    except Exception as e:
+        logger.error(f"Erro ao retomar pipeline {pipeline_id}: {str(e)}")
         return jsonify({
             'success': False,
             'error': str(e)
@@ -442,7 +490,24 @@ def process_complete_pipeline(pipeline_id: str):
         # Inicializar serviço com configuração do pipeline
         service = PipelineService(pipeline_id)
         
-        # Executar etapas do pipeline
+        # Usar sistema de retomada automática com checkpoints
+        try:
+            result = service.run_with_resume()
+            
+            # Atualizar estado do pipeline com os resultados
+            pipeline_state['results'] = result
+            pipeline_state['status'] = PipelineStatus.COMPLETED
+            pipeline_state['completed_at'] = datetime.utcnow().isoformat()
+            pipeline_state['progress'] = 100
+            
+            add_pipeline_log(pipeline_id, 'info', 'Pipeline concluído com sucesso!')
+            return
+            
+        except Exception as e:
+            # Se houver erro, tentar execução manual das etapas
+            add_pipeline_log(pipeline_id, 'warning', f'Erro na execução automática, tentando execução manual: {str(e)}')
+        
+        # Executar etapas do pipeline manualmente (fallback)
         steps = [
             (PipelineSteps.EXTRACTION, service.run_extraction),
             (PipelineSteps.TITLES, service.run_titles_generation),

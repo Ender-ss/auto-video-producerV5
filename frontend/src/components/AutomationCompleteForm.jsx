@@ -75,7 +75,7 @@ const AutomationCompleteForm = ({ onSubmit, onClose }) => {
       },
       video: {
         enabled: true,
-        resolution: '1080p',
+        resolution: '1920x1080',
         fps: 30,
         format: 'mp4',
         include_subtitles: true,
@@ -917,10 +917,10 @@ const MediaSection = ({ formData, onChange }) => {
                 onChange={(e) => onChange('config.video.resolution', e.target.value)}
                 className="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded text-white text-sm"
               >
-                <option value="720p">720p (HD)</option>
-                <option value="1080p">1080p (Full HD)</option>
-                <option value="1440p">1440p (2K)</option>
-                <option value="2160p">2160p (4K)</option>
+                <option value="1280x720">720p (HD) - 1280x720</option>
+                <option value="1920x1080">1080p (Full HD) - 1920x1080</option>
+                <option value="2560x1440">1440p (2K) - 2560x1440</option>
+                <option value="3840x2160">2160p (4K) - 3840x2160</option>
               </select>
             </div>
             <div>

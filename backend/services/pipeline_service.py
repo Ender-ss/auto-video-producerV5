@@ -17,6 +17,7 @@ sys.path.append(os.path.join(os.path.dirname(__file__), '..'))
 
 # Importar serviços necessários
 from services.video_creation_service import VideoCreationService
+from services.checkpoint_service import CheckpointService
 
 logger = logging.getLogger(__name__)
 logger.propagate = True
@@ -72,6 +73,10 @@ class PipelineService:
         
         # Carregar prompts personalizados
         self._load_custom_prompts()
+        
+        # Inicializar serviço de checkpoint
+        self.checkpoint_service = CheckpointService(pipeline_id)
+        self.auto_checkpoint = self.config.get('auto_checkpoint', True) if self.config else True
     
     def _load_custom_prompts(self):
         """Carregar prompts personalizados"""
@@ -104,11 +109,85 @@ class PipelineService:
         except Exception as e:
             logger.error(f"Erro ao adicionar log: {str(e)}")
     
+    def _save_checkpoint(self, current_step: str):
+        """Salvar checkpoint do estado atual"""
+        try:
+            success = self.checkpoint_service.save_checkpoint(
+                step=current_step,
+                results=self.results,
+                config=self.config,
+                progress=getattr(self, 'progress', {})
+            )
+            
+            if success:
+                self._log('info', f'Checkpoint salvo para etapa: {current_step}')
+            else:
+                self._log('warning', f'Falha ao salvar checkpoint para etapa: {current_step}')
+                
+        except Exception as e:
+            self._log('error', f'Erro ao salvar checkpoint: {str(e)}')
+    
+    def load_from_checkpoint(self) -> bool:
+        """Carregar estado a partir de checkpoint"""
+        try:
+            checkpoint_data = self.checkpoint_service.load_checkpoint()
+            
+            if not checkpoint_data:
+                return False
+            
+            # Validar integridade do checkpoint
+            if not self.checkpoint_service.validate_checkpoint_integrity(checkpoint_data):
+                self._log('error', 'Checkpoint inválido ou corrompido')
+                return False
+            
+            # Restaurar estado
+            self.results = checkpoint_data.get('results', {})
+            if not hasattr(self, 'progress'):
+                self.progress = {}
+            self.progress.update(checkpoint_data.get('progress', {}))
+            self.config.update(checkpoint_data.get('config', {}))
+            
+            # Criar relatório de recuperação
+            recovery_report = self.checkpoint_service.create_recovery_report(checkpoint_data)
+            
+            self._log('info', 'Estado restaurado a partir de checkpoint', {
+                'completed_steps': recovery_report['completed_steps'],
+                'next_step': recovery_report['next_step'],
+                'checkpoint_timestamp': recovery_report['checkpoint_timestamp']
+            })
+            
+            return True
+            
+        except Exception as e:
+            self._log('error', f'Erro ao carregar checkpoint: {str(e)}')
+            return False
+    
+    def get_resume_info(self) -> Optional[Dict[str, Any]]:
+        """Obter informações para retomada da pipeline"""
+        try:
+            if not self.checkpoint_service.has_checkpoint():
+                return None
+            
+            checkpoint_data = self.checkpoint_service.load_checkpoint()
+            if not checkpoint_data:
+                return None
+            
+            return self.checkpoint_service.create_recovery_report(checkpoint_data)
+            
+        except Exception as e:
+            self._log('error', f'Erro ao obter informações de retomada: {str(e)}')
+            return None
+    
     def _update_progress(self, step: str, progress: int, status: str = 'processing'):
         """Atualizar progresso do pipeline"""
         try:
             from routes.pipeline_complete import update_pipeline_progress
             update_pipeline_progress(self.pipeline_id, step, progress, status)
+            
+            # Salvar checkpoint se habilitado
+            if self.auto_checkpoint and progress == 100:
+                self._save_checkpoint(step)
+                
         except Exception as e:
             logger.error(f"Erro ao atualizar progresso: {str(e)}")
     
@@ -494,69 +573,66 @@ class PipelineService:
                     error_msg = str(e).lower()
                     if '429' in error_msg or 'quota' in error_msg or 'insufficient_quota' in error_msg:
                         self._log('warning', f'OpenAI falhou (quota excedida), tentando Gemini: {str(e)}')
+                        # Tentar Gemini como fallback primário
                         try:
                             import google.generativeai as genai
                             api_key = self.api_keys.get('gemini')
-                            # Tentar Gemini como fallback primário
-                            try:
-                                import google.generativeai as genai
-                                api_key = self.api_keys.get('gemini')
-                                if not api_key:
-                                    api_key = get_next_gemini_key()
-                                
-                                if not api_key:
-                                    raise Exception('Nenhuma chave Gemini disponível para fallback.')
+                            if not api_key:
+                                api_key = get_next_gemini_key()
+                            
+                            if not api_key:
+                                raise Exception('Nenhuma chave Gemini disponível para fallback.')
 
-                                genai.configure(api_key=api_key)
-                                model = genai.GenerativeModel('gemini-1.5-flash')
-                                premise_text = ''
-                                for chunk in model.generate_content(instructions, stream=True):
-                                    premise_text += chunk.text
-                                    self.results['premises'] = {'premise': premise_text, 'partial': True}
-                                    current_length = len(premise_text.split())
-                                    progress = min(int((current_length / word_count) * 100), 99)
-                                    self._update_progress('premises', progress)
-                                self._log('info', 'Premissa gerada com Gemini (fallback)')
-                            except Exception as gemini_error:
-                                self._log('error', f'Gemini também falhou: {str(gemini_error)}')
-                                # Se Gemini falhar, tentar OpenRouter ou OpenAI
-                                fallback_info = get_fallback_provider_info()
-                                if fallback_info:
-                                    fallback_provider = fallback_info['provider']
-                                    fallback_key = fallback_info['key']
-                                    self._log('warning', f'Tentando fallback para {fallback_provider}...')
-                                    try:
-                                        if fallback_provider == 'openrouter':
-                                            client = openai.OpenAI(
-                                                base_url="https://openrouter.ai/api/v1",
-                                                api_key=fallback_key,
-                                            )
-                                            model_name = "mistralai/mistral-7b-instruct"
-                                        elif fallback_provider == 'openai':
-                                            client = openai.OpenAI(api_key=fallback_key)
-                                            model_name = "gpt-3.5-turbo"
-                                        
-                                        premise_text = ''
-                                        stream = client.chat.completions.create(
-                                            model=model_name,
-                                            messages=[{"role": "user", "content": instructions}],
-                                            max_tokens=500,
-                                            temperature=0.7,
-                                            stream=True
+                            genai.configure(api_key=api_key)
+                            model = genai.GenerativeModel('gemini-1.5-flash')
+                            premise_text = ''
+                            for chunk in model.generate_content(instructions, stream=True):
+                                premise_text += chunk.text
+                                self.results['premises'] = {'premise': premise_text, 'partial': True}
+                                current_length = len(premise_text.split())
+                                progress = min(int((current_length / word_count) * 100), 99)
+                                self._update_progress('premises', progress)
+                            self._log('info', 'Premissa gerada com Gemini (fallback)')
+                        except Exception as gemini_error:
+                            self._log('error', f'Gemini também falhou: {str(gemini_error)}')
+                            # Se Gemini falhar, tentar OpenRouter ou OpenAI
+                            fallback_info = get_fallback_provider_info()
+                            if fallback_info:
+                                fallback_provider = fallback_info['provider']
+                                fallback_key = fallback_info['key']
+                                self._log('warning', f'Tentando fallback para {fallback_provider}...')
+                                try:
+                                    if fallback_provider == 'openrouter':
+                                        client = openai.OpenAI(
+                                            base_url="https://openrouter.ai/api/v1",
+                                            api_key=fallback_key,
                                         )
-                                        for chunk in stream:
-                                            if chunk.choices[0].delta.content is not None:
-                                                premise_text += chunk.choices[0].delta.content
-                                                self.results['premises'] = {'premise': premise_text, 'partial': True}
-                                                current_length = len(premise_text.split())
-                                                progress = min(int((current_length / word_count) * 100), 99)
-                                                self._update_progress('premises', progress)
-                                        self._log('info', f'Premissa gerada com {fallback_provider} (fallback)')
-                                    except Exception as fallback_e:
-                                        self._log('error', f'Fallback para {fallback_provider} também falhou: {str(fallback_e)}')
-                                        raise Exception(f'Todos os provedores falharam - OpenAI: {str(e)}, Gemini: {str(gemini_error)}, Fallback ({fallback_provider}): {str(fallback_e)}')
-                                else:
-                                    raise Exception(f'Ambos provedores falharam e nenhum fallback disponível - OpenAI: {str(e)}, Gemini: {str(gemini_error)}')
+                                        model_name = "mistralai/mistral-7b-instruct"
+                                    elif fallback_provider == 'openai':
+                                        client = openai.OpenAI(api_key=fallback_key)
+                                        model_name = "gpt-3.5-turbo"
+                                    
+                                    premise_text = ''
+                                    stream = client.chat.completions.create(
+                                        model=model_name,
+                                        messages=[{"role": "user", "content": instructions}],
+                                        max_tokens=500,
+                                        temperature=0.7,
+                                        stream=True
+                                    )
+                                    for chunk in stream:
+                                        if chunk.choices[0].delta.content is not None:
+                                            premise_text += chunk.choices[0].delta.content
+                                            self.results['premises'] = {'premise': premise_text, 'partial': True}
+                                            current_length = len(premise_text.split())
+                                            progress = min(int((current_length / word_count) * 100), 99)
+                                            self._update_progress('premises', progress)
+                                    self._log('info', f'Premissa gerada com {fallback_provider} (fallback)')
+                                except Exception as fallback_e:
+                                    self._log('error', f'Fallback para {fallback_provider} também falhou: {str(fallback_e)}')
+                                    raise Exception(f'Todos os provedores falharam - OpenAI: {str(e)}, Gemini: {str(gemini_error)}, Fallback ({fallback_provider}): {str(fallback_e)}')
+                            else:
+                                raise Exception(f'Ambos provedores falharam e nenhum fallback disponível - OpenAI: {str(e)}, Gemini: {str(gemini_error)}')
                         except Exception as inner_e:
                             self._log('error', f'Erro no fallback Gemini: {str(inner_e)}')
                             raise e
@@ -910,6 +986,9 @@ class PipelineService:
             
         except Exception as e:
             self._log('error', f'Erro na criação de vídeo: {str(e)}')
+            # Salvar checkpoint mesmo em caso de erro para permitir retomada
+            if self.auto_checkpoint:
+                self._save_checkpoint('video_failed')
             raise
     
     # ================================
@@ -955,6 +1034,12 @@ class PipelineService:
             
             self.results['cleanup'] = cleanup_result
             
+            # Remover checkpoint após conclusão bem-sucedida
+            if self.checkpoint_service.has_checkpoint():
+                self.checkpoint_service.delete_checkpoint()
+                self._log('info', 'Checkpoint removido após conclusão bem-sucedida')
+                cleanup_result['checkpoint_removed'] = True
+            
             self._log('info', f'Limpeza concluída: {len(cleaned_files)} arquivos removidos')
             
             return cleanup_result
@@ -962,3 +1047,79 @@ class PipelineService:
         except Exception as e:
             self._log('error', f'Erro na limpeza: {str(e)}')
             raise
+    
+    # ================================
+    # 🎯 EXECUÇÃO COM RETOMADA AUTOMÁTICA
+    # ================================
+    
+    def run_with_resume(self, steps: List[str] = None) -> Dict[str, Any]:
+        """Executar pipeline com suporte a retomada automática"""
+        try:
+            # Verificar se existe checkpoint para retomada
+            if self.checkpoint_service.has_checkpoint():
+                self._log('info', 'Checkpoint encontrado, retomando pipeline...')
+                checkpoint_data = self.load_from_checkpoint()
+                
+                if checkpoint_data:
+                    self._log('info', f'Pipeline retomada a partir da etapa: {checkpoint_data["next_step"]}')
+                    # Continuar a partir da próxima etapa
+                    remaining_steps = self._get_remaining_steps(checkpoint_data['next_step'], steps)
+                else:
+                    # Se não conseguir carregar checkpoint, começar do início
+                    remaining_steps = steps or self._get_default_steps()
+            else:
+                # Executar pipeline completa
+                remaining_steps = steps or self._get_default_steps()
+            
+            # Executar etapas restantes
+            for step in remaining_steps:
+                try:
+                    self._log('info', f'Executando etapa: {step}')
+                    
+                    if step == 'scripts':
+                        self.run_script_generation()
+                    elif step == 'tts':
+                        self.run_tts_generation()
+                    elif step == 'images':
+                        self.run_image_generation()
+                    elif step == 'video':
+                        self.run_video_creation()
+                    elif step == 'cleanup':
+                        self.run_cleanup()
+                    else:
+                        self._log('warning', f'Etapa desconhecida: {step}')
+                        continue
+                    
+                    # Salvar checkpoint após cada etapa bem-sucedida
+                    if self.auto_checkpoint and step != 'cleanup':
+                        self._save_checkpoint(step)
+                    
+                except Exception as e:
+                    self._log('error', f'Erro na etapa {step}: {str(e)}')
+                    # Salvar checkpoint mesmo em caso de erro
+                    if self.auto_checkpoint:
+                        self._save_checkpoint(f'{step}_failed')
+                    raise
+            
+            self._log('info', 'Pipeline executada com sucesso!')
+            return self.results
+            
+        except Exception as e:
+            self._log('error', f'Erro na execução da pipeline: {str(e)}')
+            raise
+    
+    def _get_default_steps(self) -> List[str]:
+        """Obter lista padrão de etapas da pipeline"""
+        return ['scripts', 'tts', 'images', 'video', 'cleanup']
+    
+    def _get_remaining_steps(self, next_step: str, all_steps: List[str] = None) -> List[str]:
+        """Obter etapas restantes a partir de uma etapa específica"""
+        if not all_steps:
+            all_steps = self._get_default_steps()
+        
+        try:
+            start_index = all_steps.index(next_step)
+            return all_steps[start_index:]
+        except ValueError:
+            # Se a etapa não for encontrada, executar todas
+            return all_steps

@@ -1,0 +1,269 @@
+{
+  "pipeline_id": "edc48d17-837b-42aa-8a04-2ece4aeaded9",
+  "timestamp": "2025-08-22T17:10:22.938556",
+  "current_step": "scripts",
+  "completed_steps": [
+    "extraction",
+    "titles",
+    "premises",
+    "scripts"
+  ],
+  "results": {
+    "extraction": {
+      "channel_info": {},
+      "titles": [
+        {
+          "video_id": "v-djT7RdoBA",
+          "title": "MILIONÁRIO FLAGRA FAXINEIRA PROTEGENDO SUA FILHA CEGA… E NÃO ACREDITA NO QUE VÊ!",
+          "description": "MILIONÁRIO FLAGRA FAXINEIRA PROTEGENDO SUA FILHA CEGA… E NÃO ACREDITA NO QUE VÊ!\n\n#historias #historiasreais #histórias #históriasemocionantes #historiasinspiradoras #históriasdesuperação...",
+          "thumbnail": "",
+          "duration": "7826.0s",
+          "views": 5250,
+          "likes": 0,
+          "published_at": "",
+          "url": "https://www.youtube.com/watch?v=v-djT7RdoBA"
+        },
+        {
+          "video_id": "dLGBChmJ6Pc",
+          "title": "\"PODEMOS COMER COM VOCÊ?\" — MENINA COM SUA IRMÃ NO COLO OLHA PARA O MILIONÁRIO E ELE MUDA TUDO!",
+          "description": "\"PODEMOS COMER COM VOCÊ?\" — MENINA COM SUA IRMÃ NO COLO OLHA PARA O MILIONÁRIO E ELE MUDA TUDO!\n\n#historias #historiasreais #histórias #históriasemocionantes #historiasinspiradoras #históri...",
+          "thumbnail": "",
+          "duration": "7989.0s",
+          "views": 3035,
+          "likes": 0,
+          "published_at": "",
+          "url": "https://www.youtube.com/watch?v=dLGBChmJ6Pc"
+        },
+        {
+          "video_id": "f8heWcgZ7Zc",
+          "title": "\"EU FALO 8 IDIOMAS\" – A MENINA DISSE ORGULHOSA, TODOS RIRAM… MENOS O MILIONÁRIO, QUE FICOU EM CHOQUE",
+          "description": "\"EU FALO 8 IDIOMAS\" – A MENINA DISSE ORGULHOSA, TODOS RIRAM… MENOS O MILIONÁRIO, QUE FICOU EM CHOQUE\n\n#historias #historiasreais #histórias #históriasemocionantes #historiasinspiradoras...",
+          "thumbnail": "",
+          "duration": "7907.0s",
+          "views": 1815,
+          "likes": 0,
+          "published_at": "",
+          "url": "https://www.youtube.com/watch?v=f8heWcgZ7Zc"
+        },
+        {
+          "video_id": "dSGvesGrEtM",
+          "title": "EMPREGADA GRÁVIDA DESMAIA NA MANSÃO DO MILIONÁRIO E O QUE ESCONDIA NO VENTRE SURPREENDE A TODOS!",
+          "description": "EMPREGADA GRÁVIDA DESMAIA NA MANSÃO DO MILIONÁRIO E O QUE ESCONDIA NO VENTRE SURPREENDE A TODOS!\n\n#historias #historiasreais #histórias #históriasemocionantes #historiasinspiradoras #história...",
+          "thumbnail": "",
+          "duration": "7480.0s",
+          "views": 20341,
+          "likes": 0,
+          "published_at": "",
+          "url": "https://www.youtube.com/watch?v=dSGvesGrEtM"
+        },
+        {
+          "video_id": "GSLCE9f4CKg",
+          "title": "\"SUA FILHA PODERIA ANDAR, MAS SUA NOIVA NÃO DEIXA!\"… DESABAFOU O MENINO POBRE AO MILIONÁRIO",
+          "description": "\"SUA FILHA PODERIA ANDAR, MAS SUA NOIVA NÃO DEIXA!\"… DESABAFOU O MENINO POBRE AO MILIONÁRIO\n\n#historias #historiasreais #histórias #históriasemocionantes #historiasinspiradoras #históriasdes...",
+          "thumbnail": "",
+          "duration": "7448.0s",
+          "views": 39540,
+          "likes": 0,
+          "published_at": "",
+          "url": "https://www.youtube.com/watch?v=GSLCE9f4CKg"
+        },
+        {
+          "video_id": "D3wVC2ekfaM",
+          "title": "MENINO POBRE IMPLORA AO MILIONÁRIO POR LEITE PARA O IRMÃO... E A REAÇÃO DELE TRANSFORMA TUDO",
+          "description": "MENINO POBRE IMPLORA AO MILIONÁRIO POR LEITE PARA O IRMÃO... E A REAÇÃO DELE TRANSFORMA TUDO\n\n#historias #historiasreais #histórias #históriasemocionantes #historiasinspiradoras #históriasde...",
+          "thumbnail": "",
+          "duration": "8020.0s",
+          "views": 4028,
+          "likes": 0,
+          "published_at": "",
+          "url": "https://www.youtube.com/watch?v=D3wVC2ekfaM"
+        },
+        {
+          "video_id": "7WjJ-Sd0HSk",
+          "title": "MILLIONÁRIO VÊ SEU FILHO AJUDANDO A COZINHEIRA A PREPARAR A COMIDA E PRESENCIA ALGO INESPERADO!",
+          "description": "MILLIONÁRIO VÊ SEU FILHO AJUDANDO A COZINHEIRA A PREPARAR A COMIDA E PRESENCIA ALGO INESPERADO!\n\n#historias #historiasreais #histórias #históriasemocionantes #historiasinspiradoras #históriasd...",
+          "thumbnail": "",
+          "duration": "8324.0s",
+          "views": 4129,
+          "likes": 0,
+          "published_at": "",
+          "url": "https://www.youtube.com/watch?v=7WjJ-Sd0HSk"
+        },
+        {
+          "video_id": "exfN4z55B-I",
+          "title": "\"PAI, AQUELES DOIS MENINOS DORMINDO NO LIXO SÃO PARECIDOS COMIGO\", DISSE O GAROTO AO MILIONÁRIO!",
+          "description": "\"PAI, AQUELES DOIS MENINOS DORMINDO NO LIXO SÃO PARECIDOS COMIGO\", DISSE O GAROTO AO MILIONÁRIO!\n\n#historias #historiasreais #histórias #históriasemocionantes #historiasinspiradoras #histórias...",
+          "thumbnail": "",
+          "duration": "7267.0s",
+          "views": 181011,
+          "likes": 0,
+          "published_at": "",
+          "url": "https://www.youtube.com/watch?v=exfN4z55B-I"
+        },
+        {
+          "video_id": "u8XYfdgQAcE",
+          "title": "MILIONÁRIO COMPRA TODA MERCADORIA DE UMA CRIANÇA VENDENDO DOCES NA RUA E FAZ UM PEDIDO INESPERADO",
+          "description": "MILIONÁRIO COMPRA TODA MERCADORIA DE UMA CRIANÇA VENDENDO DOCES NA RUA E FAZ UM PEDIDO INESPERADO\n\n#historias #historiasreais #histórias #históriasemocionantes #historiasinspiradoras #história...",
+          "thumbnail": "",
+          "duration": "8335.0s",
+          "views": 3552,
+          "likes": 0,
+          "published_at": "",
+          "url": "https://www.youtube.com/watch?v=u8XYfdgQAcE"
+        },
+        {
+          "video_id": "1zGtqccmwmg",
+          "title": "MILIONÁRIO, EM SEUS ÚLTIMOS DIAS, ADOTA DOIS GÊMEOS MENDIGOS… SEM IMAGINAR O IMPACTO EM SUA VIDA",
+          "description": "MILIONÁRIO, EM SEUS ÚLTIMOS DIAS, ADOTA DOIS GÊMEOS MENDIGOS… SEM IMAGINAR O IMPACTO EM SUA VIDA\n\n#historias #historiasreais #histórias #históriasemocionantes #historiasinspiradoras...",
+          "thumbnail": "",
+          "duration": "7637.0s",
+          "views": 7654,
+          "likes": 0,
+          "published_at": "",
+          "url": "https://www.youtube.com/watch?v=1zGtqccmwmg"
+        }
+      ],
+      "total_extracted": 10,
+      "method_used": "yt-dlp",
+      "extraction_time": "2025-08-22T17:09:25.214203"
+    },
+    "titles": {
+      "generated_titles": [
+        "Milionário Chocado! Gêmeos mendigos mudam sua vida em seus últimos dias!"
+      ],
+      "source_titles_count": 10,
+      "provider_used": "gemini",
+      "style": "viral",
+      "generation_time": "2025-08-22T17:09:28.729826"
+    },
+    "premises": {
+      "selected_title": "Milionário Chocado! Gêmeos mendigos mudam sua vida em seus últimos dias!",
+      "premise": "Este vídeo, direcionado para um público que aprecia histórias inspiradoras e com reviravoltas emocionais, conta a história de Arthur, um milionário solitário e amargurado em seus últimos dias de vida,  que se depara com dois gêmeos mendigos, Miguel e Rafael, que vivem nas ruas próximas à sua mansão.  O tom do vídeo será dramático, porém esperançoso, intercalando momentos de tristeza com a transformação gradual do protagonista.  O vídeo inicia mostrando a solidão e o desespero de Arthur, contrastando com a alegria singela e a resiliência dos gêmeos apesar de sua situação.  Um evento inesperado, como uma doença ou uma descoberta sobre sua família, impulsiona Arthur a se aproximar dos gêmeos, inicialmente com atos de caridade.  No decorrer da narrativa, a relação entre o milionário e os irmãos evolui, revelando que a simplicidade e o amor genuíno dos gêmeos são a chave para a cura emocional de Arthur. O vídeo mostrará como os gêmeos, sem querer, mudam a perspectiva de vida do milionário, ensinando-o o verdadeiro significado da felicidade e do amor incondicional.  Pontos-chave incluem a transformação de Arthur, o vínculo inesperado entre ele e os gêmeos, e a mensagem final sobre a importância da compaixão e a verdadeira riqueza da vida.  O clímax será a descoberta de um segredo emocionante que conecta Arthur aos gêmeos, revelando um elo inesperado e um final surpreendente e comovente.\n",
+      "word_count": 225,
+      "provider_used": "gemini",
+      "generation_time": "2025-08-22T17:09:31.930464"
+    },
+    "scripts": {
+      "chapters": [
+        {
+          "chapter_number": 1,
+          "title": "Capítulo 1: ## Milionário Chocado! Gêmeos Mendigos Mudam Sua V...",
+          "content": "## Milionário Chocado! Gêmeos Mendigos Mudam Sua Vida em Seus Últimos Dias! - Roteiro (Parte 1)\n\n**Duração Estimada:** 5 minutos\n\n**Cena 1:** (0:00-1:00)\n\n**Ambiente:** Interior da mansão de Antônio – Sala de estar opulenta, porém fria e vazia.  Móveis antigos e de luxo cobertos por lençóis brancos.  A iluminação é tenue, realçando a atmosfera de solidão.  Antônio (70 anos, magro, rosto enrugado e expressão amarga) está sentado em uma poltrona de couro, assistindo televisão sem prestar atenção.  A TV exibe um programa de variedades barulhento, que ele ignora completamente.  O som ambiente é apenas o leve zumbido da TV e o tique-taque de um relógio antigo na parede.\n\n**Ação:** Antônio suspira profundamente, a expressão em seu rosto mudando de apatia para uma profunda tristeza. Ele pega um copo de uísque quase vazio da mesinha de centro, bebe um gole longo e lento, e o deixa cair sobre a mesa com um baque suave.  A câmera se concentra em seu rosto, mostrando os sinais do tempo e da amargura.\n\n**Diálogos (voz em off, narração):**  \"Antônio, um homem feito de pedra e uísque.  Um império construído sobre o sacrifício de tudo que um dia amou. A solidão, sua fiel companheira. A riqueza, um escudo contra a realidade de uma vida vazia.\"\n\n**Cena 2:** (1:00-2:30)\n\n**Ambiente:** Exterior da mansão – Rua molhada por uma forte chuva.  João e Pedro (25 anos, gêmeos idênticos, com roupas rasgadas e sujas) se abrigam em um pequeno vão de porta, tremendo de frio. Eles compartilham um pedaço de pão seco, sorrindo um para o outro apesar da situação precária.  A câmera mostra a contraposição entre a mansão imponente e a vulnerabilidade dos gêmeos.\n\n**Ação:** João e Pedro se protegem da chuva, rindo baixinho de uma piada interna. A câmera destaca a força em seus olhares, mesmo sob a penúria. O som da chuva intensa e o vento forte preenchem o ambiente.\n\n**Diálogos:**\n* **João:** (Baixo) Lembra daquela vez que caímos no rio?\n* **Pedro:** (Rindo)  Ainda bem que o guarda-chuva quebrou!  Foi épico!\n\n**Cena 3:** (2:30-3:30)\n\n**Ambiente:** Interior da mansão – Sala de jantar. Antônio observa João e Pedro da janela, seu olhar distante e pensativo. A chuva continua forte.  Sua expressão revela um conflito interno, uma mistura de compaixão e repulsa que o deixa desconcertado.\n\n**Ação:** Antônio hesita, depois decide agir. Ele pega um casaco pesado e sai da sala. A câmera acompanha seus passos hesitantes em direção à porta da frente.\n\n**Diálogos (voz em off, narração):**  \"A chuva lá fora, um espelho da tormenta em sua alma.  Mas algo se quebra. Uma fenda na muralha de frieza que ele construiu ao longo dos anos.\"\n\n**Cena 4:** (3:30-4:30)\n\n**Ambiente:** Interior da mansão – Cozinha ampla e moderna.  Antônio oferece café quente e comida a João e Pedro.  Eles inicialmente hesitam, desconfiados, mas a gentileza de Antônio os tranquiliza.  O contraste entre a opulência da cozinha e a aparência humilde dos gêmeos é marcante.\n\n**Ação:** Antônio serve comida e café, observando-os com uma expressão cuidadosa.  João e Pedro comem com avidez, mostrando sua gratidão com gestos e sorrisos.  A atmosfera é tensa, mas há um começo de conexão entre eles.\n\n**Diálogos:**\n* **Antônio:** (Voz rouca) ...Com licença. Aqui, comam...\n* **João:** (Timidamente) Obrigado, senhor...\n* **Pedro:** (Observando Antônio) A comida está deliciosa.\n\n**Cena 5:** (4:30-5:00)\n\n**Ambiente:** Interior da mansão – Quarto de hóspedes.  Antônio encontra um velho baú no sótão e encontra um diário antigo. Ele abre o diário, e as páginas amarelas revelam fotos antigas de uma família feliz.  Uma foto mostra dois gêmeos bebês, assustadoramente parecidos com João e Pedro. Uma anotação no diário chama sua atenção: \"O destino une os que se buscam\".\n\n**Ação:** Antônio examina as fotos com atenção, a expressão em seu rosto mudando gradualmente de perplexidade para espanto e emoção.\n\n**Diálogos:** (Antônio, para si mesmo, sussurrando): \"Irmãos gêmeos... O destino...  Isso não pode ser...\"",
+          "word_count": 643
+        },
+        {
+          "chapter_number": 2,
+          "title": "Capítulo 2: ## Milionário Chocado! Gêmeos Mendigos Mudam Sua V...",
+          "content": "## Milionário Chocado! Gêmeos Mendigos Mudam Sua Vida em Seus Últimos Dias! - Capítulo 1: A Semente da Compaixão\n\n**[Cena 1]**\n\n**INT. MANSÃO ANTÔNIO - NOITE - 70 ANOS ANTES**\n\nA câmera percorre lentamente a imensa sala de estar da mansão de Antônio.  Móveis antigos e luxuosos, cobertos por lençóis brancos, acumulam pó. Uma imensa lareira, fria e apagada, domina um dos cantos.  A iluminação é escassa, lançando sombras longas e dramáticas.  Antônio, de 70 anos, um homem magro e enrugado com o olhar perdido, senta-se sozinho em uma poltrona de veludo carmesim, segurando uma taça de uísque quase vazia. Sua expressão é de profunda tristeza e amargura. O som de um relógio antigo marca o tempo implacavelmente.\n\n**ANTÔNIO (V.O.)**\nSetenta anos. Setenta anos de acumulação, de sucesso, de…vazio.  Construí um império, mas perdi tudo o que realmente importava.\n\nA câmera foca em uma fotografia empoeirada em uma mesa lateral – um Antônio jovem, sorridente, ao lado de uma mulher radiante e uma criança pequena.\n\n**ANTÔNIO (V.O.)**\nEles…se foram.  Como um sonho.  E eu fiquei aqui, sozinho, nesse mausoléu de luxo.\n\nUm suspiro pesado escapa de seus lábios.  Ele toma um gole de uísque, o rosto contraído pela dor.\n\n**[Cena 2]**\n\n**EXT. RUA EM FRENTE À MANSÃO - NOITE**\n\nA chuva cai torrencialmente.  João e Pedro, gêmeos idênticos com aproximadamente 30 anos, encolhem-se sob um beco, protegendo-se da chuva com pedaços de papelão.  Apesar da situação precária, um sorriso sutil troca entre eles.  Eles compartilham um pequeno pedaço de pão, a alegria em seus olhos contrastando com a miséria ao redor.\n\n**JOÃO**\nPelo menos não estamos com frio, Pedro. Compartilhando esse pão, aquece o coração.\n\n**PEDRO**\nVerdade.  Obrigado por dividir, irmão.\n\n**[Cena 3]**\n\n**INT. MANSÃO ANTÔNIO - NOITE**\n\nAntônio observa os gêmeos de sua janela, sua figura solitária silhuetando-se contra a luz.  A chuva bate forte contra o vidro.  Algo diferente acontece em seu olhar, um vislumbre de compaixão que ele mesmo não entende.\n\n**[Cena 4]**\n\n**INT. MANSÃO ANTÔNIO - COZINHA - NOITE**\n\nA câmera se concentra em um café fumegante servido em duas xícaras robustas.  Antônio olha para os gêmeos hesitantes que estão na cozinha.  Sua frieza habitual cede lugar a uma insegurança.\n\n**ANTÔNIO**\nEu... vi vocês na rua.  Estão encharcados.  Tomem um café quente.\n\nJoão e Pedro trocam um olhar incrédulo, sem acreditar na generosidade inesperada.\n\n**PEDRO**\nObrigado, senhor...\n\n**ANTÔNIO**\nSó Antônio.  E comam algo.  Há comida de sobra aqui.\n\n**[Cena 5]**\n\n**INT. MANSÃO ANTÔNIO - SALA DE JANTAR - NOITE**\n\nAntônio, João e Pedro sentam-se à mesa.  A cena é contrastante: a opulência da mesa, as roupas simples dos irmãos, o silêncio quebrado apenas pelo som de colheres e garfos.  A conversa é hesitante, mas há uma crescente sensação de conexão.  Antônio percebe a alegria simples, a força, o vínculo entre os gêmeos, uma coisa que ele nunca teve.\n\n**[Cena 6]**\n\n**INT. MANSÃO ANTÔNIO - SÓTÃO - DIA**\n\nAntônio vasculha o sótão empoeirado da mansão, encontrando um velho baú de madeira.  Dentro, descobre um diário antigo e amarelado com fotografias desbotadas.  Uma foto mostra dois bebês gêmeos, assustadoramente parecidos com João e Pedro.  Uma inscrição na primeira página chama sua atenção: \"O destino une os que se buscam\".  Seu coração bate forte.\n\n**[Cena 7]**\n\n**INT. HOSPITAL - QUARTO - DIA**\n\nAntônio, conectado a vários aparelhos, recebe a notícia devastadora de um médico.  Ele tem uma doença grave e apenas poucos meses de vida.\n\n**Doutor:** ... infelizmente, a situação é crítica.\n\nA câmera foca em seu rosto devastado, mas uma determinação surge em seus olhos. Ele precisa entender o mistério do diário e a conexão com os gêmeos antes que seja tarde demais.\n\n**[Cena 8]**\n\n**EXT. RUA EM FRENTE À MANSÃO - DIA**\n\nAntônio encontra apenas um bilhete enigmático onde João costumava dormir: \"A verdade está em seu passado, Antônio\".  João desapareceu, deixando Antônio em uma corrida contra o tempo para desvendar o mistério que poderá mudar sua vida para sempre. A câmera faz um zoom em seu rosto enquanto ele olha para o horizonte, um turbilhão de emoções atravessando seu olhar. A chuva volta a cair, desta vez, acompanhada por um sentimento crescente de esperança e desespero.",
+          "word_count": 690
+        },
+        {
+          "chapter_number": 3,
+          "title": "Capítulo 3: ## Milionário Chocado! Gêmeos Mendigos Mudam Sua V...",
+          "content": "## Milionário Chocado! Gêmeos Mendigos Mudam Sua Vida em Seus Últimos Dias! - Capítulo 2: O Diário e o Desaparecimento\n\n**[Cena 1]**\n\n**INT. MANSÃO DE ANTÔNIO - SÓTÃO - DIA**\n\nPoeira dança nos raios de sol que penetram pelas frestas do telhado inclinado.  Antônio (70, rosto marcado pela amargura, mas agora com um brilho de curiosidade nos olhos), tosse levemente, apoiando-se em uma bengala de madeira escura. Ele vasculha caixas antigas e esquecidas, iluminadas pela fraca luz de uma lanterna.  A respiração ofegante denuncia seu estado de saúde debilitado.  O ar está carregado de um cheiro a mofo e madeira velha.  Ele retira uma caixa de madeira finamente trabalhada, recoberta de veludo desbotado.  Dentro, encontra um diário de couro gasto pelo tempo, suas páginas amareladas e frágeis.  Ele o abre cuidadosamente, revelando uma caligrafia elegante, porém desbotada.\n\n**ANTÔNIO (V.O.)**\nAchei-o por acaso, no meio de todo esse lixo... um tesouro em meio ao esquecimento.\n\nA câmera se aproxima de uma fotografia desbotada, presa entre as páginas. Mostra dois bebês gêmeos idênticos, sorrindo para a câmera.  A semelhança com João e Pedro é inegável.  Antônio treme, suas mãos trêmulas enquanto ele lê a inscrição na parte de trás da foto: \"O destino une os que se buscam\".\n\n**[Cena 2]**\n\n**INT. MANSÃO DE ANTÔNIO - QUARTO DE ANTÔNIO - NOITE**\n\nAntônio está sentado em sua cama, o diário aberto em seu colo.  A sala é luxuosa, mas a atmosfera é carregada de uma profunda melancolia.  Ele lê o diário, suas palavras revelando pedaços de uma história familiar perturbada, de um passado cheio de arrependimentos e segredos.  Vemos flashes de imagens: um jovem Antônio, arrogante e ambicioso; uma mulher linda, mas distante; uma separação violenta; uma criança sendo entregue a estranhos.  A narrativa do diário revela que Antônio abandonou sua família por causa de seus negócios e ambições.\n\n**ANTÔNIO (V.O.)**\nCada palavra era um golpe em meu peito. Cada página, um fantasma do meu passado voltando para me assombrar.\n\n**[Cena 3]**\n\n**INT. MANSÃO DE ANTÔNIO - COZINHA - DIA**\n\nPedro, o gêmeo que permaneceu, ajuda Antônio a preparar um chá.  Pedro é um homem de fala mansa, com um sorriso gentil que contrasta com a tristeza nos olhos. A interação entre eles é delicada, mostrando um vínculo inusitado e um respeito mútuo que floresce em meio à tragédia. Antônio observa Pedro com admiração.\n\n**ANTÔNIO**\nJoão... ele disse que a verdade está no meu passado.  Você sabe algo sobre isso?\n\nPedro hesita, olhando para o chão. A câmera foca nos seus olhos, refletindo a hesitação e o peso de um segredo que ele carrega.\n\n**PEDRO**\nEu... eu não sei muito sobre o passado da sua família, senhor Antônio.  Mas... eu sei que João sempre teve um sexto sentido, uma intuição.\n\n**[Cena 4]**\n\n**EXT. RUA PERTO DA MANSÃO - DIA**\n\nAntônio sai da mansão, procurando por João.  Ele anda com dificuldade, sua respiração pesada. A busca de Antônio é frenética, um reflexo de seu desespero diante do tempo que lhe resta e a promessa de um final próximo. Ele encontra um bilhete rasgado, preso a uma árvore próxima à sua mansão.  A letra é inconfundível:  “A verdade está em seu passado, Antônio”.\n\n**[Cena 5]**\n\n**INT. MANSÃO DE ANTÔNIO - QUARTO DE ANTÔNIO - NOITE**\n\nAntônio, sozinho em seu quarto, segura o bilhete em suas mãos trêmulas.  A câmera foca nos seus olhos, cheios de uma mistura de medo, arrependimento e uma determinação renovada. Ele olha para o diário novamente, sentindo o peso da responsabilidade e a urgência de desvendar os mistérios do passado antes de perder toda a esperança.  A câmera fecha no diário aberto, destacando a frase: \"O destino une os que se buscam\".  A música sobe, dramática e tensa.\n\n**ANTÔNIO (V.O.)**\nO tempo está se esgotando.  Mas eu não vou desistir.  Eu preciso encontrar as respostas antes que seja tarde demais.  Para mim, e para eles.\n\n\n**(FIM DO CAPÍTULO 2)**",
+          "word_count": 647
+        },
+        {
+          "chapter_number": 4,
+          "title": "Capítulo 4: ## CAPÍTULO 3: A Sombra do Passado\n\n**DURAÇÃO ESTI...",
+          "content": "## CAPÍTULO 3: A Sombra do Passado\n\n**DURAÇÃO ESTIMADA:** 6 minutos\n\n**LOCALIZAÇÃO:** Mansão de Antônio, principalmente o sótão e o quarto de Antônio.  Flashbacks em um orfanato e na rua.\n\n**INÍCIO:** (0:00-0:30)  A cena abre com Antônio, mais fraco, mas determinado, sentado em sua cama, segurando o velho diário.  A foto dos gêmeos bebês está destacada.  Sua respiração é ofegante, sua pele pálida.  Ele observa a foto com olhos marejados, a lembrança da frase “O destino une os que se buscam” ecoando em sua mente.  A música de fundo é melancólica, mas com uma pitada de esperança. Pedro está ao seu lado, tentando confortá-lo com um copo d'água e um leve toque na mão.  Antônio parece perdido em pensamentos, revivendo fragmentos de lembranças vagas de sua infância.\n\n\n**DESENVOLVIMENTO:** (0:30-3:00)  Através de flashbacks em preto e branco, vemos vislumbres do passado de Antônio: um orfanato frio e sem amor, onde ele era um garoto solitário e taciturno; uma imagem fugaz de duas crianças gêmeas brincando no pátio, sorrindo, e um flash de uma enfermeira segurando um bebê.  O tom da cena é sombrio, acentuando a solidão da infância de Antônio e insinuando uma possível ligação com os gêmeos.  De volta ao presente, Antônio decide investigar seu passado. Com a ajuda de Pedro (que demonstra uma paciência e gentileza surpreendentes), ele começa a pesquisar registros de adoção do orfanato onde passou a infância, mas os registros são incompletos e confusos.  Há lacunas significativas, e as informações sobre o paradeiro de João continuam ausentes.  A angústia de Antônio aumenta.  Ele sofre com acessos de tosse e cansaço, o que sublinha sua condição terminal.  Pedro demonstra crescente preocupação e afeição genuína por Antônio, oferecendo apoio constante, demonstrando mais do que apenas gratidão pelo abrigo.  Em um momento de fragilidade, Antônio confessa a Pedro seu medo da morte e a amargura por ter vivido uma vida tão vazia, contrastando suas emoções com a simplicidade e a alegria que Pedro e João sempre demonstram, mesmo em meio à pobreza.\n\n\n**CLÍMAX:** (3:00-4:30)  Pedro mostra a Antônio um pequeno amuleto, um pingente de prata em forma de cruz, que encontrou no quarto de João antes dele desaparecer.  Ao reverter o pingente, uma gravação quase ilegível aparece, que, após limpeza cuidadosa por Antônio, revela as iniciais \"A.M\" e uma data próxima ao seu nascimento. As iniciais se encaixam com o seu nome.  Antônio reconhece uma semelhança assustadoramente grande entre o amuleto e outro que ele mesmo usava quando criança, e que está em uma velha caixa de memórias no sótão. A descoberta o deixa atordoado. Uma montagens paralela de flashes do passado mostra uma enfermeira, distraída, misturando inadvertidamente bebês em berços. A música se intensifica, criando um suspense crescente. Antônio começa a entender que a coincidência é improvável. Ele sofre um choque, enquanto a verdade sobre seu passado começa a se revelar.\n\n\n**RESOLUÇÃO:** (4:30-6:00) Antônio, apesar de sua fraqueza física, encontra uma força inexplicável.  Ele liga para um investigador particular, alguém que lhe pareça confiável, para investigar a adoção de gêmeos no mesmo orfanato nos anos 50. A cena termina com Antônio olhando para a foto dos gêmeos bebês no diário, enquanto a câmera se concentra em um close de seu rosto, mostrando uma mistura de esperança e apreensão.  A música de fundo muda para um tom mais otimista, sugerindo a possibilidade de um futuro melhor, mesmo em meio às suas provações. Um vislumbre de João, à distância, observando a mansão, deixa uma sensação de mistério e expectativa para o próximo capítulo.\n\n\n**FIM DO CAPÍTULO 3**",
+          "word_count": 587
+        },
+        {
+          "chapter_number": 5,
+          "title": "Capítulo 5: ## Milionário Chocado! Gêmeos Mendigos Mudam Sua V...",
+          "content": "## Milionário Chocado! Gêmeos Mendigos Mudam Sua Vida em Seus Últimos Dias! - Roteiro (Parte Final)\n\n**Cena 1:** Interior da Mansão - Quarto de Antônio - Noite\n\nAntônio, debilitado, mas com um brilho novo nos olhos, examina o diário. As fotos dos gêmeos bebês são idênticas a João e Pedro.  Ele relembra as últimas semanas: a amizade improvável com Pedro, a alegria genuína do jovem, a constante presença reconfortante. A ausência de João pesa, mas a mensagem (\"A verdade está em seu passado, Antônio\") o impulsiona. Ele encontra um envelope antigo, marcado com o nome \"Antônio Silva\" e uma data coincidente com sua infância. Em seu interior, uma carta.  A letra trêmula revela a história de sua mãe, uma jovem abandonada que deu à luz gêmeos, João e Maria. Separada à força, ela deixou Maria com uma família rica e teve que dar João para adoção, prometendo buscá-lo quando pudesse.  Maria era Antônio.\n\n**(Voz em off, Antônio):**  Eu nunca soube.  Minha mãe... sempre pensei que ela me abandonou.\n\n**Cena 2:** Exterior - Rua perto da mansão - Dia\n\nPedro está sentado na rua, melancólico. Um detetive se aproxima e mostra a ele uma foto de João.\n\n**Detetive:**  Seu irmão foi encontrado em um abrigo na cidade vizinha.  Ele estava doente, mas está recebendo atendimento médico. Ele pediu para você vir vê-lo.\n\n\n**Cena 3:** Interior - Quarto de Hospital - Dia\n\nAntônio e Pedro chegam ao hospital. João está deitado na cama, fraco, mas sorri ao ver Antônio.  A revelação final: João sabia que Antônio era seu irmão desde a infância. Um velho orfanato onde João cresceu tinha uma foto de Antônio, quando criança,  e um recorte de jornal que mencionava sua família rica.  João, apesar das dificuldades, nunca desistiu de encontrar seu irmão. A chuva de antes representava a limpeza de suas vidas.  Antônio foi levado até João por acaso no dia da chuva, pois João havia planejado ir à mansão para procurar mais pistas.\n\n**João:** (fraco)  Eu nunca te esqueci, Antônio. Sempre soube que um dia te encontraria.\n\n**Cena 4:** Interior da Mansão - Jardim de Inverno - Dia\n\nPassaram-se algumas semanas. Antônio, Pedro e João estão juntos no jardim de inverno da mansão. Antônio, apesar de sua doença, está mais sereno e feliz.  Ele abraça seus irmãos, sentindo o amor que sempre lhe faltou. Pedro canta uma música simples, um som alegre ecoando no ambiente.  O jardim, antes solitário, agora floresce com a vida dos três irmãos.\n\n**(Voz em off, Antônio):** A riqueza que eu tanto almejei... a verdadeira fortuna estava ali, diante dos meus olhos. Não em contas bancárias, mas na ligação profunda que eu não sabia que existia.\n\n**Cena 5:** Exterior - Rua perto da mansão - Dia\n\nMeses depois, Pedro está sentado na mesma rua de antes, mas agora com um sorriso tranquilo e confiante no rosto. Ele vende artesanatos que Antônio o ajudou a fazer, um sustentável meio de vida.  Ele olha para a mansão; a frieza e a solidão já se foram, substituídas por calor humano.\n\n**(Voz em off, Narrador):** Antônio encontrou a cura não em remédios, mas no amor e perdão.  A história de Antônio, João e Pedro é um testemunho de que a verdadeira riqueza não se encontra em posses materiais, mas nos laços de amor e família, que podem florescer mesmo em meio às circunstâncias mais improváveis.\n\n\n**Cena 6:** Montagem - Foto final\n\nUma sequência de fotos mostra a evolução de Antônio, dos seus dias solitários e melancólicos, para seus últimos dias cercados pelo amor fraternal. As fotos finais o mostram sorrindo,  envolvido por João e Pedro.  Um close na foto de Antônio, João e Pedro, sorrindo radiantes ao sol do jardim de inverno da mansão, finalizando com a frase: \"A verdadeira riqueza está na família.\"\n\n\n**(Música suave e emotiva toca ao fundo durante a montagem final.)**",
+          "word_count": 637
+        }
+      ],
+      "partial": true,
+      "chapters_generated": 5
+    }
+  },
+  "config": {
+    "extraction": {
+      "enabled": true,
+      "method": "yt-dlp",
+      "rapidapi_key": ""
+    },
+    "titles": {
+      "enabled": true,
+      "provider": "gemini",
+      "count": 1,
+      "style": "viral",
+      "language": "pt-BR",
+      "custom_prompt": false,
+      "custom_instructions": ""
+    },
+    "premises": {
+      "enabled": true,
+      "provider": "gemini",
+      "style": "educational",
+      "target_audience": "general",
+      "word_count": 200,
+      "custom_prompt": false,
+      "custom_instructions": ""
+    },
+    "scripts": {
+      "enabled": true,
+      "provider": "gemini",
+      "chapters": 5,
+      "duration_target": "5-7 minutes",
+      "include_intro": true,
+      "include_outro": true,
+      "custom_prompts": false,
+      "custom_inicio": "",
+      "custom_meio": "",
+      "custom_fim": ""
+    },
+    "tts": {
+      "enabled": true,
+      "provider": "kokoro",
+      "voice": "af_bella",
+      "language": "en",
+      "speed": 1,
+      "pitch": 1
+    },
+    "images": {
+      "enabled": true,
+      "provider": "pollinations",
+      "style": "realistic",
+      "quality": "high",
+      "count_per_chapter": 2,
+      "custom_prompt": false,
+      "custom_instructions": ""
+    },
+    "video": {
+      "enabled": true,
+      "resolution": "1920x1080",
+      "fps": 30,
+      "format": "mp4",
+      "include_subtitles": true,
+      "transition_duration": 0.5
+    },
+    "prompts": {
+      "titles": {
+        "viral": "Crie títulos virais e envolventes para o vídeo sobre: {topic}. Os títulos devem ser chamativos, despertar curiosidade e incentivar cliques.",
+        "educational": "Crie títulos educacionais e informativos para o vídeo sobre: {topic}. Os títulos devem ser claros, diretos e indicar o valor educacional.",
+        "professional": "Crie títulos profissionais e sérios para o vídeo sobre: {topic}. Os títulos devem transmitir autoridade e credibilidade."
+      },
+      "premises": {
+        "narrative": "Crie uma premissa narrativa envolvente para um vídeo sobre: {title}. A premissa deve contar uma história cativante em aproximadamente {word_count} palavras.",
+        "educational": "Crie uma premissa educacional estruturada para um vídeo sobre: {title}. A premissa deve apresentar os pontos de aprendizado em aproximadamente {word_count} palavras.",
+        "informative": "Crie uma premissa informativa e objetiva para um vídeo sobre: {title}. A premissa deve apresentar fatos e informações relevantes em aproximadamente {word_count} palavras."
+      },
+      "scripts": {
+        "inicio": "# Prompt — Início\n\nEscreva uma narrativa de {genre} intitulada \"{title}\".\n\nPremissa: {premise}\n\nEste é o INÍCIO da história. Deve estabelecer:\n- Personagens principais e suas motivações\n- Cenário e atmosfera da história\n- Conflito principal que moverá a narrativa\n- Tom inicial da narrativa\n\n**IMPORTANTE:** Seja detalhado, extenso e minucioso na descrição de cenários, personagens, ações e diálogos.",
+        "meio": "# Prompt — Meio\n\nContinue a narrativa de {genre} intitulada \"{title}\".\n\nCONTEXTO ANTERIOR:\n\"{previousContent}\"...\n\nEsta é a continuação do MEIO da história. Deve:\n- Continuar a narrativa de forma orgânica e coerente\n- Desenvolver os personagens e suas relações\n- Intensificar o conflito principal\n- Adicionar novos elementos de tensão\n\n**IMPORTANTE:** Seja detalhado, extenso e minucioso. Cada capítulo deve ter conteúdo substancial e rico em detalhes.",
+        "fim": "# Prompt — Fim\n\nContinue a narrativa de {genre} intitulada \"{title}\".\n\nCONTEXTO ANTERIOR:\n\"{previousContent}\"...\n\nEste é o FIM da história. Deve:\n- Resolver o conflito principal estabelecido no início\n- Proporcionar conclusão satisfatória para todos os personagens principais\n- Entregar o clímax esperado da história\n- Fechar a história de forma impactante\n\n**IMPORTANTE:** Seja detalhado, extenso e minucioso na conclusão. Garanta um fechamento rico e satisfatório."
+      },
+      "images": {
+        "cinematic": "Crie uma descrição cinematográfica para uma imagem que represente: {scene_description}. A imagem deve ter qualidade cinematográfica, boa iluminação e composição profissional.",
+        "minimalist": "Crie uma descrição minimalista para uma imagem que represente: {scene_description}. A imagem deve ser limpa, simples e com foco no elemento principal.",
+        "artistic": "Crie uma descrição artística para uma imagem que represente: {scene_description}. A imagem deve ser criativa, expressiva e visualmente impactante."
+      }
+    }
+  },
+  "progress": {},
+  "version": "1.0"
+}

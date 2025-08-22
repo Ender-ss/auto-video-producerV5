@@ -3709,6 +3709,46 @@ def serve_tts_audio(filename):
         error_response = auto_format_error(str(e), 'Servidor de Áudio')
         return jsonify(error_response), 500
 
+@automations_bp.route('/video/<filename>')
+def serve_video(filename):
+    """Servir arquivos de vídeo gerados"""
+    try:
+        import os
+        from flask import send_file
+
+        # Verificar em múltiplos diretórios onde os vídeos podem estar
+        possible_dirs = [
+            os.path.join(os.path.dirname(__file__), '..', 'temp'),
+            os.path.join(os.path.dirname(__file__), '..', 'outputs'),
+            os.path.join(os.path.dirname(__file__), '..', 'temp', 'videos')
+        ]
+        
+        filepath = None
+        for temp_dir in possible_dirs:
+            potential_path = os.path.join(temp_dir, filename)
+            if os.path.exists(potential_path):
+                filepath = potential_path
+                break
+
+        print(f"🔍 Tentando servir vídeo: {filename}")
+        add_real_time_log(f"🔍 Servindo vídeo: {filename}", "info", "video-server")
+
+        if filepath and os.path.exists(filepath):
+            print(f"✅ Arquivo encontrado, servindo: {filename}")
+            add_real_time_log(f"✅ Vídeo servido com sucesso: {filename}", "success", "video-server")
+            return send_file(filepath, as_attachment=False, mimetype='video/mp4')
+        else:
+            print(f"❌ Arquivo não encontrado: {filename}")
+            add_real_time_log(f"❌ Arquivo de vídeo não encontrado: {filename}", "error", "video-server")
+            error_response = format_error_response('validation_error', 'Arquivo de vídeo não encontrado', 'Servidor de Vídeo')
+            return jsonify(error_response), 404
+
+    except Exception as e:
+        print(f"❌ Erro ao servir vídeo: {str(e)}")
+        add_real_time_log(f"❌ Erro ao servir vídeo: {str(e)}", "error", "video-server")
+        error_response = auto_format_error(str(e), 'Servidor de Vídeo')
+        return jsonify(error_response), 500
+
 def get_audio_duration(filepath):
     """Obter duração do arquivo de áudio"""
     try:

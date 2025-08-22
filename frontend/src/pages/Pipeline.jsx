@@ -550,31 +550,48 @@ const AutomationSection = ({ automationPipelines, setAutomationPipelines, isPoll
         return
       }
       
-      console.log('PAUSE_PIPELINE: Pausando pipeline:', pipelineId)
+      // Encontrar o pipeline atual para determinar a ação
+      const currentPipeline = automationPipelines.find(p => p.pipeline_id === pipelineId)
+      if (!currentPipeline) {
+        console.error('PAUSE_PIPELINE: Pipeline não encontrado:', pipelineId)
+        return
+      }
       
-      const response = await fetch(`/api/pipeline/pause/${pipelineId}`, {
+      const isPaused = currentPipeline.status === 'paused'
+      const action = isPaused ? 'resume' : 'pause'
+      const actionText = isPaused ? 'Retomando' : 'Pausando'
+      
+      console.log(`${action.toUpperCase()}_PIPELINE: ${actionText} pipeline:`, pipelineId)
+      
+      const response = await fetch(`/api/pipeline/${action}/${pipelineId}`, {
         method: 'POST'
       })
       
       if (response.ok) {
         const result = await response.json()
-        console.log('PAUSE_PIPELINE: Resposta da API:', result)
+        console.log(`${action.toUpperCase()}_PIPELINE: Resposta da API:`, result)
         
-        if (result.success && result.data && isValidPipeline(result.data)) {
+        if (result.success) {
+          // Atualizar status do pipeline localmente
           setAutomationPipelines(prev => 
             prev.map(p => 
-              p.pipeline_id === pipelineId ? result.data : p
+              p.pipeline_id === pipelineId 
+                ? { ...p, status: isPaused ? 'running' : 'paused' }
+                : p
             )
           )
-          console.log('PAUSE_PIPELINE: Pipeline pausado com sucesso:', pipelineId)
+          console.log(`${action.toUpperCase()}_PIPELINE: Pipeline ${isPaused ? 'retomado' : 'pausado'} com sucesso:`, pipelineId)
         } else {
-          console.error('PAUSE_PIPELINE: Dados inválidos na resposta:', result)
+          console.error(`${action.toUpperCase()}_PIPELINE: Erro na resposta:`, result.error)
+          alert(`Erro ao ${isPaused ? 'retomar' : 'pausar'} pipeline: ${result.error}`)
         }
       } else {
-        console.error('PAUSE_PIPELINE: Erro HTTP:', response.status)
+        console.error(`${action.toUpperCase()}_PIPELINE: Erro HTTP:`, response.status)
+        alert(`Erro HTTP ao ${isPaused ? 'retomar' : 'pausar'} pipeline`)
       }
     } catch (error) {
       console.error('PAUSE_PIPELINE: Erro geral:', error)
+      alert('Erro inesperado ao processar pipeline')
     }
   }
 

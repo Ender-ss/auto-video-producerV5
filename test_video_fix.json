@@ -1,0 +1,25 @@
+{
+  "config": {
+    "video": {
+      "resolution": "1920x1080",
+      "fps": 30,
+      "quality": "high",
+      "transitions": true,
+      "subtitles": true
+    }
+  },
+  "test_data": {
+    "audio_path": "test_audio.mp3",
+    "images": [
+      {
+        "path": "test_image1.jpg",
+        "duration": 3.0
+      },
+      {
+        "path": "test_image2.jpg", 
+        "duration": 3.0
+      }
+    ],
+    "script_text": "Este é um teste de criação de vídeo com as correções implementadas."
+  }
+}

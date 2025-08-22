@@ -70,7 +70,7 @@ class ImageGenerationService:
             # Gerar imagens para cada prompt
             for i, prompt in enumerate(prompts_to_generate):
                 try:
-                    self._log('info', f'Gerando imagem {i + 1}/{len(prompts_to_generate)}')
+                    self._log('info', f'Gerando imagem {i + 1}/{len(prompts_to_generate)}: {prompt[:50]}...')
                     
                     # Gerar imagem baseado no provedor (usando funções da aba de automações)
                     image_bytes = None
@@ -89,7 +89,7 @@ class ImageGenerationService:
                             image_bytes = generate_image_together(prompt, api_key, width, height, 'standard', 'black-forest-labs/FLUX.1-krea-dev')
                     
                     if image_bytes is None:
-                        self._log('warning', f'Erro ao gerar imagem {i+1}: {prompt[:50]}...')
+                        self._log('warning', f'Falha ao gerar imagem {i+1}/{len(prompts_to_generate)}: {prompt[:50]}...')
                         continue
                     
                     # Salvar a imagem (mesmo método da aba de automações)
@@ -118,6 +118,8 @@ class ImageGenerationService:
                         'provider': provider,
                         'generation_time': datetime.utcnow().isoformat()
                     })
+                    
+                    self._log('info', f'Imagem {i + 1}/{len(prompts_to_generate)} salva com sucesso - {filename}')
                     
                     # Delay entre gerações (mesmo da aba de automações)
                     if i < len(prompts_to_generate) - 1:

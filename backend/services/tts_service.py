@@ -62,7 +62,7 @@ class TTSService:
             
             for i, segment_text in enumerate(text_segments):
                 try:
-                    self._log('info', f'Gerando áudio para segmento {i + 1}/{len(text_segments)}')
+                    self._log('info', f'Gerando áudio {i + 1}/{len(text_segments)}: {segment_text[:50]}...')
                     
                     # Gerar áudio baseado no provedor
                     audio_result = self._generate_audio_segment(
@@ -107,7 +107,7 @@ class TTSService:
                             'generation_time': datetime.utcnow().isoformat()
                         })
                         
-                        self._log('info', f'Segmento {i + 1} gerado com sucesso')
+                        self._log('info', f'Áudio {i + 1}/{len(text_segments)} gerado com sucesso - {filename}')
                     else:
                         self._log('warning', f'Falha ao gerar segmento {i + 1}: {audio_result.get("error", "Erro desconhecido")}')
                         

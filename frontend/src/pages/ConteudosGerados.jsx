@@ -4,25 +4,13 @@
  * Página para visualizar todos os conteúdos gerados pelas pipelines
  */
 
-import React, { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { motion } from 'framer-motion'
-import {
-  Image,
-  Music,
-  Video,
-  Download,
-  Eye,
-  Calendar,
-  HardDrive,
-  RefreshCw,
-  Search,
-  Filter,
-  Grid,
-  List,
-  Play,
-  FileText,
-  AlertCircle
-} from 'lucide-react'
+import { format } from 'date-fns'
+import { ptBR } from 'date-fns/locale'
+import { Search, Image, Music, Video, FileText, RefreshCw, AlertCircle, HardDrive, Eye, Download, Play, Pause, Calendar, Volume2, Grid, List, Trash2 } from 'lucide-react'
+import axios from 'axios'
+import VideoPreview from '../components/VideoPreview'
 
 const ConteudosGerados = () => {
   const [content, setContent] = useState({
@@ -42,6 +30,14 @@ const ConteudosGerados = () => {
   const [searchTerm, setSearchTerm] = useState('')
   const [activeTab, setActiveTab] = useState('all')
   const [viewMode, setViewMode] = useState('grid')
+  const [currentAudio, setCurrentAudio] = useState(null)
+  const [isPlaying, setIsPlaying] = useState(false)
+  const [currentTime, setCurrentTime] = useState(0)
+  const [duration, setDuration] = useState(0)
+  const audioRef = useRef(null)
+
+  const [showVideoPreview, setShowVideoPreview] = useState(false)
+  const [selectedVideo, setSelectedVideo] = useState(null)
 
   const fetchContent = async () => {
     try {
@@ -52,7 +48,19 @@ const ConteudosGerados = () => {
       const data = await response.json()
       
       if (data.success) {
-        setContent(data.content)
+        // Adicionar URLs para áudios e vídeos
+        const contentWithUrls = {
+          ...data.content,
+          audios: data.content.audios.map(audio => ({
+            ...audio,
+            url: `/api/automations/audio/${audio.filename}`
+          })),
+          videos: data.content.videos.map(video => ({
+            ...video,
+            url: `/api/automations/video/${video.filename}`
+          }))
+        }
+        setContent(contentWithUrls)
         setSummary(data.summary)
       } else {
         setError(data.error || 'Erro ao carregar conteúdos')
@@ -123,9 +131,66 @@ const ConteudosGerados = () => {
   const handlePreview = (item) => {
     if (item.type === 'image' && item.url) {
       window.open(item.url, '_blank')
+    } else if (item.type === 'audio' && item.url) {
+      handleAudioPlay(item)
+    } else if (item.type === 'video' && item.url) {
+      setSelectedVideo(item)
+      setShowVideoPreview(true)
     } else {
       alert('Preview não disponível para este tipo de arquivo')
     }
+  }
+
+  const handleCloseVideoPreview = () => {
+    setShowVideoPreview(false)
+    setSelectedVideo(null)
+  }
+
+  const handleAudioPlay = (audioItem) => {
+    if (currentAudio?.filename === audioItem.filename) {
+      // Se é o mesmo áudio, pausar/retomar
+      if (isPlaying) {
+        audioRef.current?.pause()
+        setIsPlaying(false)
+      } else {
+        audioRef.current?.play()
+        setIsPlaying(true)
+      }
+    } else {
+      // Novo áudio
+      setCurrentAudio(audioItem)
+      setIsPlaying(true)
+      setCurrentTime(0)
+    }
+  }
+
+  const handleAudioTimeUpdate = () => {
+    if (audioRef.current) {
+      setCurrentTime(audioRef.current.currentTime)
+      setDuration(audioRef.current.duration || 0)
+    }
+  }
+
+  const handleAudioEnded = () => {
+    setIsPlaying(false)
+    setCurrentTime(0)
+  }
+
+  const handleSeek = (e) => {
+    const rect = e.currentTarget.getBoundingClientRect()
+    const percent = (e.clientX - rect.left) / rect.width
+    const newTime = percent * duration
+    if (audioRef.current) {
+      audioRef.current.currentTime = newTime
+      setCurrentTime(newTime)
+    }
+  }
+
+  const formatTime = (time) => {
+    if (isNaN(time)) return '0:00'
+    const minutes = Math.floor(time / 60)
+    const seconds = Math.floor(time % 60)
+    return `${minutes}:${seconds.toString().padStart(2, '0')}`
   }
 
   const handleDownload = (item) => {
@@ -136,8 +201,28 @@ const ConteudosGerados = () => {
       document.body.appendChild(link)
       link.click()
       document.body.removeChild(link)
+    } else if (item.type === 'video' && item.url) {
+      const link = document.createElement('a')
+      link.href = item.url
+      link.download = item.filename
+      document.body.appendChild(link)
+      link.click()
+      document.body.removeChild(link)
     } else {
       alert('Download direto não disponível para este tipo de arquivo')
+    }
+  }
+
+  const handleDelete = async (item) => {
+    if (window.confirm(`Tem certeza que deseja excluir ${item.filename}?`)) {
+      try {
+        await axios.delete(`/api/content/${item.type}/${item.filename}`)
+        fetchContent() // Atualiza a lista após a exclusão
+        alert('Arquivo excluído com sucesso!')
+      } catch (error) {
+        console.error('Erro ao excluir arquivo:', error)
+        alert('Erro ao excluir arquivo. Verifique o console para mais detalhes.')
+      }
     }
   }
 
@@ -329,6 +414,23 @@ const ConteudosGerados = () => {
                         <span className="text-xs font-medium text-gray-400 uppercase">{item.type}</span>
                       </div>
                       <div className="flex space-x-1">
+                        {item.type === 'audio' && item.url && (
+                          <button
+                            onClick={() => handleAudioPlay(item)}
+                            className={`p-1 hover:bg-gray-700 rounded ${
+                              currentAudio?.filename === item.filename && isPlaying
+                                ? 'text-green-400'
+                                : 'text-gray-400 hover:text-white'
+                            }`}
+                            title={currentAudio?.filename === item.filename && isPlaying ? 'Pausar' : 'Reproduzir'}
+                          >
+                            {currentAudio?.filename === item.filename && isPlaying ? (
+                              <Pause size={14} />
+                            ) : (
+                              <Play size={14} />
+                            )}
+                          </button>
+                        )}
                         <button
                           onClick={() => handlePreview(item)}
                           className="p-1 text-gray-400 hover:text-white hover:bg-gray-700 rounded"
@@ -343,23 +445,31 @@ const ConteudosGerados = () => {
                         >
                           <Download size={14} />
                         </button>
+                        <button
+                          onClick={() => handleDelete(item)}
+                          className="p-1 text-red-400 hover:text-red-300 hover:bg-gray-700 rounded"
+                          title="Excluir"
+                        >
+                          <Trash2 size={14} />
+                        </button>
                       </div>
                     </div>
-                    <h3 className="font-medium text-white mb-2 text-sm truncate" title={item.filename}>
+                    <h3 className="font-medium text-white mb-2 truncate" title={item.filename}>
                       {item.filename}
                     </h3>
-                    <div className="space-y-1 text-xs text-gray-400">
-                      <div className="flex items-center space-x-1">
+                    <div className="text-xs text-gray-400 space-y-1">
+                      <div className="flex items-center space-x-2">
                         <HardDrive size={12} />
                         <span>{formatFileSize(item.size)}</span>
                       </div>
-                      <div className="flex items-center space-x-1">
+                      <div className="flex items-center space-x-2">
                         <Calendar size={12} />
                         <span>{formatDate(item.created_at)}</span>
                       </div>
                       {item.directory && (
-                        <div className="text-xs text-gray-500">
-                          📁 {item.directory}
+                        <div className="flex items-center space-x-2">
+                          <span>📁</span>
+                          <span className="truncate">{item.directory}</span>
                         </div>
                       )}
                     </div>
@@ -380,6 +490,23 @@ const ConteudosGerados = () => {
                       </div>
                     </div>
                     <div className="flex space-x-2">
+                      {item.type === 'audio' && item.url && (
+                        <button
+                          onClick={() => handleAudioPlay(item)}
+                          className={`p-2 hover:bg-gray-700 rounded ${
+                            currentAudio?.filename === item.filename && isPlaying
+                              ? 'text-green-400'
+                              : 'text-gray-400 hover:text-white'
+                          }`}
+                          title={currentAudio?.filename === item.filename && isPlaying ? 'Pausar' : 'Reproduzir'}
+                        >
+                          {currentAudio?.filename === item.filename && isPlaying ? (
+                            <Pause size={16} />
+                          ) : (
+                            <Play size={16} />
+                          )}
+                        </button>
+                      )}
                       <button
                         onClick={() => handlePreview(item)}
                         className="p-2 text-gray-400 hover:text-white hover:bg-gray-700 rounded"
@@ -394,6 +521,13 @@ const ConteudosGerados = () => {
                       >
                         <Download size={16} />
                       </button>
+                      <button
+                        onClick={() => handleDelete(item)}
+                        className="p-2 text-red-400 hover:text-red-300 hover:bg-gray-700 rounded"
+                        title="Excluir"
+                      >
+                        <Trash2 size={16} />
+                      </button>
                     </div>
                   </div>
                 )}
@@ -402,6 +536,72 @@ const ConteudosGerados = () => {
           </div>
         )}
       </div>
+
+      {/* Audio Player */}
+      {currentAudio && (
+        <div className="fixed bottom-0 left-0 right-0 bg-gray-800 border-t border-gray-700 p-4 z-50">
+          <div className="max-w-7xl mx-auto">
+            <div className="flex items-center space-x-4">
+              {/* Audio Info */}
+              <div className="flex items-center space-x-3 min-w-0 flex-1">
+                <div className="bg-green-500/20 p-2 rounded-lg">
+                  <Volume2 className="text-green-400" size={20} />
+                </div>
+                <div className="min-w-0 flex-1">
+                  <h4 className="text-white font-medium truncate">{currentAudio.filename}</h4>
+                  <p className="text-gray-400 text-sm">
+                    {formatTime(currentTime)} / {formatTime(duration)}
+                  </p>
+                </div>
+              </div>
+
+              {/* Controls */}
+              <div className="flex items-center space-x-4">
+                <button
+                  onClick={() => handleAudioPlay(currentAudio)}
+                  className="bg-green-600 hover:bg-green-700 p-2 rounded-lg"
+                >
+                  {isPlaying ? <Pause size={20} /> : <Play size={20} />}
+                </button>
+              </div>
+
+              {/* Progress Bar */}
+              <div className="flex-1 max-w-md">
+                <div
+                  className="bg-gray-700 h-2 rounded-full cursor-pointer"
+                  onClick={handleSeek}
+                >
+                  <div
+                    className="bg-green-500 h-2 rounded-full transition-all"
+                    style={{ width: `${duration ? (currentTime / duration) * 100 : 0}%` }}
+                  />
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Hidden Audio Element */}
+      {currentAudio && (
+        <audio
+          ref={audioRef}
+          src={currentAudio.url}
+          onTimeUpdate={handleAudioTimeUpdate}
+          onEnded={handleAudioEnded}
+          onLoadedMetadata={handleAudioTimeUpdate}
+          autoPlay
+        />
+      )}
+
+      {/* Video Preview Modal */}
+      {showVideoPreview && selectedVideo && (
+        <VideoPreview
+          video={selectedVideo}
+          isOpen={showVideoPreview}
+          onClose={handleCloseVideoPreview}
+        />
+      )}
     </div>
   )
 }

@@ -356,20 +356,26 @@ def list_generated_content():
         
         # Listar áudios (verificar múltiplos diretórios)
         audio_dirs = [audio_dir, temp_dir]
+        audio_files_seen = set()  # Para evitar duplicatas
+        
         for audio_search_dir in audio_dirs:
             if os.path.exists(audio_search_dir):
                 for ext in ['*.wav', '*.mp3', '*.m4a', '*.ogg', '*.flac']:
                     for filepath in glob.glob(os.path.join(audio_search_dir, ext)):
                         filename = os.path.basename(filepath)
-                        file_stats = os.stat(filepath)
-                        content['audios'].append({
-                            'filename': filename,
-                            'path': filepath,
-                            'directory': os.path.basename(audio_search_dir),
-                            'size': file_stats.st_size,
-                            'created_at': datetime.fromtimestamp(file_stats.st_ctime).isoformat(),
-                            'modified_at': datetime.fromtimestamp(file_stats.st_mtime).isoformat()
-                        })
+                        
+                        # Evitar duplicatas baseadas no nome do arquivo
+                        if filename not in audio_files_seen:
+                            audio_files_seen.add(filename)
+                            file_stats = os.stat(filepath)
+                            content['audios'].append({
+                                'filename': filename,
+                                'path': filepath,
+                                'directory': os.path.basename(audio_search_dir),
+                                'size': file_stats.st_size,
+                                'created_at': datetime.fromtimestamp(file_stats.st_ctime).isoformat(),
+                                'modified_at': datetime.fromtimestamp(file_stats.st_mtime).isoformat()
+                            })
         
         # Listar vídeos (verificar múltiplos diretórios)
         video_dirs = [videos_dir, outputs_dir]
