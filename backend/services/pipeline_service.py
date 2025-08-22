@@ -15,6 +15,9 @@ from typing import Dict, Any, List, Optional
 sys.path.append(os.path.join(os.path.dirname(__file__), '..', 'routes'))
 sys.path.append(os.path.join(os.path.dirname(__file__), '..'))
 
+# Importar serviços necessários
+from services.video_creation_service import VideoCreationService
+
 logger = logging.getLogger(__name__)
 logger.propagate = True
 logger.setLevel(logging.INFO)
@@ -862,14 +865,15 @@ class PipelineService:
             
             self._update_progress('video', 25)
             
-            # Importar serviço de criação de vídeo
-            from services.video_creation_service import VideoCreationService
-            
+            # Criar instância do serviço de criação de vídeo
             video_service = VideoCreationService(self.pipeline_id)
             
             self._update_progress('video', 50)
             
-            # Criar vídeo
+            # Obter segmentos TTS para sincronização precisa
+            tts_segments = self.results['tts'].get('segments', [])
+            
+            # Criar vídeo com sincronização inteligente
             result = video_service.create_video(
                 audio_path=self.results['tts']['audio_file_path'],
                 images=self.results['images']['generated_images'],
@@ -878,7 +882,8 @@ class PipelineService:
                 fps=fps,
                 quality=quality,
                 transitions=transitions,
-                subtitles=subtitles
+                subtitles=subtitles,
+                tts_segments=tts_segments
             )
             
             self._update_progress('video', 100)

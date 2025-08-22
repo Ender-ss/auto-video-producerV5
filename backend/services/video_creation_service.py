@@ -51,7 +51,8 @@ class VideoCreationService:
     def create_video(self, audio_path: str, images: List[Dict[str, Any]], 
                     script_text: str, resolution: str = '1920x1080', 
                     fps: int = 30, quality: str = 'high', 
-                    transitions: bool = True, subtitles: bool = True) -> Dict[str, Any]:
+                    transitions: bool = True, subtitles: bool = True,
+                    tts_segments: List[Dict] = None) -> Dict[str, Any]:
         """Criar vídeo final"""
         try:
             self._log('info', 'Iniciando criação do vídeo final')
@@ -66,8 +67,8 @@ class VideoCreationService:
             audio_duration = self._get_audio_duration(audio_path)
             self._log('info', f'Duração do áudio: {audio_duration:.2f} segundos')
             
-            # Calcular timing das imagens
-            image_timings = self._calculate_image_timings(images, audio_duration)
+            # Calcular timing das imagens com base no script
+            image_timings = self._calculate_image_timings(images, audio_duration, script_text)
             
             # Criar clipes de imagem
             image_clips = self._create_image_clips(images, image_timings, resolution)
@@ -89,10 +90,10 @@ class VideoCreationService:
             
             # Adicionar legendas se solicitado
             if subtitles:
-                video_clip = self._add_subtitles(video_clip, script_text, audio_duration)
+                video_clip = self._add_subtitles(video_clip, script_text, audio_duration, tts_segments)
             
-            # Definir configurações de qualidade
-            codec_settings = self._get_codec_settings(quality)
+            # Definir configurações de qualidade adaptativas
+            codec_settings = self._get_adaptive_codec_settings(quality, resolution, audio_duration)
             
             # Renderizar vídeo final
             output_filename = f"video_{self.pipeline_id}.mp4"
@@ -100,14 +101,9 @@ class VideoCreationService:
             
             self._log('info', 'Iniciando renderização do vídeo')
             
-            video_clip.write_videofile(
-                output_path,
-                fps=fps,
-                codec='libx264',
-                audio_codec='aac',
-                **codec_settings,
-                verbose=False,
-                logger=None
+            # Renderização otimizada com configurações avançadas
+            self._render_video_optimized(
+                video_clip, output_path, fps, codec_settings
             )
             
             # Obter informações do arquivo final
@@ -200,23 +196,155 @@ class VideoCreationService:
             return max(60, estimated_duration)  # Mínimo de 1 minuto
     
     def _calculate_image_timings(self, images: List[Dict[str, Any]], 
-                               total_duration: float) -> List[Tuple[float, float]]:
-        """Calcular timing de cada imagem"""
+                               total_duration: float, script_text: str = "") -> List[Tuple[float, float]]:
+        """Calcular timing de cada imagem com base no conteúdo e estrutura do roteiro"""
         num_images = len(images)
         
         if num_images == 0:
             return []
         
-        # Distribuir tempo igualmente entre as imagens
-        duration_per_image = total_duration / num_images
+        # Se temos apenas uma imagem, ela ocupa toda a duração
+        if num_images == 1:
+            return [(0.0, total_duration)]
         
+        # Analisar script para determinar timing inteligente
+        if script_text:
+            timings = self._calculate_intelligent_timings(images, total_duration, script_text)
+            if timings:
+                return timings
+    
+    def _calculate_intelligent_timings(self, images: List[Dict[str, Any]], 
+                                     total_duration: float, script_text: str) -> List[Tuple[float, float]]:
+        """Calcular timing inteligente baseado no conteúdo do script"""
+        try:
+            # Dividir script em segmentos lógicos
+            script_segments = self._analyze_script_segments(script_text)
+            num_images = len(images)
+            
+            if len(script_segments) != num_images:
+                # Se não há correspondência 1:1, usar método adaptativo
+                return self._calculate_adaptive_timings(images, total_duration)
+            
+            # Calcular duração baseada no comprimento e complexidade de cada segmento
+            segment_weights = []
+            for segment in script_segments:
+                # Peso baseado no comprimento do texto
+                text_weight = len(segment.strip())
+                
+                # Peso adicional para segmentos com pontuação (pausas naturais)
+                punctuation_weight = segment.count('.') + segment.count('!') + segment.count('?')
+                
+                # Peso final
+                total_weight = text_weight + (punctuation_weight * 50)
+                segment_weights.append(max(total_weight, 100))  # Mínimo de 100
+            
+            # Normalizar pesos para distribuir o tempo total
+            total_weight = sum(segment_weights)
+            timings = []
+            current_time = 0.0
+            
+            for i, weight in enumerate(segment_weights):
+                duration = (weight / total_weight) * total_duration
+                # Garantir duração mínima e máxima
+                duration = max(2.0, min(duration, total_duration * 0.4))
+                
+                start_time = current_time
+                end_time = current_time + duration
+                timings.append((start_time, end_time))
+                current_time = end_time
+            
+            # Ajustar último timing para corresponder à duração total
+            if timings and current_time != total_duration:
+                last_start, _ = timings[-1]
+                timings[-1] = (last_start, total_duration)
+            
+            self._log('info', f'Timing inteligente calculado baseado no script')
+            return timings
+            
+        except Exception as e:
+            self._log('warning', f'Erro no cálculo inteligente: {str(e)}')
+            return []
+    
+    def _calculate_adaptive_timings(self, images: List[Dict[str, Any]], 
+                                  total_duration: float) -> List[Tuple[float, float]]:
+        """Calcular timing adaptativo baseado no tipo e características das imagens"""
+        num_images = len(images)
+        
+        # Analisar características das imagens
+        image_weights = []
+        for img_data in images:
+            weight = 1.0  # Peso base
+            
+            # Ajustar peso baseado no tipo de imagem (se disponível)
+            img_type = img_data.get('type', 'unknown')
+            if img_type in ['title', 'intro']:
+                weight = 1.3  # Imagens de título ficam mais tempo
+            elif img_type in ['transition', 'outro']:
+                weight = 0.8  # Transições ficam menos tempo
+            elif img_type in ['detail', 'close-up']:
+                weight = 1.1  # Detalhes ficam um pouco mais
+            
+            # Ajustar baseado na descrição (se disponível)
+            description = img_data.get('description', '').lower()
+            if any(word in description for word in ['complex', 'detailed', 'chart', 'graph']):
+                weight *= 1.2  # Imagens complexas precisam de mais tempo
+            elif any(word in description for word in ['simple', 'logo', 'icon']):
+                weight *= 0.9  # Imagens simples precisam de menos tempo
+            
+            image_weights.append(weight)
+        
+        # Normalizar pesos
+        total_weight = sum(image_weights)
         timings = []
-        for i in range(num_images):
-            start_time = i * duration_per_image
-            end_time = (i + 1) * duration_per_image
-            timings.append((start_time, end_time))
+        current_time = 0.0
         
-        self._log('info', f'Timing calculado: {duration_per_image:.2f}s por imagem')
+        for i, weight in enumerate(image_weights):
+            duration = (weight / total_weight) * total_duration
+            # Garantir duração mínima de 1.5s e máxima de 8s
+            duration = max(1.5, min(duration, 8.0))
+            
+            start_time = current_time
+            end_time = current_time + duration
+            timings.append((start_time, end_time))
+            current_time = end_time
+        
+        # Ajustar último timing para corresponder à duração total
+        if timings and current_time != total_duration:
+            last_start, _ = timings[-1]
+            timings[-1] = (last_start, total_duration)
+        
+        self._log('info', f'Timing adaptativo calculado')
+        return timings
+    
+    def _analyze_script_segments(self, script_text: str) -> List[str]:
+        """Analisar script e dividir em segmentos lógicos"""
+        import re
+        
+        # Dividir por pontos, exclamações e interrogações
+        segments = re.split(r'[.!?]+', script_text)
+        
+        # Limpar e filtrar segmentos
+        cleaned_segments = []
+        for segment in segments:
+            segment = segment.strip()
+            if segment and len(segment) > 10:  # Mínimo 10 caracteres
+                cleaned_segments.append(segment)
+        
+        # Se temos poucos segmentos, dividir por vírgulas também
+        if len(cleaned_segments) < 3:
+            all_segments = []
+            for segment in cleaned_segments:
+                sub_segments = [s.strip() for s in segment.split(',') if s.strip()]
+                all_segments.extend(sub_segments)
+            if len(all_segments) > len(cleaned_segments):
+                cleaned_segments = all_segments
+        
+        return cleaned_segments
+        
+        # Fallback: distribuir tempo com variação baseada no tipo de imagem
+        timings = self._calculate_adaptive_timings(images, total_duration)
+        
+        self._log('info', f'Timing calculado para {num_images} imagens')
         return timings
     
     def _create_image_clips(self, images: List[Dict[str, Any]], 
@@ -290,11 +418,15 @@ class VideoCreationService:
         self._log('info', f'Transições adicionadas a {len(clips)} clipes')
         return transitioned_clips
     
-    def _add_subtitles(self, video_clip, script_text: str, duration: float):
-        """Adicionar legendas ao vídeo"""
+    def _add_subtitles(self, video_clip, script_text: str, duration: float, tts_segments: List[Dict] = None):
+        """Adicionar legendas ao vídeo com sincronização baseada em TTS"""
         try:
-            # Dividir script em segmentos
-            segments = self._create_subtitle_segments(script_text, duration)
+            # Usar segmentos TTS se disponíveis para sincronização precisa
+            if tts_segments:
+                segments = self._create_tts_based_subtitle_segments(script_text, tts_segments)
+            else:
+                # Fallback para método tradicional
+                segments = self._create_subtitle_segments(script_text, duration)
             
             subtitle_clips = []
             
@@ -327,8 +459,87 @@ class VideoCreationService:
         
         return video_clip
     
+    def _create_tts_based_subtitle_segments(self, script_text: str, tts_segments: List[Dict]) -> List[Dict[str, Any]]:
+        """Criar segmentos de legenda baseados nos segmentos TTS"""
+        segments = []
+        current_time = 0.0
+        
+        # Dividir texto em sentenças
+        sentences = self._split_into_sentences(script_text)
+        
+        if not sentences:
+            return []
+        
+        # Calcular duração total dos segmentos TTS
+        total_tts_duration = sum(seg.get('duration', 0) for seg in tts_segments if seg.get('duration'))
+        
+        if total_tts_duration > 0:
+            # Distribuir sentenças baseado na duração dos segmentos TTS
+            sentences_per_segment = max(1, len(sentences) // len(tts_segments))
+            
+            sentence_index = 0
+            for i, tts_segment in enumerate(tts_segments):
+                segment_duration = tts_segment.get('duration', 3.0)
+                
+                # Determinar quantas sentenças cabem neste segmento
+                end_sentence_index = min(sentence_index + sentences_per_segment, len(sentences))
+                
+                # Se é o último segmento TTS, incluir todas as sentenças restantes
+                if i == len(tts_segments) - 1:
+                    end_sentence_index = len(sentences)
+                
+                # Combinar sentenças para este segmento
+                segment_sentences = sentences[sentence_index:end_sentence_index]
+                if segment_sentences:
+                    combined_text = ' '.join(segment_sentences)
+                    
+                    # Dividir texto longo em múltiplas legendas
+                    if len(combined_text) > 80:  # Máximo 80 caracteres por legenda
+                        sub_segments = self._split_long_subtitle(combined_text, segment_duration, current_time)
+                        segments.extend(sub_segments)
+                    else:
+                        segments.append({
+                            'text': combined_text,
+                            'start': current_time,
+                            'duration': segment_duration
+                        })
+                    
+                    sentence_index = end_sentence_index
+                
+                current_time += segment_duration
+        else:
+            # Fallback para método tradicional
+            return self._create_subtitle_segments(script_text, current_time or 60.0)
+        
+        return segments
+    
+    def _split_long_subtitle(self, text: str, total_duration: float, start_time: float) -> List[Dict[str, Any]]:
+        """Dividir legenda longa em múltiplos segmentos"""
+        words = text.split()
+        segments = []
+        
+        # Dividir em chunks de ~12-15 palavras
+        chunk_size = 12
+        num_chunks = max(1, len(words) // chunk_size)
+        duration_per_chunk = total_duration / num_chunks
+        
+        current_start = start_time
+        for i in range(0, len(words), chunk_size):
+            chunk_words = words[i:i + chunk_size]
+            chunk_text = ' '.join(chunk_words)
+            
+            segments.append({
+                'text': chunk_text,
+                'start': current_start,
+                'duration': min(duration_per_chunk, 4.0)  # Máximo 4 segundos por chunk
+            })
+            
+            current_start += duration_per_chunk
+        
+        return segments
+    
     def _create_subtitle_segments(self, script_text: str, duration: float) -> List[Dict[str, Any]]:
-        """Criar segmentos de legenda"""
+        """Criar segmentos de legenda (método tradicional)"""
         # Dividir texto em sentenças
         sentences = self._split_into_sentences(script_text)
         
@@ -379,27 +590,155 @@ class VideoCreationService:
         return cleaned_sentences
     
     def _get_codec_settings(self, quality: str) -> Dict[str, Any]:
-        """Obter configurações de codec baseadas na qualidade"""
+        """Obter configurações de codec otimizadas baseadas na qualidade"""
         quality_settings = {
             'low': {
-                'bitrate': '1000k',
-                'preset': 'fast'
+                'bitrate': '1200k',
+                'preset': 'ultrafast',
+                'crf': 28,
+                'threads': 4,
+                'tune': 'fastdecode'
             },
             'medium': {
-                'bitrate': '2500k',
-                'preset': 'medium'
+                'bitrate': '2800k',
+                'preset': 'fast',
+                'crf': 23,
+                'threads': 6,
+                'tune': 'film'
             },
             'high': {
-                'bitrate': '5000k',
-                'preset': 'slow'
+                'bitrate': '5500k',
+                'preset': 'medium',
+                'crf': 20,
+                'threads': 8,
+                'tune': 'film'
             },
             'ultra': {
-                'bitrate': '8000k',
-                'preset': 'veryslow'
+                'bitrate': '9000k',
+                'preset': 'slow',
+                'crf': 18,
+                'threads': 8,
+                'tune': 'film'
             }
         }
         
         return quality_settings.get(quality, quality_settings['high'])
+    
+    def _get_adaptive_codec_settings(self, quality: str, resolution: str, duration: float) -> Dict[str, Any]:
+        """Obter configurações adaptativas baseadas na qualidade, resolução e duração"""
+        # Configurações base
+        base_settings = self._get_codec_settings(quality)
+        
+        # Adaptações baseadas na resolução
+        width, height = map(int, resolution.split('x'))
+        pixel_count = width * height
+        
+        # Ajustar bitrate baseado na resolução
+        if pixel_count <= 921600:  # 720p ou menor
+            bitrate_multiplier = 0.7
+        elif pixel_count <= 2073600:  # 1080p
+            bitrate_multiplier = 1.0
+        elif pixel_count <= 3686400:  # 1440p
+            bitrate_multiplier = 1.4
+        else:  # 4K ou maior
+            bitrate_multiplier = 2.0
+        
+        # Ajustar bitrate baseado na duração
+        if duration < 60:  # Vídeos curtos (< 1 min)
+            duration_multiplier = 1.2
+        elif duration < 300:  # Vídeos médios (< 5 min)
+            duration_multiplier = 1.0
+        elif duration < 900:  # Vídeos longos (< 15 min)
+            duration_multiplier = 0.9
+        else:  # Vídeos muito longos
+            duration_multiplier = 0.8
+        
+        # Calcular bitrate adaptativo
+        base_bitrate = int(base_settings['bitrate'].replace('k', ''))
+        adaptive_bitrate = int(base_bitrate * bitrate_multiplier * duration_multiplier)
+        
+        # Aplicar limites mínimos e máximos
+        adaptive_bitrate = max(800, min(adaptive_bitrate, 15000))
+        
+        # Atualizar configurações
+        adaptive_settings = base_settings.copy()
+        adaptive_settings['bitrate'] = f'{adaptive_bitrate}k'
+        
+        # Ajustar preset baseado na resolução para otimizar tempo vs qualidade
+        if pixel_count >= 3686400:  # 1440p ou maior
+            if adaptive_settings['preset'] == 'slow':
+                adaptive_settings['preset'] = 'medium'  # Mais rápido para resoluções altas
+            elif adaptive_settings['preset'] == 'veryslow':
+                adaptive_settings['preset'] = 'slow'
+        
+        self._log('info', f'Configurações adaptativas: bitrate={adaptive_bitrate}k, preset={adaptive_settings["preset"]}')
+        
+        return adaptive_settings
+    
+    def _render_video_optimized(self, video_clip, output_path: str, fps: int, codec_settings: Dict[str, Any]):
+        """Renderização otimizada de vídeo com configurações avançadas"""
+        try:
+            import multiprocessing
+            
+            # Detectar número de cores disponíveis
+            cpu_count = multiprocessing.cpu_count()
+            threads = min(codec_settings.get('threads', 4), cpu_count)
+            
+            # Configurações otimizadas de renderização
+            render_params = {
+                'fps': fps,
+                'codec': 'libx264',
+                'audio_codec': 'aac',
+                'bitrate': codec_settings.get('bitrate', '5500k'),
+                'preset': codec_settings.get('preset', 'medium'),
+                'threads': threads,
+                'verbose': False,
+                'logger': None,
+                'temp_audiofile': os.path.join(self.temp_dir, 'temp_audio.m4a'),
+                'remove_temp': True
+            }
+            
+            # Adicionar configurações avançadas se disponíveis
+            if 'crf' in codec_settings:
+                render_params['ffmpeg_params'] = ['-crf', str(codec_settings['crf'])]
+                
+            if 'tune' in codec_settings:
+                if 'ffmpeg_params' not in render_params:
+                    render_params['ffmpeg_params'] = []
+                render_params['ffmpeg_params'].extend(['-tune', codec_settings['tune']])
+            
+            # Otimizações adicionais para performance
+            if 'ffmpeg_params' not in render_params:
+                render_params['ffmpeg_params'] = []
+            
+            render_params['ffmpeg_params'].extend([
+                '-movflags', '+faststart',  # Otimização para streaming
+                '-pix_fmt', 'yuv420p',      # Compatibilidade máxima
+                '-profile:v', 'high',       # Perfil H.264 otimizado
+                '-level', '4.0'             # Nível de compatibilidade
+            ])
+            
+            self._log('info', f'Renderizando com {threads} threads, preset: {codec_settings.get("preset", "medium")}')
+            
+            # Renderizar vídeo
+            video_clip.write_videofile(output_path, **render_params)
+            
+            self._log('info', 'Renderização otimizada concluída')
+            
+        except Exception as e:
+            self._log('error', f'Erro na renderização otimizada: {str(e)}')
+            # Fallback para renderização básica
+            self._log('info', 'Tentando renderização básica como fallback')
+            video_clip.write_videofile(
+                output_path,
+                fps=fps,
+                codec='libx264',
+                audio_codec='aac',
+                bitrate=codec_settings.get('bitrate', '5500k'),
+                preset=codec_settings.get('preset', 'medium'),
+                verbose=False,
+                logger=None
+            )
     
     def create_preview(self, video_path: str, duration: int = 30) -> Optional[str]:
         """Criar preview do vídeo"""

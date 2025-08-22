@@ -1,0 +1,32 @@
+{
+  "channel_url": "https://www.youtube.com/@testchannel",
+  "extraction_method": "manual",
+  "manual_data": {
+    "titles": [
+      "Como fazer um bolo de chocolate delicioso",
+      "Receita fácil de bolo caseiro",
+      "Dicas para um bolo perfeito"
+    ],
+    "channel_info": {
+      "name": "Canal de Teste",
+      "description": "Canal para testes de pipeline",
+      "subscriber_count": 1000
+    }
+  },
+  "config": {
+    "max_videos": 1,
+    "video_settings": {
+      "resolution": "1920x1080",
+      "fps": 30,
+      "quality": "high",
+      "transitions": true,
+      "subtitles": true
+    },
+    "ai_settings": {
+      "premise_model": "gemini",
+      "script_model": "gemini",
+      "image_model": "dalle",
+      "tts_model": "elevenlabs"
+    }
+  }
+}
