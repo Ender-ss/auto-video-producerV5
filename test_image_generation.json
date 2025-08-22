@@ -1,0 +1,39 @@
+{
+  "channel_url": "https://www.youtube.com/@motivacaoviral",
+  "video_count": 1,
+  "target_duration": 60,
+  "video_style": "motivational",
+  "tts_service": "kokoro",
+  "image_service": "pollinations",
+  "test_script": {
+    "title": "Teste de Geração de Imagens",
+    "script": "Este é um teste simples para verificar a geração de imagens. Vamos criar algumas imagens motivacionais para testar o sistema. Primeiro, uma imagem de sucesso. Segundo, uma imagem de determinação. Terceiro, uma imagem de conquista.",
+    "segments": [
+      {
+        "text": "Este é um teste simples para verificar a geração de imagens.",
+        "duration": 3,
+        "image_prompt": "Simple test image with motivational text"
+      },
+      {
+        "text": "Vamos criar algumas imagens motivacionais para testar o sistema.",
+        "duration": 4,
+        "image_prompt": "Motivational images testing system"
+      },
+      {
+        "text": "Primeiro, uma imagem de sucesso.",
+        "duration": 2,
+        "image_prompt": "Success image with golden colors"
+      },
+      {
+        "text": "Segundo, uma imagem de determinação.",
+        "duration": 2,
+        "image_prompt": "Determination image with strong colors"
+      },
+      {
+        "text": "Terceiro, uma imagem de conquista.",
+        "duration": 2,
+        "image_prompt": "Achievement image with celebration"
+      }
+    ]
+  }
+}

@@ -1,0 +1,50 @@
+{
+  "title": "Teste Pipeline Manual - Geração de Imagens",
+  "channel_url": "manual",
+  "video_style": "motivational",
+  "target_duration": 60,
+  "test_mode": true,
+  "config": {
+    "extraction": {
+      "method": "manual",
+      "max_titles": 3,
+      "min_views": 1000,
+      "provided_titles": [
+        "Como Alcançar Seus Objetivos em 2024",
+        "5 Hábitos que Mudam Sua Vida",
+        "O Poder da Mentalidade Positiva"
+      ]
+    },
+    "titles": {
+      "provider": "gemini",
+      "count": 3,
+      "style": "viral"
+    },
+    "premises": {
+      "provider": "gemini",
+      "style": "motivational"
+    },
+    "scripts": {
+      "provider": "gemini",
+      "chapters": 3,
+      "style": "inicio",
+      "duration_target": "1-2 minutes"
+    },
+    "images": {
+      "provider": "pollinations",
+      "style": "cinematic",
+      "resolution": "1920x1080",
+      "per_chapter": 2
+    },
+    "tts": {
+      "provider": "kokoro",
+      "voice": "af_bella",
+      "speed": 1.0
+    },
+    "video": {
+      "provider": "moviepy",
+      "fps": 30,
+      "quality": "high"
+    }
+  }
+}
