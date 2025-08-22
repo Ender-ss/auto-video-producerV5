@@ -77,6 +77,11 @@ class PipelineService:
         # Inicializar serviço de checkpoint
         self.checkpoint_service = CheckpointService(pipeline_id)
         self.auto_checkpoint = self.config.get('auto_checkpoint', True) if self.config else True
+        
+        # Adicionar controle de threading para pausar/retomar
+        import threading
+        self._pause_event = threading.Event()
+        self._pause_event.set()  # Iniciar como não pausado
     
     def _load_custom_prompts(self):
         """Carregar prompts personalizados"""
@@ -1049,6 +1054,57 @@ class PipelineService:
             raise
     
     # ================================
+    # 🎯 VERIFICAÇÃO DE STATUS
+    # ================================
+    
+    def _check_pipeline_status(self) -> bool:
+        """Verificar se o pipeline foi pausado ou cancelado"""
+        try:
+            # Importar aqui para evitar dependência circular
+            from routes.pipeline_complete import active_pipelines, PipelineStatus
+            
+            if self.pipeline_id in active_pipelines:
+                status = active_pipelines[self.pipeline_id]['status']
+                if status == PipelineStatus.PAUSED:
+                    self._log('info', 'Pipeline pausado, aguardando retomada...')
+                    self._pause_event.clear()  # Pausar a execução
+                    
+                    # Aguardar até que o pipeline seja retomado ou cancelado
+                    while True:
+                        # Verificar status a cada segundo
+                        if self._pause_event.wait(timeout=1.0):
+                            # Event foi setado, verificar se foi retomado
+                            current_status = active_pipelines[self.pipeline_id]['status']
+                            if current_status == PipelineStatus.PROCESSING:
+                                self._log('info', 'Pipeline retomado, continuando execução...')
+                                return True
+                            elif current_status == PipelineStatus.CANCELLED:
+                                self._log('warning', 'Pipeline cancelado durante pausa')
+                                return False
+                        else:
+                            # Timeout, verificar se foi cancelado
+                            current_status = active_pipelines[self.pipeline_id]['status']
+                            if current_status == PipelineStatus.CANCELLED:
+                                self._log('warning', 'Pipeline cancelado durante pausa')
+                                return False
+                            elif current_status == PipelineStatus.PROCESSING:
+                                self._pause_event.set()  # Sinalizar retomada
+                                self._log('info', 'Pipeline retomado, continuando execução...')
+                                return True
+                elif status == PipelineStatus.CANCELLED:
+                    self._log('warning', 'Pipeline cancelado pelo usuário')
+                    return False
+            return True
+        except Exception as e:
+            self._log('warning', f'Erro ao verificar status do pipeline: {str(e)}')
+            return True  # Continuar em caso de erro
+    
+    def _wait_for_resume(self):
+        """Aguardar até que o pipeline seja retomado"""
+        # Este método não é mais necessário pois a lógica foi movida para _check_pipeline_status
+        pass
+    
+    # ================================
     # 🎯 EXECUÇÃO COM RETOMADA AUTOMÁTICA
     # ================================
     
@@ -1073,6 +1129,11 @@ class PipelineService:
             
             # Executar etapas restantes
             for step in remaining_steps:
+                # Verificar se pipeline foi pausado ou cancelado antes de cada etapa
+                if not self._check_pipeline_status():
+                    self._log('info', f'Pipeline pausado/cancelado antes da etapa: {step}')
+                    return self.results
+                
                 try:
                     self._log('info', f'Executando etapa: {step}')
                     
@@ -1089,6 +1150,11 @@ class PipelineService:
                     else:
                         self._log('warning', f'Etapa desconhecida: {step}')
                         continue
+                    
+                    # Verificar novamente após a execução da etapa
+                    if not self._check_pipeline_status():
+                        self._log('info', f'Pipeline pausado/cancelado após a etapa: {step}')
+                        return self.results
                     
                     # Salvar checkpoint após cada etapa bem-sucedida
                     if self.auto_checkpoint and step != 'cleanup':

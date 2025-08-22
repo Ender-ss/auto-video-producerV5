@@ -1,0 +1,219 @@
+{
+  "pipeline_id": "b1dbd6bf-dd6f-45c4-8505-2ac76820b266",
+  "timestamp": "2025-08-22T19:55:16.309340",
+  "current_step": "scripts",
+  "completed_steps": [
+    "extraction",
+    "titles",
+    "premises",
+    "scripts"
+  ],
+  "results": {
+    "extraction": {
+      "channel_info": {},
+      "titles": [
+        {
+          "video_id": "TDv56whosPQ",
+          "title": "Survive 100 Days In Prison, Win $500,000",
+          "description": "I did not expect them to do that lol\nGet your hands on the new MrBeast Lab Hybrids here:\nhttps://www.moosetoys.com/brands/mr-beast-lab\n\n\nNew Merch - https://mrbeast.store\n\nCheck out Viewstats!...",
+          "thumbnail": "",
+          "duration": "2376.0s",
+          "views": 80166591,
+          "likes": 0,
+          "published_at": "",
+          "url": "https://www.youtube.com/watch?v=TDv56whosPQ"
+        },
+        {
+          "video_id": "Z4hVGCWH1Kc",
+          "title": "2,000,000 People Get Clean Water For The First Time!",
+          "description": "$1 will provide 1 person with clean water for a year\nThanks to Shopify for supporting our mission to raise $40,000,000 for clean water for 2,000,000 people. Go to https://teamwater.org to donate...",
+          "thumbnail": "",
+          "duration": "620.0s",
+          "views": 59779925,
+          "likes": 0,
+          "published_at": "",
+          "url": "https://www.youtube.com/watch?v=Z4hVGCWH1Kc"
+        },
+        {
+          "video_id": "pzBi1nwDn8U",
+          "title": "Survive 100 Days Trapped In A Private Jet, Keep It",
+          "description": "Spending that much time in a jet is crazy\n10 people will win $10,000 thanks to DoorDash. Enter promo code JET on any grocery, convenience or retail to get $10 off your order AND to enter for...",
+          "thumbnail": "",
+          "duration": "1983.0s",
+          "views": 126667517,
+          "likes": 0,
+          "published_at": "",
+          "url": "https://www.youtube.com/watch?v=pzBi1nwDn8U"
+        },
+        {
+          "video_id": "FWAdfuPpLOc",
+          "title": "World's Fastest Car Vs Cheetah!",
+          "description": "I still can't believe we got all these animals for this\n\nCheck out the latest Lenovo Legion Pro 7i with Intel® Core™ Ultra 9 Processor: https://www.lenovo.com/legion?cid=ww:display:334qnx...",
+          "thumbnail": "",
+          "duration": "1237.0s",
+          "views": 148214999,
+          "likes": 0,
+          "published_at": "",
+          "url": "https://www.youtube.com/watch?v=FWAdfuPpLOc"
+        },
+        {
+          "video_id": "pe_ejTiIcSs",
+          "title": "Lose 100 LBs, Win $250,000!",
+          "description": "Go start the business you’ve been dreaming of and visit https://www.Shopify.com/MrBeast to start your trial now.\n\n**In Loving Memory of Coach Tyler Wall**\n\nIt is with profound sadness that...",
+          "thumbnail": "",
+          "duration": "2210.0s",
+          "views": 187974091,
+          "likes": 0,
+          "published_at": "",
+          "url": "https://www.youtube.com/watch?v=pe_ejTiIcSs"
+        },
+        {
+          "video_id": "hTSaweR8qMI",
+          "title": "$1 vs $500,000 Date",
+          "description": "Experiencing all of this was incredible\nBuy Feastables! It tastes amazing and it's ethically sourced 👉 https://fstbls.com/5mj6dv\n\nNew Merch - https://mrbeast.store\n\nCheck out Viewstats!...",
+          "thumbnail": "",
+          "duration": "1042.0s",
+          "views": 126563216,
+          "likes": 0,
+          "published_at": "",
+          "url": "https://www.youtube.com/watch?v=hTSaweR8qMI"
+        },
+        {
+          "video_id": "DZIASl9q90s",
+          "title": "Beat Neymar, Win $500,000",
+          "description": "The amount of skill in this video is insane\nIf you wanna score tons of Magenta Status perks and benefits like Aaron Judge and MrBeast, just for being a T-Mobile member, check out https://T-Mobile.c...",
+          "thumbnail": "",
+          "duration": "1673.0s",
+          "views": 151886990,
+          "likes": 0,
+          "published_at": "",
+          "url": "https://www.youtube.com/watch?v=DZIASl9q90s"
+        },
+        {
+          "video_id": "-4GmbBoYQjE",
+          "title": "I Survived 100 Hours In An Ancient Temple",
+          "description": "I can’t believe I got to do this\nHUGE thanks to @jacklinks for making this happen, without them we can’t give away this money. Visit the link to buy Jack Link’s DUOS now: https://bit.ly/4ipfW...",
+          "thumbnail": "",
+          "duration": "946.0s",
+          "views": 110058810,
+          "likes": 0,
+          "published_at": "",
+          "url": "https://www.youtube.com/watch?v=-4GmbBoYQjE"
+        },
+        {
+          "video_id": "uyiG6uw-6pA",
+          "title": "Would You Risk Drowning for $500,000?",
+          "description": "These were crazy dangerous so everything was performed under professional supervision\nJack Link’s Jerky can fuel anything. Scan the code or visit the link to buy Jack Link’s DUOS now: https://b...",
+          "thumbnail": "",
+          "duration": "1546.0s",
+          "views": 176168615,
+          "likes": 0,
+          "published_at": "",
+          "url": "https://www.youtube.com/watch?v=uyiG6uw-6pA"
+        },
+        {
+          "video_id": "figrl0aOULs",
+          "title": "Click This Video To Feed 1 Person",
+          "description": "Buying 1 Hoodie = 100 Meals for people in need! Go get it now: https://www.doordash.com/p/dashmart-near-me\n\nThank you https://youtube.com/@DoorDash for teaming up to fight food insecurity....",
+          "thumbnail": "",
+          "duration": "629.0s",
+          "views": 70991575,
+          "likes": 0,
+          "published_at": "",
+          "url": "https://www.youtube.com/watch?v=figrl0aOULs"
+        }
+      ],
+      "total_extracted": 10,
+      "method_used": "auto",
+      "extraction_time": "2025-08-22T19:54:20.598436"
+    },
+    "titles": {
+      "generated_titles": [
+        "100 Dias Preso, R$ 2 MILHÕES em jogo! Você sobreviveria?",
+        "100 Dias Preso, R$ 2,5 Milhões em Jogo!  Arriscaria?",
+        "100 Dias na Prisão por MEIO MILHÃO?  Você sobreviveria?",
+        "100 Dias na Prisão por R$ 2 MILHÕES?  Você Aceita?",
+        "Preso 100 dias por MEIO MILHÃO?  Insano!"
+      ],
+      "source_titles_count": 10,
+      "provider_used": "gemini",
+      "style": "viral",
+      "generation_time": "2025-08-22T19:54:24.496796"
+    },
+    "premises": {
+      "selected_title": "100 Dias Preso, R$ 2 MILHÕES em jogo! Você sobreviveria?",
+      "premise": "Neste vídeo explosivo, desafiamos você a imaginar: 100 dias preso, sem contato com o mundo exterior, com R$ 2 milhões te esperando do outro lado. Mas há um porém: a cada dia, você enfrenta desafios mentais e físicos brutais, que testam seus limites psicológicos e físicos.  A cada prova superada, você ganha dinheiro, mas falhar significa perder tudo.  Este vídeo é para entusiastas de desafios extremos, amantes de realities e aqueles que se questionam sobre sua própria resistência.  Com um tom tenso e dramático, intercalando imagens de simulações de provas desafiadoras com análises de especialistas em psicologia e sobrevivência, vamos te levar a um mergulho na mente humana sob pressão. Exploraremos cenários de isolamento, privação sensorial, tarefas de raciocínio lógico sob estresse e desafios físicos intensos.  Veremos como a pressão de um prêmio tão alto afeta a tomada de decisões, a estratégia e a sanidade mental.  Será que você teria a força mental e física para sobreviver a esses 100 dias e conquistar os R$ 2 milhões?  Descubra se você teria o que é preciso para vencer neste desafio de sobrevivência extrema!\n",
+      "word_count": 182,
+      "provider_used": "gemini",
+      "generation_time": "2025-08-22T19:54:27.286261"
+    },
+    "scripts": {
+      "chapters": [
+        {
+          "chapter_number": 1,
+          "title": "Capítulo 1: ## 100 Dias Preso, R$ 2 Milhões em Jogo! - Roteiro...",
+          "content": "## 100 Dias Preso, R$ 2 Milhões em Jogo! - Roteiro (Parte 1)\n\n**Duração estimada:** 5 minutos\n\n**Cena 1:** (0:00-0:30)  - *EXT. EDIFÍCIO IMPONENTE - NOITE*\n\nClose-up em um relógio de pulso mostrando 23:58.  A câmera se afasta lentamente revelando ARTHUR (32 anos, engenheiro, rosto marcado pela tensão e olheiras profundas), vestido com roupas simples, nervoso, parado diante de um imponente edifício de concreto e aço, quase sem janelas. O clima é frio e chuvoso. O som de chuva forte e o vento uivando criam uma atmosfera tensa.  Arthur respira fundo, pega um pequeno envelope em seu bolso e o examina, o rosto refletido na luz fraca de um poste.\n\n**Voz em off (Narrador):**  Dívidas sufocantes, um casamento à beira do abismo...  Para Arthur, 32 anos, a vida se tornou um labirinto sem saída.  Mas uma chance inusitada surge das sombras, um desafio bizarro com um prêmio tentador: 2 milhões de reais.  A condição? 100 dias de isolamento absoluto.\n\n**Cena 2:** (0:30-1:30) - *INT. HALL DE ENTRADA - CONTINUO*\n\nArthur entra no edifício imponente. O hall é minimalista, frio e iluminado por luzes fluorescentes frias. O silêncio é quase ensurdecedor, quebrado apenas pelo eco de seus passos.  Ele se aproxima de uma recepcionista impassível, uma mulher de meia-idade com expressão neutra, sentada atrás de uma mesa de aço inoxidável.  Ela não diz uma palavra, apenas aponta para um scanner de íris.\n\n**Arthur:** (para si mesmo, quase sussurrando)  Dois milhões... É muita grana. Mas a vida aqui dentro...\n\nO scanner de íris analisa Arthur. A recepcionista entrega-lhe um pequeno cartão com um número.\n\n**Arthur:** (incerto)  Isso é tudo?\n\nA recepcionista apenas assente, mantendo a impassibilidade.\n\n**Cena 3:** (1:30-2:30) - *INT. INSTALAÇÃO SUBTERRÂNEA - CORREDOR*\n\nArthur é conduzido por um longo corredor estreito e claustrofóbico, iluminado por luzes frias que parecem acentuar a opressão do lugar. As paredes são de concreto nu, sem adornos.  A atmosfera é gélida e abafada.  Ao fundo, ouve-se um zumbido constante e baixo.  Ao final do corredor, uma porta de aço pesada se abre.\n\n**Voz em off (Narrador):**  A instalação subterrânea, seu novo lar por 100 dias. Minimalista, opressiva, monitorada por câmeras em cada canto.  Sua única companhia, um assistente de voz impessoal.\n\n**Cena 4:** (2:30-3:30) - *INT. INSTALAÇÃO SUBTERRÂNEA - QUARTO*\n\nArthur entra em seu quarto.  É um pequeno cubo de concreto, com uma cama estreita, um vaso sanitário e um lavatório.  Uma tela fria exibe uma contagem regressiva: 100 dias.\n\n**Assistente de voz (sintético, frio):** Bem-vindo, participante número 47. As regras do desafio foram claramente apresentadas. Se você decidir desistir a qualquer momento, seu prêmio será zero. Boa sorte.  Sua primeira prova iniciará em 10 minutos.\n\nArthur senta na cama, a respiração ofegante.  Ele olha ao redor, a câmera focando nos detalhes claustrofóbicos do quarto.\n\n**Cena 5:** (3:30-4:30) - *INT. INSTALAÇÃO SUBTERRÂNEA - QUARTO - PROVA 1*\n\nA tela muda, exibindo instruções:  Isolamento sensorial completo por 2 horas.  Sucesso: R$ 50.000.  Fracasso: eliminação. Arthur coloca fones de ouvido que bloqueiam qualquer som externo e uma máscara sobre os olhos que o impede de ver.  A câmera mostra a câmera monitorando Arthur.\n\n**Cena 6:** (4:30-5:00) - *INT. INSTALAÇÃO SUBTERRÂNEA - QUARTO - PÓS PROVA*\n\nArthur, suado e visivelmente exausto, tira os fones e a máscara. A tela mostra: Prova concluída com sucesso.  Crédito de R$ 50.000 adicionado à sua conta.  Ele procura algo para se apoiar e encontra um bilhete em uma caligrafia elegante escondido sob a cama, escrito com uma tinta vermelha escura.\n\n**Bilhete:** Você não está sozinho.\n\nArthur olha para o bilhete com choque, sua expressão mudando de exaustão para puro desconforto e paranoia. O zumbido constante parece mais intenso agora. A câmera fecha no bilhete, deixando a questão em aberto.\n\n\n**(Fim da Parte 1)**",
+          "word_count": 621
+        },
+        {
+          "chapter_number": 2,
+          "title": "Capítulo 2: ## 100 Dias Preso, R$ 2 Milhões em Jogo! - Capítul...",
+          "content": "## 100 Dias Preso, R$ 2 Milhões em Jogo! - Capítulo 1: A Descida\n\n**[Cena 1: INT. APARTAMENTO - NOITE - 2 MINUTOS]**\n\nA câmera se concentra em Arthur (32, engenheiro, vestindo roupas desleixadas, rosto cansado e marcado pela preocupação), sentado em sua mesa de jantar, cercado por papéis de dívidas. O apartamento é pequeno, mobiliário desgastado, refletindo sua situação financeira precária.  Sua esposa, Laura (30s, expressão cansada e resignada), senta-se ao lado, olhando para o chão.\n\n**LAURA:** (Suspiro) Arthur, não sei mais o que fazer. O banco está nos pressionando…  A casa… o carro…\n\n**ARTHUR:** (Voz rouca, sem olhar para ela) Eu sei, Laura. Eu sei. Estou tentando… procurando algo, alguma saída…\n\nEle pega um tablet e mostra um anúncio: “100 Dias Preso, R$ 2 Milhões em Jogo! Você sobreviveria?” A imagem que acompanha é sinistra: uma porta de metal imponente.\n\n**ARTHUR (V.O):**  Duas milhões de reais.  Era uma quantia absurda, inimaginável. O suficiente para pagar todas as dívidas, recomeçar… salvar meu casamento.  Eu precisava tentar.  A sanidade?  Isso era um detalhe.\n\n**[Cena 2: EXT. INSTALAÇÃO SUBTERRÂNEA - DIA - 1 MINUTO]**\n\nUma van escura para diante de uma entrada de concreto imponente e fria, sem janelas, apenas uma porta de aço maciça. Arthur sai, hesitando, olhando para trás pela última vez. Ele carrega uma pequena mochila.\n\n**[Cena 3: INT. INSTALAÇÃO SUBTERRÂNEA - QUARTO MINIMALISTA - 3 MINUTOS]**\n\nA porta se fecha com um estrondo metálico. O quarto é minimalista, quase ascético: uma cama estreita, um pequeno vaso sanitário, uma pia, uma mesa com um computador e uma câmera no canto, que o observa implacavelmente.  O ambiente é branco e frio, sem janelas, criando uma sensação opressiva. Uma voz sintética e fria ecoa pelo quarto.\n\n**ASSISTENTE DE VOZ (V.O):** Bem-vindo, Arthur.  Seja bem-vindo ao Desafio dos 100 Dias.  Seu primeiro desafio se iniciará em 60 segundos.  Você tem até então para se preparar.  Seu tempo começa agora.\n\nArthur explora o ambiente, a tensão evidente em seus movimentos. Ele senta-se na cama, respirando fundo, tentando se controlar. A câmera o observa sem trégua.\n\n**[Cena 4: INT. INSTALAÇÃO SUBTERRÂNEA - CÂMARA DE ISOLAMENTO SENSORIAL - 1 MINUTO]**\n\nArthur é conduzido a uma pequena câmara de isolamento sensorial. As paredes são acolchoadas, a escuridão total. A única coisa audível é o zumbido suave do sistema de ar condicionado. O assistente de voz o instrui:\n\n**ASSISTENTE DE VOZ (V.O):** Seu desafio: permanecer neste ambiente, sem estímulos sensoriais, por 12 horas.  Se conseguir, receberá 50 mil reais.  Caso contrário, você será considerado desistente e não receberá nada. O tempo começa agora.\n\nArthur fecha os olhos, a respiração ofegante.  A câmera registra o esforço evidente em sua face. A pressão é palpável.\n\n\n**[Cena 5: INT. INSTALAÇÃO SUBTERRÂNEA - QUARTO MINIMALISTA - 1 MINUTO]**\n\nDoze horas depois, Arthur volta ao seu quarto, exausto, mas com um olhar determinado. A tela do computador exibe: \"DESAFIO COMPLETO. PRÊMIO: R$ 50.000,00\".\n\nEle sente um alívio momentâneo, mas a paranoia começa a surgir. Ao se aproximar da cama, percebe um bilhete esquecido debaixo do travesseiro. A caligrafia é estranha, ilegível. Arthur desdobra o papel, suas mãos tremendo levemente enquanto lê: \"Você não está sozinho\".\n\n\n**[FIM DO CAPÍTULO 1]**",
+          "word_count": 528
+        },
+        {
+          "chapter_number": 3,
+          "title": "Capítulo 3: ## 100 Dias Preso, R$ 2 Milhões em Jogo! - Capítul...",
+          "content": "## 100 Dias Preso, R$ 2 Milhões em Jogo! - Capítulo 2: A Semente da Dúvida\n\n**Duração estimada:** 6 minutos\n\n**Cena 1:** (0:00-1:30) - **Isolamento Sensorial Intensificado.**  A câmera mostra Arthur (32 anos, engenheiro, rosto marcado pelo cansaço e pela tensão) deitado em uma maca minimalista dentro de uma pequena câmara de isolamento sensorial. O ambiente é completamente escuro e silencioso, exceto pelo zumbido quase imperceptível da ventilação.  A voz impessoal do assistente de voz (AV) ecoa: “Iniciando Protocolo Alfa-Omega.  Nível de dificuldade: Alto.  Sua tarefa é permanecer imóvel e em silêncio absoluto por 72 horas.  Seu progresso será monitorado constantemente.  Falha resultará em desclassificação e perda de todos os ganhos acumulados.  Boa sorte, sujeito 472.” A câmera se aproxima do rosto de Arthur, mostrando os músculos faciais tensionados, sua respiração irregular.  A cena se alterna entre closes nos seus olhos fechados, lutando contra alucinações, e imagens da câmara vazia, enfatizando a opressão do isolamento.  Após 1 hora e 30 minutos de tensão palpável, o AV o interrompe, informando a conclusão bem-sucedida do desafio e o crédito de mais R$ 100 mil em sua conta.\n\n**Cena 2:** (1:30-3:00) - **O Mistério do Bilhete.**  A câmera acompanha Arthur ao sair da câmara de isolamento. Ele parece fragilizado, mas com um brilho de triunfo nos olhos. Está visivelmente mais magro, com olheiras profundas.  Ele caminha em direção ao seu quarto, um cubo branco ainda mais opressivo que a câmara. A câmera observa o espaço minimalista – cama, banheiro, mesa com um computador e uma tela mostrando o saldo atualizado de sua conta: R$ 150.000.  Arthur pega uma garrafa de água, bebe lentamente, seus movimentos hesitantes.   Então, ele percebe o bilhete.  A câmera focaliza o papel esquecido sob seu travesseiro, com uma caligrafia elegante e desconhecida. O texto é simples: \"Você não está sozinho\". A reação de Arthur é gradual, começando com confusão, evoluindo para descrença e culminando em um medo crescente. Ele examina o quarto atentamente, buscando por algum sinal, alguma câmera escondida que possa ter registrado sua descoberta.  A música de fundo torna-se mais tensa, criando suspense.\n\n**Cena 3:** (3:00-4:30) - **Paranoia e Dúvida.**  A cena mostra Arthur interagindo com o AV, interrogando-o sobre o bilhete.  O AV responde com sua habitual frieza e impessoalidade: \"Não há registros de mensagens ou objetos não autorizados inseridos na instalação.  Sugiro focar nos próximos desafios.\"  A resposta apenas intensifica a paranoia de Arthur. Ele começa a questionar a realidade da situação, a integridade do desafio e a sua própria sanidade.  A câmera apresenta flashbacks rápidos e distorcidos das provas anteriores, sugerindo a manipulação e a possibilidade de alucinações.  A iluminação fica mais fria, com sombras que parecem se mover. Arthur se mostra cada vez mais desconfiado, observando tudo com suspeita, examinando as paredes, o teto, os equipamentos.  Ele se encontra em um dilema interno, entre a necessidade de completar o desafio e a crescente desconfiança em relação à sua própria situação.\n\n**Cena 4:** (4:30-6:00) - **O Próximo Desafio - Manipulação Psicológica.** O AV anuncia o próximo desafio: um jogo de estratégia online contra um oponente desconhecido.  A câmera mostra a tela do computador, com um jogo complexo e aparentemente aleatório.  Arthur percebe que o jogo está sendo manipulado psicologicamente, jogando com seus medos e inseguranças, revelando seus maiores temores em forma de símbolos e imagens durante o jogo. A pressão aumenta gradativamente, com o oponente virtual empregando táticas mentais para quebrar sua concentração e provocar reações emocionais extremas. A música de fundo reflete a tensão mental, com notas dissonantes que causam desconforto.  A cena termina com Arthur, visivelmente abalado, lutando para manter o foco enquanto tenta decifrar as mensagens subliminares do jogo e concluir a prova. A câmera o mostra tremendo, suor escorrendo pela testa, em uma batalha contra sua própria mente. A tela permanece exibindo o jogo, com o placar ainda indefinido, deixando o espectador ansioso pelo desfecho.",
+          "word_count": 645
+        },
+        {
+          "chapter_number": 4,
+          "title": "Capítulo 4: ## 100 Dias Preso, R$ 2 Milhões em Jogo! - Capítul...",
+          "content": "## 100 Dias Preso, R$ 2 Milhões em Jogo! - Capítulo 3: Sussurros na Escuridão\n\n**Duração estimada:** 6 minutos\n\n**Cena 1:** (0:00-1:30) -  **Isolamento e a Pressão Crescente**\n\n* **Ambiente:**  Interno, instalação subterrânea. A câmera acompanha Arthur (32 anos, engenheiro, visivelmente cansado) enquanto ele percorre o corredor minimalista de seu confinamento.  A iluminação fria e artificial acentua a claustrofobia do ambiente.  O assistente de voz, com sua tonalidade monótona, anuncia a próxima prova: um teste de raciocínio lógico sob extrema pressão temporal, com um prêmio de R$ 100.000.\n\n* **Ação:** Arthur demonstra crescente nervosismo. Ele massageia as têmporas, visivelmente lutando contra a fadiga e o isolamento sensorial.  Imagens rápidas intercalam sua luta mental com closes em seu rosto, mostrando suor e sinais de exaustão.  A trilha sonora aumenta a tensão, utilizando batidas eletrônicas pesadas e sons de tique-taque de relógio.\n\n* **Diálogo:**\n    * **Assistente de Voz:** \"Iniciando prova número três. Você tem 60 minutos para resolver uma série de enigmas. O tempo está correndo. Boa sorte, Arthur.\"\n    * **(Pensamentos de Arthur, em voz off):**  \"Cem dias... já se passaram dez. Dez dias nesse inferno... e cada dia parece uma eternidade. Preciso desse dinheiro, preciso...\"\n\n* **Progresso:** Arthur resolve parte dos enigmas, mas a pressão do tempo e a solidão o afetam.  Ele demonstra hesitação, frustração e momentos de pânico silencioso.  A câmera foca em detalhes: um tremor em suas mãos, a respiração ofegante. Ele finalmente resolve o último enigma, nos segundos finais.\n\n\n**Cena 2:** (1:30-3:00) - **A Recompensa e o Mistério**\n\n* **Ambiente:**  O quarto minimalista de Arthur. Ele está exausto, mas aliviado após a prova bem sucedida. O assistente de voz confirma o prêmio de R$ 100.000, depositado em sua conta virtual.\n\n* **Ação:** Arthur desaba na cama, o alívio dando lugar à exaustão profunda. Ele observa as paredes impessoais, analisando as câmeras de vigilância. Sua atenção se volta a um pequeno detalhe no canto do quarto: um pequeno envelope pardo escondido sob um móvel. Ele o pega hesitante.\n\n* **Diálogo:**\n    * **Assistente de Voz:** \"Prova concluída com sucesso. Seu saldo atual é de R$ 150.000.\"\n    * **(Pensamentos de Arthur, em voz off):**  \"Um envelope... o que é isso? Alguém está aqui comigo? Ou... será minha mente?\"\n\n* **Revelação:** Ele abre o envelope, revelando um bilhete escrito em uma caligrafia elegante e misteriosa, que ele tenta decifrar, em close. A câmera foca na expressão de confusão e medo crescente em seu rosto, enquanto ele lê:  \"Você não está sozinho. Eles estão te observando.  Tome cuidado com suas escolhas\".\n\n**Cena 3:** (3:00-5:00) - **Paranoia e Desconfiança**\n\n* **Ambiente:**  O mesmo quarto, mas agora a atmosfera é carregada de suspense.  Arthur examina o bilhete, procurando pistas, analisando a caligrafia.  Imagens rápidas intercalam o bilhete com closes em seus olhos arregalados, expressando medo e paranoia.\n\n* **Ação:**  Arthur começa a examinar seu quarto mais detalhadamente, inspecionando os cantos, as paredes, atrás dos móveis. A câmera o segue, criando uma atmosfera de suspense crescente. Ele verifica as câmeras de vigilância com desconfiança, sentindo que está sendo observado.\n\n* **Diálogo:**\n    * **(Pensamentos de Arthur, em voz off):** \"Eles? Quem são eles?  É algum tipo de teste psicológico?  Ou é real? Isso é loucura!  Estou perdendo a cabeça?\"\n    * **Arthur (para si mesmo, em um sussurro):**  \"Preciso descobrir quem está por trás disso...\"\n\n* **Suspense:** A cena termina com Arthur olhando fixamente para uma câmera de vigilância, com um olhar interrogativo e a trilha sonora se intensifica, sugerindo a presença de algo sinistro.\n\n\n**Cena 4:** (5:00-6:00) - **A Decisão**\n\n* **Ambiente:** Arthur sentado na cama, olhando para o bilhete e para uma tela exibindo a programação das próximas provas. Ele parece dividido entre continuar o desafio e a possibilidade de pedir ajuda.\n\n* **Ação:**  A câmera mostra um close de suas mãos trêmulas enquanto ele rabisca em um pedaço de papel, escrevendo um plano de ação.  Montagem rápida que ilustra suas opções: desistir do desafio ou continuar.\n\n* **Diálogo:**\n     * **(Pensamentos de Arthur, em voz off):** \"Dois milhões de reais...  essa dívida... meu casamento...  eu preciso continuar? Ou preciso confiar nesse bilhete misterioso?\".\n\n* **Conclusão:** A câmera foca no rosto de Arthur, indeciso, mas com uma nova determinação em seus olhos.  Ele resolve seguir em frente, a dúvida em seu olhar indicando que ele acredita no bilhete e que um novo elemento entrou no jogo. O capítulo termina com uma imagem da próxima prova anunciada na tela e um som abafado, como um sussurro.",
+          "word_count": 739
+        },
+        {
+          "chapter_number": 5,
+          "title": "Capítulo 5: ## 100 Dias Preso, R$ 2 Milhões em Jogo! - Ato Fin...",
+          "content": "## 100 Dias Preso, R$ 2 Milhões em Jogo! - Ato Final (4-6 minutos)\n\n**(Cena: Dia 90. Arthur, magro, com olheiras profundas, senta-se em posição fetal no chão de sua cela. A iluminação minimalista acentua a sua fragilidade. O assistente de voz, impassível, soa.)**\n\n**Assistente de Voz:** Arthur, iniciando protocolo para o desafio final.  Em 24 horas, você enfrentará uma série de testes psicológicos complexos. A falha em qualquer um deles resulta na perda imediata do prêmio acumulado.\n\n**(Arthur permanece imóvel, a respiração ofegante.  A câmera fecha em seu rosto, mostrando a luta interna.)**\n\n**(Montagem: Sequência rápida de flashbacks mostrando momentos cruciais dos 90 dias: provas físicas extenuantes, momentos de desespero, o bilhete misterioso.  A música aumenta a tensão.)**\n\n**(Cena: Dia 91. Arthur se prepara para o desafio final.  Ele está visivelmente mais forte, mentalmente mais resiliente. A câmera o mostra observando seu reflexo, um homem diferente daquele que entrou na instalação.)**\n\n**Assistente de Voz:**  O desafio final consiste em uma simulação de realidade virtual, projetando seus medos mais profundos. Você enfrentará seus demônios, suas inseguranças, e a pressão de sua vida anterior. Sua resposta determinará o sucesso ou fracasso.\n\n**(Cena: Arthur está em uma sala escura, usando um capacete de realidade virtual. A simulação começa com a reaparição de sua esposa, em meio a uma discussão acesa sobre suas dívidas.  A simulação se torna cada vez mais perturbadoramente realista, exibindo versões distorcidas de sua vida e seus maiores medos.)**\n\n**(Cena: Arthur luta contra as imagens e sons da simulação. Ele se debate, grita, mas encontra forças internas para confrontar a sua realidade, enfrentando cada pesadelo com determinação. A câmera mostra sua luta física e mental, com a música intensificando a dramatização.)**\n\n**(Cena: A simulação termina abruptamente.  Arthur tira o capacete, ofegante, mas com um olhar de alívio e triunfo. O assistente de voz permanece silente por alguns segundos, processando os dados.)**\n\n**Assistente de Voz:** Arthur, você completou o desafio final.  Parabéns.\n\n**(Cena: Arthur caminha lentamente até a saída da instalação subterrânea,  a luz do sol forte o cega no início.  Ele sai, lento, observando o céu.)**\n\n**(Cena: Meses depois. Arthur, saudável, bem vestido, olha para um extrato bancário com uma quantia milionária.  Ele visita uma casa nova, ampla e iluminada.  Há um flash de sua antiga casa deteriorada.)**\n\n**(Cena: Arthur senta-se em uma cafeteria, observando pessoas comuns, sorrindo. Ele recebe uma mensagem no celular.  A caligrafia é a mesma do bilhete misterioso. O texto diz simplesmente: “Obrigado por nos mostrar que é possível superar. Você nos inspirou.”)\n\n**(Cena: Arthur olha para o céu, sem entender totalmente o significado da mensagem. A câmera focaliza a imensidão do céu, sugerindo que o mistério e a busca por sentido da vida ainda perduram,  mesmo após o grande desafio concluído.)**\n\n**(Narração:** Arthur venceu os 100 dias, os 2 milhões, e, mais importante, venceu a si mesmo. Mas a jornada deixou marcas profundas, gerando perguntas que talvez não tenham resposta. Ele provou ser capaz de resistir às pressões extremas, mas a verdadeira vitória reside em como ele usará o conhecimento adquirido e o prêmio conquistado para reconstruir sua vida,  confrontando seu passado e construindo um futuro melhor. A prova de resistência não foi somente física ou mental, mas também moral e espiritual. A dúvida permanece: quem eram os responsáveis pelo projeto? Por que escolheram Arthur? As respostas seguem obscuras, mas as marcas deixadas pelo desafio se tornam um guia para sua jornada de redenção.)**\n\n**(Cena Final: Um close nos olhos de Arthur, transmitindo um misto de paz e profunda introspecção.  A música final termina com uma nota de esperança e mistério.  O logo do vídeo aparece na tela.)**",
+          "word_count": 604
+        }
+      ],
+      "partial": true,
+      "chapters_generated": 5
+    }
+  },
+  "config": {
+    "extraction": {
+      "method": "auto",
+      "max_titles": 10,
+      "min_views": 1000,
+      "days_back": 30
+    },
+    "titles": {
+      "provider": "gemini"
+    },
+    "premises": {
+      "provider": "gemini"
+    },
+    "scripts": {
+      "provider": "gemini"
+    },
+    "tts": {
+      "provider": "kokoro"
+    },
+    "images": {
+      "provider": "flux"
+    },
+    "video": {
+      "resolution": "1920x1080",
+      "fps": 30,
+      "quality": "high",
+      "transitions": true,
+      "subtitles": true
+    }
+  },
+  "progress": {},
+  "version": "1.0"
+}

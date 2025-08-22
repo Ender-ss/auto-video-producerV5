@@ -1,0 +1,263 @@
+{
+  "pipeline_id": "924cb919-b8d6-4f33-8de4-c25977c0432b",
+  "timestamp": "2025-08-22T20:16:28.841495",
+  "current_step": "images",
+  "completed_steps": [
+    "extraction",
+    "titles",
+    "premises",
+    "scripts"
+  ],
+  "results": {
+    "extraction": {
+      "channel_info": {},
+      "titles": [
+        {
+          "video_id": "v-djT7RdoBA",
+          "title": "MILIONÁRIO FLAGRA FAXINEIRA PROTEGENDO SUA FILHA CEGA… E NÃO ACREDITA NO QUE VÊ!",
+          "description": "MILIONÁRIO FLAGRA FAXINEIRA PROTEGENDO SUA FILHA CEGA… E NÃO ACREDITA NO QUE VÊ!\n\n#historias #historiasreais #histórias #históriasemocionantes #historiasinspiradoras #históriasdesuperação...",
+          "thumbnail": "",
+          "duration": "7826.0s",
+          "views": 8400,
+          "likes": 0,
+          "published_at": "",
+          "url": "https://www.youtube.com/watch?v=v-djT7RdoBA"
+        },
+        {
+          "video_id": "dLGBChmJ6Pc",
+          "title": "\"PODEMOS COMER COM VOCÊ?\" — MENINA COM SUA IRMÃ NO COLO OLHA PARA O MILIONÁRIO E ELE MUDA TUDO!",
+          "description": "\"PODEMOS COMER COM VOCÊ?\" — MENINA COM SUA IRMÃ NO COLO OLHA PARA O MILIONÁRIO E ELE MUDA TUDO!\n\n#historias #historiasreais #histórias #históriasemocionantes #historiasinspiradoras #históri...",
+          "thumbnail": "",
+          "duration": "7989.0s",
+          "views": 3051,
+          "likes": 0,
+          "published_at": "",
+          "url": "https://www.youtube.com/watch?v=dLGBChmJ6Pc"
+        },
+        {
+          "video_id": "f8heWcgZ7Zc",
+          "title": "\"EU FALO 8 IDIOMAS\" – A MENINA DISSE ORGULHOSA, TODOS RIRAM… MENOS O MILIONÁRIO, QUE FICOU EM CHOQUE",
+          "description": "\"EU FALO 8 IDIOMAS\" – A MENINA DISSE ORGULHOSA, TODOS RIRAM… MENOS O MILIONÁRIO, QUE FICOU EM CHOQUE\n\n#historias #historiasreais #histórias #históriasemocionantes #historiasinspiradoras...",
+          "thumbnail": "",
+          "duration": "7907.0s",
+          "views": 1914,
+          "likes": 0,
+          "published_at": "",
+          "url": "https://www.youtube.com/watch?v=f8heWcgZ7Zc"
+        },
+        {
+          "video_id": "dSGvesGrEtM",
+          "title": "EMPREGADA GRÁVIDA DESMAIA NA MANSÃO DO MILIONÁRIO E O QUE ESCONDIA NO VENTRE SURPREENDE A TODOS!",
+          "description": "EMPREGADA GRÁVIDA DESMAIA NA MANSÃO DO MILIONÁRIO E O QUE ESCONDIA NO VENTRE SURPREENDE A TODOS!\n\n#historias #historiasreais #histórias #históriasemocionantes #historiasinspiradoras #história...",
+          "thumbnail": "",
+          "duration": "7480.0s",
+          "views": 20481,
+          "likes": 0,
+          "published_at": "",
+          "url": "https://www.youtube.com/watch?v=dSGvesGrEtM"
+        },
+        {
+          "video_id": "GSLCE9f4CKg",
+          "title": "\"SUA FILHA PODERIA ANDAR, MAS SUA NOIVA NÃO DEIXA!\"… DESABAFOU O MENINO POBRE AO MILIONÁRIO",
+          "description": "\"SUA FILHA PODERIA ANDAR, MAS SUA NOIVA NÃO DEIXA!\"… DESABAFOU O MENINO POBRE AO MILIONÁRIO\n\n#historias #historiasreais #histórias #históriasemocionantes #historiasinspiradoras #históriasdes...",
+          "thumbnail": "",
+          "duration": "7448.0s",
+          "views": 39886,
+          "likes": 0,
+          "published_at": "",
+          "url": "https://www.youtube.com/watch?v=GSLCE9f4CKg"
+        },
+        {
+          "video_id": "D3wVC2ekfaM",
+          "title": "MENINO POBRE IMPLORA AO MILIONÁRIO POR LEITE PARA O IRMÃO... E A REAÇÃO DELE TRANSFORMA TUDO",
+          "description": "MENINO POBRE IMPLORA AO MILIONÁRIO POR LEITE PARA O IRMÃO... E A REAÇÃO DELE TRANSFORMA TUDO\n\n#historias #historiasreais #histórias #históriasemocionantes #historiasinspiradoras #históriasde...",
+          "thumbnail": "",
+          "duration": "8020.0s",
+          "views": 4030,
+          "likes": 0,
+          "published_at": "",
+          "url": "https://www.youtube.com/watch?v=D3wVC2ekfaM"
+        },
+        {
+          "video_id": "7WjJ-Sd0HSk",
+          "title": "MILLIONÁRIO VÊ SEU FILHO AJUDANDO A COZINHEIRA A PREPARAR A COMIDA E PRESENCIA ALGO INESPERADO!",
+          "description": "MILLIONÁRIO VÊ SEU FILHO AJUDANDO A COZINHEIRA A PREPARAR A COMIDA E PRESENCIA ALGO INESPERADO!\n\n#historias #historiasreais #histórias #históriasemocionantes #historiasinspiradoras #históriasd...",
+          "thumbnail": "",
+          "duration": "8324.0s",
+          "views": 4137,
+          "likes": 0,
+          "published_at": "",
+          "url": "https://www.youtube.com/watch?v=7WjJ-Sd0HSk"
+        },
+        {
+          "video_id": "exfN4z55B-I",
+          "title": "\"PAI, AQUELES DOIS MENINOS DORMINDO NO LIXO SÃO PARECIDOS COMIGO\", DISSE O GAROTO AO MILIONÁRIO!",
+          "description": "\"PAI, AQUELES DOIS MENINOS DORMINDO NO LIXO SÃO PARECIDOS COMIGO\", DISSE O GAROTO AO MILIONÁRIO!\n\n#historias #historiasreais #histórias #históriasemocionantes #historiasinspiradoras #histórias...",
+          "thumbnail": "",
+          "duration": "7267.0s",
+          "views": 181698,
+          "likes": 0,
+          "published_at": "",
+          "url": "https://www.youtube.com/watch?v=exfN4z55B-I"
+        },
+        {
+          "video_id": "u8XYfdgQAcE",
+          "title": "MILIONÁRIO COMPRA TODA MERCADORIA DE UMA CRIANÇA VENDENDO DOCES NA RUA E FAZ UM PEDIDO INESPERADO",
+          "description": "MILIONÁRIO COMPRA TODA MERCADORIA DE UMA CRIANÇA VENDENDO DOCES NA RUA E FAZ UM PEDIDO INESPERADO\n\n#historias #historiasreais #histórias #históriasemocionantes #historiasinspiradoras #história...",
+          "thumbnail": "",
+          "duration": "8335.0s",
+          "views": 3556,
+          "likes": 0,
+          "published_at": "",
+          "url": "https://www.youtube.com/watch?v=u8XYfdgQAcE"
+        },
+        {
+          "video_id": "1zGtqccmwmg",
+          "title": "MILIONÁRIO, EM SEUS ÚLTIMOS DIAS, ADOTA DOIS GÊMEOS MENDIGOS… SEM IMAGINAR O IMPACTO EM SUA VIDA",
+          "description": "MILIONÁRIO, EM SEUS ÚLTIMOS DIAS, ADOTA DOIS GÊMEOS MENDIGOS… SEM IMAGINAR O IMPACTO EM SUA VIDA\n\n#historias #historiasreais #histórias #históriasemocionantes #historiasinspiradoras...",
+          "thumbnail": "",
+          "duration": "7637.0s",
+          "views": 7672,
+          "likes": 0,
+          "published_at": "",
+          "url": "https://www.youtube.com/watch?v=1zGtqccmwmg"
+        }
+      ],
+      "total_extracted": 10,
+      "method_used": "yt-dlp",
+      "extraction_time": "2025-08-22T20:12:27.326447"
+    },
+    "titles": {
+      "generated_titles": [
+        "Chocante!  Milionário descobre segredo devastador sobre sua família... e muda tudo!"
+      ],
+      "source_titles_count": 10,
+      "provider_used": "gemini",
+      "style": "viral",
+      "generation_time": "2025-08-22T20:12:33.292532"
+    },
+    "premises": {
+      "selected_title": "Chocante!  Milionário descobre segredo devastador sobre sua família... e muda tudo!",
+      "premise": "Este vídeo explora a vida de Arthur Blackwood, um milionário aparentemente impecável, cuja existência perfeita desmorona após uma descoberta chocante sobre sua família.  O tom será dramático e cheio de suspense, utilizando imagens impactantes e uma edição rápida para manter o espectador engajado.  O público-alvo são entusiastas de dramas familiares, thrillers e histórias de suspense, com idade entre 25 e 55 anos, interessados em conteúdo que explore temas de riqueza, traição e segredos de família.  O vídeo inicia com Arthur vivendo uma vida de luxo e ostentação, até que um antigo documento familiar revela uma verdade devastadora sobre sua herança e a origem de sua fortuna.  A revelação é um segredo obscuro que envolve crimes passados, relacionamentos ocultos e uma teia de mentiras cuidadosamente construídas ao longo de gerações.  A premissa central é a jornada de Arthur ao lidar com essa verdade, as consequências que afetam sua vida e as escolhas difíceis que ele precisa fazer para reconstruir sua identidade e seu legado, ou mesmo buscar justiça.  Pontos-chave incluem a descoberta do segredo, as reações de Arthur e de sua família, o passado obscuro da família Blackwood e as implicações éticas e morais de suas ações.  O vídeo culminará em um final surpreendente, deixando o público questionando a verdadeira natureza da riqueza e o peso dos segredos de família.\n",
+      "word_count": 219,
+      "provider_used": "gemini",
+      "generation_time": "2025-08-22T20:12:37.269609"
+    },
+    "scripts": {
+      "title": "Chocante!  Milionário descobre segredo devastador sobre sua família... e muda tudo!",
+      "premise": "Este vídeo explora a vida de Arthur Blackwood, um milionário aparentemente impecável, cuja existência perfeita desmorona após uma descoberta chocante sobre sua família.  O tom será dramático e cheio de suspense, utilizando imagens impactantes e uma edição rápida para manter o espectador engajado.  O público-alvo são entusiastas de dramas familiares, thrillers e histórias de suspense, com idade entre 25 e 55 anos, interessados em conteúdo que explore temas de riqueza, traição e segredos de família.  O vídeo inicia com Arthur vivendo uma vida de luxo e ostentação, até que um antigo documento familiar revela uma verdade devastadora sobre sua herança e a origem de sua fortuna.  A revelação é um segredo obscuro que envolve crimes passados, relacionamentos ocultos e uma teia de mentiras cuidadosamente construídas ao longo de gerações.  A premissa central é a jornada de Arthur ao lidar com essa verdade, as consequências que afetam sua vida e as escolhas difíceis que ele precisa fazer para reconstruir sua identidade e seu legado, ou mesmo buscar justiça.  Pontos-chave incluem a descoberta do segredo, as reações de Arthur e de sua família, o passado obscuro da família Blackwood e as implicações éticas e morais de suas ações.  O vídeo culminará em um final surpreendente, deixando o público questionando a verdadeira natureza da riqueza e o peso dos segredos de família.\n",
+      "script": "Capítulo 1: ## ROTEIRO - CHOCANTE! MILIONÁRIO DESCOBRE SEGREDO...\n\n## ROTEIRO - CHOCANTE! MILIONÁRIO DESCOBRE SEGREDO DE VASTADOR SOBRE SUA FAMÍLIA... E MUDA TUDO!\n\n**Parte 1: A Sombra da Fortuna** (Duração estimada: 5 minutos)\n\n**Cena 1:** (0:00-0:30)\n\n* **Local:** Mansão de Artur Blackwood em Ipanema. Vista panorâmica da praia ao nascer do sol, com a mansão imponente em primeiro plano.  Música clássica suave e elegante ao fundo.\n* **Visual:** Close em um relógio de pulso de ouro, mostrando o horário 6:00 AM.  Transição para Artur (45 anos, elegante, impecavelmente vestido) acordando em uma cama luxuosa, com vista para o mar.  Ele se levanta com movimentos lentos e precisos, demonstrando riqueza e poder.\n* **Som:** Som ambiente suave de ondas do mar e pássaros.\n* **Ação:** Artur inicia sua rotina matinal impecável: toma um café da manhã requintado servido por um mordomo discreto, faz exercícios leves com vista para o oceano.  A câmera foca nos detalhes luxuosos da mansão: obras de arte, móveis antigos, decoração sofisticada.\n* **Diálogo:** (Voz em off de Artur, narrando): \"A vida sempre me tratou bem.  Sucesso.  Fortuna.  Uma existência aparentemente perfeita.  Mas a perfeição, como a riqueza, esconde suas próprias sombras.\"\n\n\n**Cena 2:** (0:30-1:30)\n\n* **Local:** Cofre particular dentro da mansão.  Atmosfera claustrofóbica, apesar do luxo evidente.\n* **Visual:**  Artur abre o cofre, revelando um ambiente repleto de documentos antigos, caixas de madeira e objetos de valor.  A câmera se concentra em um diário antigo, encadernado em couro desgastado.\n* **Som:** Som ambiente mais silencioso, enfatizando o tic-tac de um relógio antigo e o leve rangido da porta do cofre.\n* **Ação:** Artur pega o diário com cuidado, a poeira se levanta levemente. Ele senta em uma cadeira de couro perto do cofre e começa a ler o diário.  Expressão inicial de curiosidade, que gradualmente se transforma em choque e incrédulo.  Close nos detalhes do diário: escrita antiga, manchas de tempo, algumas páginas rasgadas.\n* **Diálogo:** (Voz em off de Artur, narrando, misturado com imagens do diário e suas reações): \"O diário do meu avô. Um tesouro familiar que eu nunca me preocupei em abrir.  Até agora.  As palavras escritas ali me congelaram...  Diamantes. Contrabandistas. Morte...\"\n\n\n**Cena 3:** (1:30-3:00)\n\n* **Local:**  Montagem de imagens: flashes rápidos do conteúdo do diário ilustrado com imagens de época (navios antigos, fotografias em preto e branco, ruas escuras de uma cidade desconhecida).\n* **Visual:**  Imagens dramáticas e de suspense, mostrando a vida de Arthur misturada com imagens que revelam o esquema criminoso do avô.\n* **Som:**  Música dramática e tensa, aumentando a intensidade com o passar das cenas.\n* **Ação:**  A câmera mostra imagens de Artur lendo o diário, com close em suas expressões de descrença, raiva, e pavor.  A narrativa em off descreve o esquema de contrabando de diamantes, os assassinatos, as alianças secretas, e a construção da fortuna Blackwood sobre um mar de mentiras.\n* **Diálogo:** (Voz em off, intercalada com trechos do diário lidos por Artur): \"...A Ilha Perdida.  Um paraíso tropical que escondia um inferno de crueldade.  Meu avô,  o homem que eu admirava,  um criminoso implacável...\"\n\n\n**Cena 4:** (3:00-4:30)\n\n* **Local:**  Artur em sua mansão, sentado em sua escrivaninha.\n* **Visual:**  Artur examina a fotografia antiga, mostrando seu avô com uma mulher desconhecida em um navio. A inscrição \"Ilha Perdida\" está claramente visível no verso.  A câmera se concentra no rosto de Artur, demonstrando sua confusão e crescente angústia.\n* **Som:**  Música tensa e suspense.  O som do mar agora parece ameaçador.\n* **Ação:** Artur liga para seu advogado, um homem elegante e sofisticado, porém com um ar de preocupação. A ligação é tensa e breve, Artur apenas diz que precisa de ajuda com algo urgente.\n* **Diálogo:**\n    * **Artur:** (ao telefone, voz tensa)  \"Preciso da sua ajuda, imediatamente.  Algo extremamente grave... Meu passado, a história da minha família... está tudo errado.\"\n    * **Advogado:** (ao telefone, voz calma, mas séria) \"Já estou a caminho, Sr. Blackwood.\"\n\n\n**Cena 5:** (4:30-5:00)\n\n* **Local:**  Artur na varanda da mansão, olhando para o oceano.  O sol está se pondo, criando uma atmosfera sombria.\n* **Visual:**  Close no rosto de Artur, mostrando a luta interna entre a decepção, a raiva e o medo.  A câmera amplia a imagem do oceano, dando a impressão de um abismo sem fundo.\n* **Som:**  Música dramática e melancólica.  Som de ondas do mar, mais fortes e imponentes.\n* **Ação:**  Artur parece perdido em seus pensamentos, observando o oceano que antes simbolizava paz agora parece um reflexo do mar de mentiras que descobriu. Ele segura a fotografia antiga, a \"Ilha Perdida\" reflete-se em seus olhos cheios de dúvida.\n* **Diálogo:** (Voz em off de Artur, narrando): \"Tudo o que eu conhecia estava ruindo.  Minha fortuna, minha identidade, minha família...  A verdade me sufocaria se eu não a enfrentasse.\"\n\n**(Continua...)**\n\nCapítulo 2: ## Chocante! Milionário Descobre Segredo Devastado...\n\n## Chocante! Milionário Descobre Segredo Devastador Sobre Sua Família... e Muda Tudo!\n\n**Capítulo 1: A Sombra do Passado**\n\n**[Cena 1] (0:00-1:00) - Ext. Mansão em Ipanema - Dia**\n\nA câmera se move lentamente, captando a beleza imponente da mansão de Artur Blackwood em Ipanema.  Sol forte, mar azul turquesa, brisa leve. A imagem é de riqueza e perfeição.  A câmera se concentra em Artur (45 anos, impecavelmente vestido), praticando ioga na varanda, com vista panorâmica para o oceano.  Música suave e relaxante ao fundo.  Ele exala uma aura de poder e controle, mas um olhar atento revela um leve traço de preocupação em seus olhos.\n\n**[Voz em off de Artur (V.O.):] (0:30-0:45)** _\"Minha vida sempre foi impecável. Sucesso profissional, fortuna invejável, uma casa de sonhos…  Eu tinha tudo o que sempre desejei. Ou assim eu pensava.\"_\n\n**[Cena 2] (1:00-2:30) - Int. Cofre Particular - Dia**\n\nArtur está dentro de seu cofre, um ambiente opulento e seguro.  Ele abre um antigo baú de madeira maciça, repleto de documentos familiares amarelados pelo tempo. A câmera se concentra nos seus dedos enquanto ele vasculha cuidadosamente os papéis, sua expressão séria e concentrada.  A atmosfera é tensa, carregada de expectativa.  Ele encontra um diário encadernado em couro gasto, com o nome \"Malcolm Blackwood\" gravado em dourado.\n\n**[Cena 3] (2:30-4:00) - Int. Escritório - Dia**\n\nArtur senta-se em sua mesa de mogno, lendo o diário com crescente espanto.  Flashbacks rápidos e dramáticos, intercalados com as imagens de Artur lendo, mostram cenas em preto e branco:  homens trocando malas em um porto escuro, tiroteios em becos escuros, um navio misterioso no alto-mar.  A música de fundo fica mais sombria, refletindo o conteúdo chocante do diário.  A leitura revela a verdade: Malcolm, o avô de Artur, era o chefe de um esquema de contrabando de diamantes, envolvendo assassinatos e alianças secretas. A fortuna da família Blackwood foi construída sobre uma fundação de mentiras e crimes.\n\n**[V.O. Artur]:** _\"Cada página era um golpe no meu estômago. Meu avô… um criminoso implacável. A fortuna que eu herdara, manchada pelo sangue de inocentes.\"_\n\n**[Cena 4] (4:00-5:30) - Int. Escritório - Dia**\n\nArtur encontra uma fotografia antiga, desbotada pelo tempo, dentro do diário.  A imagem mostra seu avô, Malcolm, ao lado de uma mulher elegante e desconhecida, em um navio.  No verso, escrito a caneta, a inscrição: \"Ilha Perdida\".  A câmera se aproxima da foto, focalizando os rostos de Malcolm e da mulher misteriosa.  O olhar de Artur é de perplexidade, misturado a uma crescente sensação de terror.\n\n**[V.O. Artur]:** _\"Quem era ela?  E o que significava 'Ilha Perdida'? Aquele nome ecoava na minha mente como um prenúncio de desgraça.\"_\n\n**[Cena 5] (5:30-6:30) - Int. Mansão - Vários ambientes - Noite**\n\nMontagem rápida mostrando Artur caminhando pela mansão, agora vista sob uma luz sombria e ameaçadora.  A atmosfera opressora da mansão, antes símbolo de luxo, agora o sufoca.  Cada canto parece sussurrar segredos. Ele passa pela sala de jantar suntuosa, pelo hall de entrada imponente, por corredores escuros e silenciosos.  A câmera se concentra em detalhes que antes passavam despercebidos: um quadro antigo com uma mancha escura, uma sombra se movendo rapidamente num corredor, o reflexo distorcido de seu rosto em um espelho antigo.  A música de fundo é tensa, cheia de suspense.\n\n**[V.O. Artur]:** _\"A tranquilidade da minha mansão havia se transformado em um pesadelo.  A sombra do passado pairava sobre mim, ameaçando destruir tudo o que eu havia construído.\"_\n\n\n**[Cena 6] (6:30-7:00) - Int. Escritório - Noite**\n\nArtur senta-se à sua mesa, olhando para a fotografia da \"Ilha Perdida\", o rosto enrugado pela angústia. A câmera se fecha em seu rosto, refletindo a dúvida, o medo e a determinação que começam a se formar em seus olhos.  Ele pega o telefone, com uma expressão decidida.\n\n**[V.O. Artur]:** _\"Eu não podia mais ignorar a verdade. A investigação tinha que começar. Eu precisava descobrir a identidade daquela mulher e o que ela representava para a 'Ilha Perdida'.  A minha história, e a da minha família, estava prestes a mudar para sempre.\"_  A cena termina com um close no telefone, enquanto Artur disca um número. Fim do Capítulo 1.\n\nCapítulo 3: [INÍCIO DA ÚLTIMA PARTE DO ROTEIRO - 4-6 MINUTOS]\n...\n\n[INÍCIO DA ÚLTIMA PARTE DO ROTEIRO - 4-6 MINUTOS]\n\n\n**Cena 1:** (1 minuto) - Interior da mansão Blackwood, noite. Artur, visivelmente envelhecido e abatido, senta-se sozinho em sua ampla biblioteca, cercado por pilhas de documentos e fotografias. A iluminação dramática enfatiza as sombras profundas em seu rosto.  Ele segura a fotografia antiga, sua expressão um misto de terror e determinação.  Um close na foto destaca os rostos borrados do avô e da mulher desconhecida. A câmera se move lentamente para mostrar uma janela com vista para o mar agitado, espelhando a turbulência interior de Artur.\n\n**Narração (Voz grave e sussurrante):**  A ‘Ilha Perdida’. A pista final. Mas para onde ela o levaria? A verdade, tão próxima quanto a própria costa, agora se escondia atrás de um véu de mentiras, mais profundo e perigoso do que jamais imaginara.\n\n**Cena 2:** (1 minuto 30 segundos) - Montagem rápida de cenas: Artur investigando arquivos históricos, entrevistando pessoas idosas que lembram vagamente o avô, navegando em um mapa antigo da região que aponta para uma pequena ilha desabitada próxima ao Rio de Janeiro. As imagens são intercaladas com flashbacks breves, mostrados em tons de sépia, mostrando o avô de Artur em momentos de tensão e clandestinidade, envolvido em transações obscuras.  A música de suspense aumenta a tensão.\n\n**Cena 3:** (1 minuto) - Exterior, dia. Um pequeno barco leva Artur até a Ilha Perdida. A ilha é isolada, misteriosa, com uma vegetação densa e atmosfera sombria.  A câmera se concentra nos detalhes: uma pequena cabana em ruínas, um cais deteriorado.  Artur explora a ilha com cautela, encontrando uma caixa enterrada – contendo um diário da mulher da fotografia.\n\n\n**Cena 4:** (30 segundos) - Interior da cabana, close no diário aberto.  Artur lê, sua expressão mudando de choque para compreensão.  O diário revela a identidade da mulher – Isabela, uma ex-amante do avô, também envolvida no esquema de contrabando, mas traída e deixada para morrer na ilha.  Isabela planejava denunciar tudo, mas foi silenciada.  A 'Ilha Perdida' não era só um local de fuga, mas um túmulo.\n\n\n**Cena 5:** (30 segundos) - Exterior da ilha, dia. Artur observa o mar, a expressão serena, finalmente liberto do peso dos segredos da família.  Ele decide usar sua fortuna para compensar as vítimas do esquema do avô, criando uma fundação para ajudar comunidades carentes e revelar a verdade ao público.  Não mais buscando vingança, mas justiça e redenção.\n\n\n**Cena 6:** (30 segundos) - Interior da mansão Blackwood, noite.  Artur, agora com um olhar diferente, mais leve e sereno, observa a mansão de Ipanema da sua varanda.  A mansão, antes símbolo de luxo e ostentação, agora parece carregada de história, mas também de esperança.  Ele olha para o mar calmo. A câmera se foca em seus olhos, que refletem a complexidade de sua jornada.\n\n**Narração (Voz grave e calma):** A riqueza não era mais uma blindagem, mas uma responsabilidade.  A herança dos Blackwood jamais seria esquecida, mas o legado de Artur seria moldado pela justiça e pela redenção. A verdade, por mais perturbadora que fosse, liberara Artur.  E a ‘Ilha Perdida’, que outrora simbolizava segredos sombrios, transformou-se em um ponto de partida para uma nova vida.\n\n\n**Cena Final:** (30 segundos) – Montagem de imagens:  Artur em uma coletiva de imprensa, anunciando a fundação; imagens de projetos sociais; Artur sorrindo com pessoas carentes; o mar calmo, o pôr do sol.  A música se torna inspiradora, transmitindo esperança e redenção.  O título final do vídeo aparece na tela: \"Chocante! Milionário descobre segredo devastador sobre sua família... e muda tudo!\"\n\n\n[FIM DA ÚLTIMA PARTE DO ROTEIRO]",
+      "chapters": [
+        {
+          "chapter_number": 1,
+          "title": "Capítulo 1: ## ROTEIRO - CHOCANTE! MILIONÁRIO DESCOBRE SEGREDO...",
+          "content": "## ROTEIRO - CHOCANTE! MILIONÁRIO DESCOBRE SEGREDO DE VASTADOR SOBRE SUA FAMÍLIA... E MUDA TUDO!\n\n**Parte 1: A Sombra da Fortuna** (Duração estimada: 5 minutos)\n\n**Cena 1:** (0:00-0:30)\n\n* **Local:** Mansão de Artur Blackwood em Ipanema. Vista panorâmica da praia ao nascer do sol, com a mansão imponente em primeiro plano.  Música clássica suave e elegante ao fundo.\n* **Visual:** Close em um relógio de pulso de ouro, mostrando o horário 6:00 AM.  Transição para Artur (45 anos, elegante, impecavelmente vestido) acordando em uma cama luxuosa, com vista para o mar.  Ele se levanta com movimentos lentos e precisos, demonstrando riqueza e poder.\n* **Som:** Som ambiente suave de ondas do mar e pássaros.\n* **Ação:** Artur inicia sua rotina matinal impecável: toma um café da manhã requintado servido por um mordomo discreto, faz exercícios leves com vista para o oceano.  A câmera foca nos detalhes luxuosos da mansão: obras de arte, móveis antigos, decoração sofisticada.\n* **Diálogo:** (Voz em off de Artur, narrando): \"A vida sempre me tratou bem.  Sucesso.  Fortuna.  Uma existência aparentemente perfeita.  Mas a perfeição, como a riqueza, esconde suas próprias sombras.\"\n\n\n**Cena 2:** (0:30-1:30)\n\n* **Local:** Cofre particular dentro da mansão.  Atmosfera claustrofóbica, apesar do luxo evidente.\n* **Visual:**  Artur abre o cofre, revelando um ambiente repleto de documentos antigos, caixas de madeira e objetos de valor.  A câmera se concentra em um diário antigo, encadernado em couro desgastado.\n* **Som:** Som ambiente mais silencioso, enfatizando o tic-tac de um relógio antigo e o leve rangido da porta do cofre.\n* **Ação:** Artur pega o diário com cuidado, a poeira se levanta levemente. Ele senta em uma cadeira de couro perto do cofre e começa a ler o diário.  Expressão inicial de curiosidade, que gradualmente se transforma em choque e incrédulo.  Close nos detalhes do diário: escrita antiga, manchas de tempo, algumas páginas rasgadas.\n* **Diálogo:** (Voz em off de Artur, narrando, misturado com imagens do diário e suas reações): \"O diário do meu avô. Um tesouro familiar que eu nunca me preocupei em abrir.  Até agora.  As palavras escritas ali me congelaram...  Diamantes. Contrabandistas. Morte...\"\n\n\n**Cena 3:** (1:30-3:00)\n\n* **Local:**  Montagem de imagens: flashes rápidos do conteúdo do diário ilustrado com imagens de época (navios antigos, fotografias em preto e branco, ruas escuras de uma cidade desconhecida).\n* **Visual:**  Imagens dramáticas e de suspense, mostrando a vida de Arthur misturada com imagens que revelam o esquema criminoso do avô.\n* **Som:**  Música dramática e tensa, aumentando a intensidade com o passar das cenas.\n* **Ação:**  A câmera mostra imagens de Artur lendo o diário, com close em suas expressões de descrença, raiva, e pavor.  A narrativa em off descreve o esquema de contrabando de diamantes, os assassinatos, as alianças secretas, e a construção da fortuna Blackwood sobre um mar de mentiras.\n* **Diálogo:** (Voz em off, intercalada com trechos do diário lidos por Artur): \"...A Ilha Perdida.  Um paraíso tropical que escondia um inferno de crueldade.  Meu avô,  o homem que eu admirava,  um criminoso implacável...\"\n\n\n**Cena 4:** (3:00-4:30)\n\n* **Local:**  Artur em sua mansão, sentado em sua escrivaninha.\n* **Visual:**  Artur examina a fotografia antiga, mostrando seu avô com uma mulher desconhecida em um navio. A inscrição \"Ilha Perdida\" está claramente visível no verso.  A câmera se concentra no rosto de Artur, demonstrando sua confusão e crescente angústia.\n* **Som:**  Música tensa e suspense.  O som do mar agora parece ameaçador.\n* **Ação:** Artur liga para seu advogado, um homem elegante e sofisticado, porém com um ar de preocupação. A ligação é tensa e breve, Artur apenas diz que precisa de ajuda com algo urgente.\n* **Diálogo:**\n    * **Artur:** (ao telefone, voz tensa)  \"Preciso da sua ajuda, imediatamente.  Algo extremamente grave... Meu passado, a história da minha família... está tudo errado.\"\n    * **Advogado:** (ao telefone, voz calma, mas séria) \"Já estou a caminho, Sr. Blackwood.\"\n\n\n**Cena 5:** (4:30-5:00)\n\n* **Local:**  Artur na varanda da mansão, olhando para o oceano.  O sol está se pondo, criando uma atmosfera sombria.\n* **Visual:**  Close no rosto de Artur, mostrando a luta interna entre a decepção, a raiva e o medo.  A câmera amplia a imagem do oceano, dando a impressão de um abismo sem fundo.\n* **Som:**  Música dramática e melancólica.  Som de ondas do mar, mais fortes e imponentes.\n* **Ação:**  Artur parece perdido em seus pensamentos, observando o oceano que antes simbolizava paz agora parece um reflexo do mar de mentiras que descobriu. Ele segura a fotografia antiga, a \"Ilha Perdida\" reflete-se em seus olhos cheios de dúvida.\n* **Diálogo:** (Voz em off de Artur, narrando): \"Tudo o que eu conhecia estava ruindo.  Minha fortuna, minha identidade, minha família...  A verdade me sufocaria se eu não a enfrentasse.\"\n\n**(Continua...)**",
+          "word_count": 785
+        },
+        {
+          "chapter_number": 2,
+          "title": "Capítulo 2: ## Chocante! Milionário Descobre Segredo Devastado...",
+          "content": "## Chocante! Milionário Descobre Segredo Devastador Sobre Sua Família... e Muda Tudo!\n\n**Capítulo 1: A Sombra do Passado**\n\n**[Cena 1] (0:00-1:00) - Ext. Mansão em Ipanema - Dia**\n\nA câmera se move lentamente, captando a beleza imponente da mansão de Artur Blackwood em Ipanema.  Sol forte, mar azul turquesa, brisa leve. A imagem é de riqueza e perfeição.  A câmera se concentra em Artur (45 anos, impecavelmente vestido), praticando ioga na varanda, com vista panorâmica para o oceano.  Música suave e relaxante ao fundo.  Ele exala uma aura de poder e controle, mas um olhar atento revela um leve traço de preocupação em seus olhos.\n\n**[Voz em off de Artur (V.O.):] (0:30-0:45)** _\"Minha vida sempre foi impecável. Sucesso profissional, fortuna invejável, uma casa de sonhos…  Eu tinha tudo o que sempre desejei. Ou assim eu pensava.\"_\n\n**[Cena 2] (1:00-2:30) - Int. Cofre Particular - Dia**\n\nArtur está dentro de seu cofre, um ambiente opulento e seguro.  Ele abre um antigo baú de madeira maciça, repleto de documentos familiares amarelados pelo tempo. A câmera se concentra nos seus dedos enquanto ele vasculha cuidadosamente os papéis, sua expressão séria e concentrada.  A atmosfera é tensa, carregada de expectativa.  Ele encontra um diário encadernado em couro gasto, com o nome \"Malcolm Blackwood\" gravado em dourado.\n\n**[Cena 3] (2:30-4:00) - Int. Escritório - Dia**\n\nArtur senta-se em sua mesa de mogno, lendo o diário com crescente espanto.  Flashbacks rápidos e dramáticos, intercalados com as imagens de Artur lendo, mostram cenas em preto e branco:  homens trocando malas em um porto escuro, tiroteios em becos escuros, um navio misterioso no alto-mar.  A música de fundo fica mais sombria, refletindo o conteúdo chocante do diário.  A leitura revela a verdade: Malcolm, o avô de Artur, era o chefe de um esquema de contrabando de diamantes, envolvendo assassinatos e alianças secretas. A fortuna da família Blackwood foi construída sobre uma fundação de mentiras e crimes.\n\n**[V.O. Artur]:** _\"Cada página era um golpe no meu estômago. Meu avô… um criminoso implacável. A fortuna que eu herdara, manchada pelo sangue de inocentes.\"_\n\n**[Cena 4] (4:00-5:30) - Int. Escritório - Dia**\n\nArtur encontra uma fotografia antiga, desbotada pelo tempo, dentro do diário.  A imagem mostra seu avô, Malcolm, ao lado de uma mulher elegante e desconhecida, em um navio.  No verso, escrito a caneta, a inscrição: \"Ilha Perdida\".  A câmera se aproxima da foto, focalizando os rostos de Malcolm e da mulher misteriosa.  O olhar de Artur é de perplexidade, misturado a uma crescente sensação de terror.\n\n**[V.O. Artur]:** _\"Quem era ela?  E o que significava 'Ilha Perdida'? Aquele nome ecoava na minha mente como um prenúncio de desgraça.\"_\n\n**[Cena 5] (5:30-6:30) - Int. Mansão - Vários ambientes - Noite**\n\nMontagem rápida mostrando Artur caminhando pela mansão, agora vista sob uma luz sombria e ameaçadora.  A atmosfera opressora da mansão, antes símbolo de luxo, agora o sufoca.  Cada canto parece sussurrar segredos. Ele passa pela sala de jantar suntuosa, pelo hall de entrada imponente, por corredores escuros e silenciosos.  A câmera se concentra em detalhes que antes passavam despercebidos: um quadro antigo com uma mancha escura, uma sombra se movendo rapidamente num corredor, o reflexo distorcido de seu rosto em um espelho antigo.  A música de fundo é tensa, cheia de suspense.\n\n**[V.O. Artur]:** _\"A tranquilidade da minha mansão havia se transformado em um pesadelo.  A sombra do passado pairava sobre mim, ameaçando destruir tudo o que eu havia construído.\"_\n\n\n**[Cena 6] (6:30-7:00) - Int. Escritório - Noite**\n\nArtur senta-se à sua mesa, olhando para a fotografia da \"Ilha Perdida\", o rosto enrugado pela angústia. A câmera se fecha em seu rosto, refletindo a dúvida, o medo e a determinação que começam a se formar em seus olhos.  Ele pega o telefone, com uma expressão decidida.\n\n**[V.O. Artur]:** _\"Eu não podia mais ignorar a verdade. A investigação tinha que começar. Eu precisava descobrir a identidade daquela mulher e o que ela representava para a 'Ilha Perdida'.  A minha história, e a da minha família, estava prestes a mudar para sempre.\"_  A cena termina com um close no telefone, enquanto Artur disca um número. Fim do Capítulo 1.",
+          "word_count": 687
+        },
+        {
+          "chapter_number": 3,
+          "title": "Capítulo 3: [INÍCIO DA ÚLTIMA PARTE DO ROTEIRO - 4-6 MINUTOS]\n...",
+          "content": "[INÍCIO DA ÚLTIMA PARTE DO ROTEIRO - 4-6 MINUTOS]\n\n\n**Cena 1:** (1 minuto) - Interior da mansão Blackwood, noite. Artur, visivelmente envelhecido e abatido, senta-se sozinho em sua ampla biblioteca, cercado por pilhas de documentos e fotografias. A iluminação dramática enfatiza as sombras profundas em seu rosto.  Ele segura a fotografia antiga, sua expressão um misto de terror e determinação.  Um close na foto destaca os rostos borrados do avô e da mulher desconhecida. A câmera se move lentamente para mostrar uma janela com vista para o mar agitado, espelhando a turbulência interior de Artur.\n\n**Narração (Voz grave e sussurrante):**  A ‘Ilha Perdida’. A pista final. Mas para onde ela o levaria? A verdade, tão próxima quanto a própria costa, agora se escondia atrás de um véu de mentiras, mais profundo e perigoso do que jamais imaginara.\n\n**Cena 2:** (1 minuto 30 segundos) - Montagem rápida de cenas: Artur investigando arquivos históricos, entrevistando pessoas idosas que lembram vagamente o avô, navegando em um mapa antigo da região que aponta para uma pequena ilha desabitada próxima ao Rio de Janeiro. As imagens são intercaladas com flashbacks breves, mostrados em tons de sépia, mostrando o avô de Artur em momentos de tensão e clandestinidade, envolvido em transações obscuras.  A música de suspense aumenta a tensão.\n\n**Cena 3:** (1 minuto) - Exterior, dia. Um pequeno barco leva Artur até a Ilha Perdida. A ilha é isolada, misteriosa, com uma vegetação densa e atmosfera sombria.  A câmera se concentra nos detalhes: uma pequena cabana em ruínas, um cais deteriorado.  Artur explora a ilha com cautela, encontrando uma caixa enterrada – contendo um diário da mulher da fotografia.\n\n\n**Cena 4:** (30 segundos) - Interior da cabana, close no diário aberto.  Artur lê, sua expressão mudando de choque para compreensão.  O diário revela a identidade da mulher – Isabela, uma ex-amante do avô, também envolvida no esquema de contrabando, mas traída e deixada para morrer na ilha.  Isabela planejava denunciar tudo, mas foi silenciada.  A 'Ilha Perdida' não era só um local de fuga, mas um túmulo.\n\n\n**Cena 5:** (30 segundos) - Exterior da ilha, dia. Artur observa o mar, a expressão serena, finalmente liberto do peso dos segredos da família.  Ele decide usar sua fortuna para compensar as vítimas do esquema do avô, criando uma fundação para ajudar comunidades carentes e revelar a verdade ao público.  Não mais buscando vingança, mas justiça e redenção.\n\n\n**Cena 6:** (30 segundos) - Interior da mansão Blackwood, noite.  Artur, agora com um olhar diferente, mais leve e sereno, observa a mansão de Ipanema da sua varanda.  A mansão, antes símbolo de luxo e ostentação, agora parece carregada de história, mas também de esperança.  Ele olha para o mar calmo. A câmera se foca em seus olhos, que refletem a complexidade de sua jornada.\n\n**Narração (Voz grave e calma):** A riqueza não era mais uma blindagem, mas uma responsabilidade.  A herança dos Blackwood jamais seria esquecida, mas o legado de Artur seria moldado pela justiça e pela redenção. A verdade, por mais perturbadora que fosse, liberara Artur.  E a ‘Ilha Perdida’, que outrora simbolizava segredos sombrios, transformou-se em um ponto de partida para uma nova vida.\n\n\n**Cena Final:** (30 segundos) – Montagem de imagens:  Artur em uma coletiva de imprensa, anunciando a fundação; imagens de projetos sociais; Artur sorrindo com pessoas carentes; o mar calmo, o pôr do sol.  A música se torna inspiradora, transmitindo esperança e redenção.  O título final do vídeo aparece na tela: \"Chocante! Milionário descobre segredo devastador sobre sua família... e muda tudo!\"\n\n\n[FIM DA ÚLTIMA PARTE DO ROTEIRO]",
+          "word_count": 593
+        }
+      ],
+      "chapters_generated": 3,
+      "estimated_duration": 13.96,
+      "style": "inicio",
+      "generation_time": "2025-08-22T20:13:20.865695",
+      "partial": false
+    }
+  },
+  "config": {
+    "extraction": {
+      "enabled": true,
+      "method": "yt-dlp",
+      "rapidapi_key": ""
+    },
+    "titles": {
+      "enabled": true,
+      "provider": "gemini",
+      "count": 1,
+      "style": "viral",
+      "language": "pt-BR",
+      "custom_prompt": false,
+      "custom_instructions": ""
+    },
+    "premises": {
+      "enabled": true,
+      "provider": "gemini",
+      "style": "educational",
+      "target_audience": "general",
+      "word_count": 200,
+      "custom_prompt": false,
+      "custom_instructions": ""
+    },
+    "scripts": {
+      "enabled": true,
+      "provider": "gemini",
+      "chapters": 3,
+      "duration_target": "3 minutes",
+      "include_intro": true,
+      "include_outro": true,
+      "custom_prompts": false,
+      "custom_inicio": "",
+      "custom_meio": "",
+      "custom_fim": ""
+    },
+    "tts": {
+      "enabled": true,
+      "provider": "kokoro",
+      "voice": "pf_dora",
+      "language": "pt",
+      "speed": 1,
+      "pitch": 1
+    },
+    "images": {
+      "enabled": true,
+      "provider": "pollinations",
+      "style": "realistic",
+      "quality": "high",
+      "count_per_chapter": 2,
+      "custom_prompt": false,
+      "custom_instructions": ""
+    },
+    "video": {
+      "enabled": true,
+      "resolution": "1920x1080",
+      "fps": 30,
+      "format": "mp4",
+      "include_subtitles": true,
+      "transition_duration": 0.5
+    },
+    "prompts": {
+      "titles": {
+        "viral": "Crie títulos virais e envolventes para o vídeo sobre: {topic}. Os títulos devem ser chamativos, despertar curiosidade e incentivar cliques.",
+        "educational": "Crie títulos educacionais e informativos para o vídeo sobre: {topic}. Os títulos devem ser claros, diretos e indicar o valor educacional.",
+        "professional": "Crie títulos profissionais e sérios para o vídeo sobre: {topic}. Os títulos devem transmitir autoridade e credibilidade."
+      },
+      "premises": {
+        "narrative": "Crie uma premissa narrativa envolvente para um vídeo sobre: {title}. A premissa deve contar uma história cativante em aproximadamente {word_count} palavras.",
+        "educational": "Crie uma premissa educacional estruturada para um vídeo sobre: {title}. A premissa deve apresentar os pontos de aprendizado em aproximadamente {word_count} palavras.",
+        "informative": "Crie uma premissa informativa e objetiva para um vídeo sobre: {title}. A premissa deve apresentar fatos e informações relevantes em aproximadamente {word_count} palavras."
+      },
+      "scripts": {
+        "inicio": "# Prompt — Início\n\nEscreva uma narrativa de {genre} intitulada \"{title}\".\n\nPremissa: {premise}\n\nEste é o INÍCIO da história. Deve estabelecer:\n- Personagens principais e suas motivações\n- Cenário e atmosfera da história\n- Conflito principal que moverá a narrativa\n- Tom inicial da narrativa\n\n**IMPORTANTE:** Seja detalhado, extenso e minucioso na descrição de cenários, personagens, ações e diálogos.",
+        "meio": "# Prompt — Meio\n\nContinue a narrativa de {genre} intitulada \"{title}\".\n\nCONTEXTO ANTERIOR:\n\"{previousContent}\"...\n\nEsta é a continuação do MEIO da história. Deve:\n- Continuar a narrativa de forma orgânica e coerente\n- Desenvolver os personagens e suas relações\n- Intensificar o conflito principal\n- Adicionar novos elementos de tensão\n\n**IMPORTANTE:** Seja detalhado, extenso e minucioso. Cada capítulo deve ter conteúdo substancial e rico em detalhes.",
+        "fim": "# Prompt — Fim\n\nContinue a narrativa de {genre} intitulada \"{title}\".\n\nCONTEXTO ANTERIOR:\n\"{previousContent}\"...\n\nEste é o FIM da história. Deve:\n- Resolver o conflito principal estabelecido no início\n- Proporcionar conclusão satisfatória para todos os personagens principais\n- Entregar o clímax esperado da história\n- Fechar a história de forma impactante\n\n**IMPORTANTE:** Seja detalhado, extenso e minucioso na conclusão. Garanta um fechamento rico e satisfatório."
+      },
+      "images": {
+        "cinematic": "Crie uma descrição cinematográfica para uma imagem que represente: {scene_description}. A imagem deve ter qualidade cinematográfica, boa iluminação e composição profissional.",
+        "minimalist": "Crie uma descrição minimalista para uma imagem que represente: {scene_description}. A imagem deve ser limpa, simples e com foco no elemento principal.",
+        "artistic": "Crie uma descrição artística para uma imagem que represente: {scene_description}. A imagem deve ser criativa, expressiva e visualmente impactante."
+      }
+    }
+  },
+  "progress": {},
+  "version": "1.0"
+}

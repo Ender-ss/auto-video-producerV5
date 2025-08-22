@@ -37,7 +37,7 @@ const Pipeline = () => {
   const [searchTerm, setSearchTerm] = useState('')
   const [statusFilter, setStatusFilter] = useState('all')
   const [activePipeline, setActivePipeline] = useState(null)
-  const [activeTab, setActiveTab] = useState('monitoring') // 'monitoring' ou 'automation'
+  const [activeTab, setActiveTab] = useState('automation') // 'monitoring' ou 'automation'
   const [automationPipelines, setAutomationPipelines] = useState([])
   const [isPolling, setIsPolling] = useState(false)
 
@@ -370,6 +370,7 @@ const Pipeline = () => {
 const AutomationSection = ({ automationPipelines, setAutomationPipelines, isPolling, setIsPolling }) => {
   const [showForm, setShowForm] = useState(false)
   const [selectedPipeline, setSelectedPipeline] = useState(null)
+  const [initialLoadComplete, setInitialLoadComplete] = useState(false)
 
   // Função para validar se um pipeline é válido
   const isValidPipeline = useCallback((pipeline) => {
@@ -381,6 +382,73 @@ const AutomationSection = ({ automationPipelines, setAutomationPipelines, isPoll
            pipeline.status &&
            typeof pipeline.status === 'string'
   }, [])
+
+  // Carregar pipelines ativos na inicialização
+  useEffect(() => {
+    const loadActivePipelines = async () => {
+      if (initialLoadComplete) return
+      
+      try {
+        console.log('INIT_LOAD: Carregando pipelines ativos...')
+        const response = await fetch('/api/pipeline/active?status=processing,queued,paused')
+        
+        if (response.ok) {
+          const result = await response.json()
+          console.log('INIT_LOAD: Resposta da API:', result)
+          
+          if (result.success && result.pipelines && Array.isArray(result.pipelines)) {
+            const validPipelines = []
+            
+            // Para cada pipeline encontrado, buscar detalhes completos
+            for (const pipeline of result.pipelines) {
+              console.log('INIT_LOAD: Processando pipeline:', pipeline)
+              if (pipeline.pipeline_id) {
+                try {
+                  const statusResponse = await fetch(`/api/pipeline/status/${pipeline.pipeline_id}`)
+                  if (statusResponse.ok) {
+                    const statusResult = await statusResponse.json()
+                    console.log('INIT_LOAD: Resposta do status:', statusResult)
+                    console.log('INIT_LOAD: Dados do pipeline:', statusResult.data)
+                    console.log('INIT_LOAD: Pipeline ID:', statusResult.data?.pipeline_id)
+                    console.log('INIT_LOAD: Pipeline Status:', statusResult.data?.status)
+                    console.log('INIT_LOAD: Validação do pipeline:', isValidPipeline(statusResult.data))
+                    if (statusResult.success && statusResult.data && isValidPipeline(statusResult.data)) {
+                      validPipelines.push(statusResult.data)
+                      console.log('INIT_LOAD: Pipeline válido carregado:', statusResult.data.pipeline_id)
+                    } else {
+                      console.log('INIT_LOAD: Pipeline inválido ou dados ausentes')
+                    }
+                  } else {
+                    console.log('INIT_LOAD: Erro na resposta do status:', statusResponse.status)
+                  }
+                } catch (error) {
+                  console.error('INIT_LOAD: Erro ao buscar detalhes do pipeline:', pipeline.pipeline_id, error)
+                }
+              }
+            }
+            
+            if (validPipelines.length > 0) {
+              console.log(`INIT_LOAD: ${validPipelines.length} pipelines ativos encontrados`)
+              console.log('INIT_LOAD: Pipelines válidos:', validPipelines)
+              setAutomationPipelines(validPipelines)
+              setIsPolling(true)
+              console.log('INIT_LOAD: Estado atualizado com pipelines:', validPipelines.length)
+            } else {
+              console.log('INIT_LOAD: Nenhum pipeline ativo encontrado')
+            }
+          }
+        } else {
+          console.log('INIT_LOAD: Nenhum pipeline ativo encontrado (resposta não OK)')
+        }
+      } catch (error) {
+        console.error('INIT_LOAD: Erro ao carregar pipelines ativos:', error)
+      } finally {
+        setInitialLoadComplete(true)
+      }
+    }
+    
+    loadActivePipelines()
+  }, [initialLoadComplete, setAutomationPipelines, setIsPolling, isValidPipeline])
 
 
 

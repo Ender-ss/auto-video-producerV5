@@ -59,8 +59,50 @@ class PipelineSteps:
     CLEANUP = 'cleanup'
 
 # ================================
-# 🎯 ENDPOINT PRINCIPAL
+# 🎯 ENDPOINTS PRINCIPAIS
 # ================================
+
+@pipeline_complete_bp.route('/active', methods=['GET'])
+def get_active_pipelines():
+    """Listar pipelines ativos em memória"""
+    try:
+        # Filtrar pipelines por status se especificado
+        status_filter = request.args.get('status', '')
+        
+        if status_filter:
+            # Converter string de status separados por vírgula em lista
+            allowed_statuses = [s.strip() for s in status_filter.split(',')]
+            filtered_pipelines = {
+                pid: pipeline for pid, pipeline in active_pipelines.items()
+                if pipeline.get('status') in allowed_statuses
+            }
+        else:
+            filtered_pipelines = active_pipelines
+        
+        # Converter para lista com informações básicas
+        pipelines_list = []
+        for pipeline_id, pipeline_data in filtered_pipelines.items():
+            pipelines_list.append({
+                'pipeline_id': pipeline_id,
+                'status': pipeline_data.get('status'),
+                'started_at': pipeline_data.get('started_at'),
+                'progress': pipeline_data.get('progress', 0),
+                'current_step': pipeline_data.get('current_step', ''),
+                'config': pipeline_data.get('config', {})
+            })
+        
+        return jsonify({
+            'success': True,
+            'pipelines': pipelines_list,
+            'total': len(pipelines_list)
+        })
+        
+    except Exception as e:
+        logger.error(f"Erro ao listar pipelines ativos: {str(e)}")
+        return jsonify({
+            'success': False,
+            'error': str(e)
+        }), 500
 
 @pipeline_complete_bp.route('/complete', methods=['POST'])
 def start_complete_automation():
@@ -336,17 +378,18 @@ def resume_pipeline(pipeline_id: str):
                 'error': 'Pipeline não está pausado'
             }), 400
         
-        # Retomar pipeline em thread separada
+        # Alterar o status para PROCESSING
         pipeline_state['status'] = PipelineStatus.PROCESSING
         add_pipeline_log(pipeline_id, 'info', 'Pipeline retomado pelo usuário')
         
-        # Iniciar thread para continuar processamento
-        thread = threading.Thread(
-            target=process_complete_pipeline,
-            args=(pipeline_id,),
-            daemon=True
-        )
-        thread.start()
+        # Sinalizar retomada para o PipelineService se existir uma instância ativa
+        try:
+            # Tentar encontrar a instância do PipelineService para este pipeline
+            # Isso é feito através do threading local ou global registry se implementado
+            # Por enquanto, o PipelineService detectará a mudança de status automaticamente
+            pass
+        except Exception as signal_error:
+            logger.warning(f"Não foi possível sinalizar retomada diretamente: {str(signal_error)}")
         
         return jsonify({
             'success': True,

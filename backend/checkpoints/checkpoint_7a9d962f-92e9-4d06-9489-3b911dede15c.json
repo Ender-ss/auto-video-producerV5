@@ -1,0 +1,39 @@
+{
+  "pipeline_id": "7a9d962f-92e9-4d06-9489-3b911dede15c",
+  "timestamp": "2025-08-22T19:54:05.866147",
+  "current_step": "scripts_failed",
+  "completed_steps": [],
+  "results": {},
+  "config": {
+    "extraction": {
+      "method": "auto",
+      "max_titles": 10,
+      "min_views": 1000,
+      "days_back": 30
+    },
+    "titles": {
+      "provider": "gemini"
+    },
+    "premises": {
+      "provider": "gemini"
+    },
+    "scripts": {
+      "provider": "gemini"
+    },
+    "tts": {
+      "provider": "kokoro"
+    },
+    "images": {
+      "provider": "flux"
+    },
+    "video": {
+      "resolution": "1920x1080",
+      "fps": 30,
+      "quality": "high",
+      "transitions": true,
+      "subtitles": true
+    }
+  },
+  "progress": {},
+  "version": "1.0"
+}

@@ -210,6 +210,7 @@ const PipelineProgress = ({ pipeline, onPause, onCancel, onViewDetails, index })
   const getStatusIcon = (status) => {
     switch (status) {
       case 'running':
+      case 'processing':
         return <Loader size={16} className="text-blue-400 animate-spin" />
       case 'paused':
         return <Pause size={16} className="text-yellow-400" />
@@ -227,6 +228,7 @@ const PipelineProgress = ({ pipeline, onPause, onCancel, onViewDetails, index })
   const getStatusColor = (status) => {
     switch (status) {
       case 'running':
+      case 'processing':
         return 'text-blue-400'
       case 'paused':
         return 'text-yellow-400'
@@ -327,16 +329,16 @@ const PipelineProgress = ({ pipeline, onPause, onCancel, onViewDetails, index })
           
           <div className="flex items-center space-x-2">
             <span className={`text-sm font-medium ${getStatusColor(pipeline.status)}`}>
-              {pipeline.status === 'running' ? 'Executando' :
-               pipeline.status === 'paused' ? 'Pausado' :
-               pipeline.status === 'completed' ? 'Concluído' :
-               pipeline.status === 'failed' ? 'Falhou' :
-               pipeline.status === 'cancelled' ? 'Cancelado' : 'Aguardando'}
+              {(pipeline.status === 'running' || pipeline.status === 'processing') ? 'Executando' :
+             pipeline.status === 'paused' ? 'Pausado' :
+             pipeline.status === 'completed' ? 'Concluído' :
+             pipeline.status === 'failed' ? 'Falhou' :
+             pipeline.status === 'cancelled' ? 'Cancelado' : 'Aguardando'}
             </span>
             
             {/* Actions */}
             <div className="flex items-center space-x-1">
-              {pipeline.status === 'running' && (
+              {(pipeline.status === 'running' || pipeline.status === 'processing') && (
                 <button
                   onClick={() => onPause(pipeline.pipeline_id)}
                   className="p-2 text-gray-400 hover:text-yellow-400 hover:bg-gray-700 rounded transition-colors"
@@ -356,7 +358,7 @@ const PipelineProgress = ({ pipeline, onPause, onCancel, onViewDetails, index })
                 </button>
               )}
               
-              {['running', 'paused'].includes(pipeline.status) && (
+              {['running', 'processing', 'paused'].includes(pipeline.status) && (
                 <button
                   onClick={() => onCancel(pipeline.pipeline_id)}
                   className="p-2 text-gray-400 hover:text-red-400 hover:bg-gray-700 rounded transition-colors"
