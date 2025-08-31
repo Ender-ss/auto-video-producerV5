@@ -1387,7 +1387,7 @@ ${agentGeneratedScript.model !== 'auto' ? `Modelo: ${agentGeneratedScript.model}
     { id: 'openai/gpt-4o', name: 'GPT-4o', free: false },
     { id: 'openai/gpt-4o-mini', name: 'GPT-4o Mini', free: false },
     { id: 'openai/gpt-3.5-turbo', name: 'GPT-3.5 Turbo', free: false },
-    { id: 'google/gemini-pro-1.5', name: 'Gemini Pro 1.5', free: false },
+    { id: 'google/gemini-1.5-flash', name: 'Gemini 1.5 Flash', free: false },
     { id: 'meta-llama/llama-3.1-8b-instruct:free', name: 'Llama 3.1 8B', free: true },
     { id: 'meta-llama/llama-3.1-70b-instruct', name: 'Llama 3.1 70B', free: false },
     { id: 'mistralai/mistral-7b-instruct:free', name: 'Mistral 7B', free: true },
@@ -2426,7 +2426,7 @@ ${agentGeneratedScript.model !== 'auto' ? `Modelo: ${agentGeneratedScript.model}
                   <option value="auto">Automático</option>
                   <option value="anthropic/claude-3.5-sonnet">Claude 3.5 Sonnet</option>
                   <option value="openai/gpt-4o">GPT-4o</option>
-                  <option value="google/gemini-pro-1.5">Gemini Pro 1.5</option>
+                  <option value="google/gemini-1.5-flash">Gemini 1.5 Flash</option>
                   <option value="meta-llama/llama-3.1-405b-instruct">Llama 3.1 405B</option>
                 </select>
               </div>

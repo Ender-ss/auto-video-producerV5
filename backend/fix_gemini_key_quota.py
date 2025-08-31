@@ -42,7 +42,7 @@ def fix_gemini_quota_issue():
         print(f"\n🔍 Chave gemini_2 identificada: {gemini_2_key[:20]}...")
         
         # Marcar como esgotada (8 usos = limite)
-        GEMINI_KEYS_ROTATION['usage_count'][gemini_2_key] = 8
+        GEMINI_KEYS_ROTATION['usage_count'][gemini_2_key] = 40
         
         print(f"✅ Chave gemini_2 marcada como esgotada (8/8 usos)")
         
@@ -57,7 +57,7 @@ def fix_gemini_quota_issue():
         # Verificar quantas chaves ainda estão disponíveis
         available_keys = 0
         for key in GEMINI_KEYS_ROTATION['keys']:
-            if GEMINI_KEYS_ROTATION['usage_count'].get(key, 0) < 8:
+            if GEMINI_KEYS_ROTATION['usage_count'].get(key, 0) < 40:
                 available_keys += 1
         
         print(f"\n📈 Resumo:")

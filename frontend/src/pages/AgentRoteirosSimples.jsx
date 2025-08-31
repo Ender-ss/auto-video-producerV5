@@ -761,7 +761,7 @@ ${agentGeneratedScript.model !== 'auto' ? `Modelo: ${agentGeneratedScript.model}
                   <option value="auto">Automático</option>
                   <option value="anthropic/claude-3.5-sonnet">Claude 3.5 Sonnet</option>
                   <option value="openai/gpt-4o">GPT-4o</option>
-                  <option value="google/gemini-pro-1.5">Gemini Pro 1.5</option>
+                  <option value="google/gemini-1.5-flash">Gemini 1.5 Flash</option>
                   <option value="meta-llama/llama-3.1-405b-instruct">Llama 3.1 405B</option>
                 </select>
               </div>

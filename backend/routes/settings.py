@@ -68,9 +68,9 @@ def get_gemini_quota_status():
                 'key_index': i + 1,
                 'key_id': f"gemini_{i + 1}",
                 'usage_current': usage,
-                'usage_limit': 8,
-                'status': 'active' if usage < 8 else 'exhausted',
-                'percentage_used': round((usage / 8) * 100, 1)
+                'usage_limit': 40,
+                'status': 'active' if usage < 40 else 'exhausted',
+                'percentage_used': round((usage / 40) * 100, 1)
             })
         
         # Verificar fallbacks disponíveis
@@ -115,8 +115,8 @@ def get_gemini_quota_status():
                     'active_keys': len([k for k in keys_data if k['status'] == 'active']),
                     'exhausted_keys': len([k for k in keys_data if k['status'] == 'exhausted']),
                     'total_requests_today': total_requests_today,
-                    'max_requests_per_day': len(GEMINI_KEYS_ROTATION['keys']) * 8,
-                    'percentage_used': round((total_requests_today / (len(GEMINI_KEYS_ROTATION['keys']) * 8)) * 100, 1) if GEMINI_KEYS_ROTATION['keys'] else 0
+                    'max_requests_per_day': len(GEMINI_KEYS_ROTATION['keys']) * 250,
+                    'percentage_used': round((total_requests_today / (len(GEMINI_KEYS_ROTATION['keys']) * 250)) * 100, 1) if GEMINI_KEYS_ROTATION['keys'] else 0
                 },
                 'reset_info': {
                     'seconds_to_reset': seconds_to_reset,
@@ -125,9 +125,9 @@ def get_gemini_quota_status():
                 },
                 'fallback_status': fallback_status,
                 'limits': {
-                    'requests_per_key_per_day': 8,
-                    'total_gemini_limit_per_day': 50,
-                    'note': 'Limite ajustado para respeitar Free Tier do Gemini (50 req/dia)'
+                    'requests_per_key_per_day': 250,
+                    'total_gemini_limit_per_day': 7 * 40,
+                    'note': 'Limite atualizado para 40 requisições por chave'
                 }
             }
         })

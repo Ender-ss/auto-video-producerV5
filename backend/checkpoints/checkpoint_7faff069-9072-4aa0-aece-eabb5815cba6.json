@@ -1,0 +1,281 @@
+{
+  "pipeline_id": "7faff069-9072-4aa0-aece-eabb5815cba6",
+  "timestamp": "2025-08-30T20:02:59.408460",
+  "current_step": "scripts",
+  "completed_steps": [
+    "extraction",
+    "titles",
+    "premises",
+    "scripts"
+  ],
+  "results": {
+    "extraction": {
+      "channel_info": {},
+      "titles": [
+        {
+          "video_id": "G6wHEaLVhOc",
+          "title": "MILIONÁRIO ENCONTRA MENINA DESCONHECIDA ESTUDANDO DEBAIXO DA MESA COM EMPREGADA",
+          "description": "MILIONÁRIO ENCONTRA MENINA DESCONHECIDA ESTUDANDO DEBAIXO DA MESA DA COZINHA COM A EMPREGADA E SE EMOCIONA AO SABER QUEM ERA.\n\nVeja histórias fantásticas contadas de uma forma emocionante,...",
+          "thumbnail": "",
+          "duration": "4141.0s",
+          "views": 1510,
+          "likes": 0,
+          "published_at": "",
+          "url": "https://www.youtube.com/watch?v=G6wHEaLVhOc"
+        },
+        {
+          "video_id": "_oWfEg7dpsA",
+          "title": "“Escolha Entre Eu Ou o Bebê!” Disse Noiva Do Milionário, Mas Ela Faz Algo Que o Deixa Em Choque",
+          "description": "“Escolha Entre Mim Ou Esse Bebê!” Disse a Noiva Do Milionário, Mas o Que Ela Faz Ao Bebê Deixa o Coração Do Milionário Em Pedaços.\n\nVeja histórias fantásticas contadas de uma forma...",
+          "thumbnail": "",
+          "duration": "4641.0s",
+          "views": 3320,
+          "likes": 0,
+          "published_at": "",
+          "url": "https://www.youtube.com/watch?v=_oWfEg7dpsA"
+        },
+        {
+          "video_id": "hyqYjcDTR48",
+          "title": "MILIONÁRIO LEVA GAROTA MENDIGA PARA SUA CASA E SE ESPANTA COM O QUE ELA FAZ COM SUA MÃE ACAMADA",
+          "description": "MILIONÁRIO LEVA GAROTA MENDIGA PARA SUA CASA E SE ESPANTA COM O QUE ELA FAZ COM SUA MÃE ACAMADA.\n\nVeja histórias fantásticas contadas de uma forma emocionante, histórias que mostram os...",
+          "thumbnail": "",
+          "duration": "3930.0s",
+          "views": 2528,
+          "likes": 0,
+          "published_at": "",
+          "url": "https://www.youtube.com/watch?v=hyqYjcDTR48"
+        },
+        {
+          "video_id": "T5rUnkoLRqs",
+          "title": "MILIONÁRIO FICA EM CHOQUE AO VER OPERÁRIA IDÊNTICA A SUA FILHA PERDIDA",
+          "description": "MILIONÁRIO FICA EM CHOQUE AO VER OPERÁRIA IDÊNTICA A SUA FILHA PERDIDA.\n\nVeja histórias fantásticas contadas de uma forma emocionante, histórias que mostram os diversos lados da humanidade,...",
+          "thumbnail": "",
+          "duration": "3787.0s",
+          "views": 12578,
+          "likes": 0,
+          "published_at": "",
+          "url": "https://www.youtube.com/watch?v=T5rUnkoLRqs"
+        },
+        {
+          "video_id": "ugi0hYcXNjU",
+          "title": "OS GÊMEOS DO MILIONÁRIO NÃO FALAVAM, MAS A FAXINEIRA FEZ O QUE NINGUÉM IMAGINOU",
+          "description": "OS GÊMEOS DO MILIONÁRIO NÃO FALAVAM, MAS A FAXINEIRA FEZ O QUE NINGUÉM IMAGINOU.\n\nVeja histórias fantásticas contadas de uma forma emocionante, histórias que mostram os diversos lados...",
+          "thumbnail": "",
+          "duration": "5775.0s",
+          "views": 1680,
+          "likes": 0,
+          "published_at": "",
+          "url": "https://www.youtube.com/watch?v=ugi0hYcXNjU"
+        },
+        {
+          "video_id": "rpz3lf4rsU4",
+          "title": "GARÇONETE É PAGA PARA DESTRUIR O ENCONTRO ROMÂNTICO DE UM MILIONÁRIO, MAS ELE SE APAIXONA POR ELA",
+          "description": "GARÇONETE É PAGA 100 REAIS PARA DESTRUIR O ENCONTRO ROMÂNTICO DE UM MILIONÁRIO, MAS JAMAIS IMAGINOU QUE ELE FICARIA ENCANTADO POR ELA.\n\nVeja histórias fantásticas contadas de uma forma...",
+          "thumbnail": "",
+          "duration": "4389.0s",
+          "views": 1319,
+          "likes": 0,
+          "published_at": "",
+          "url": "https://www.youtube.com/watch?v=rpz3lf4rsU4"
+        },
+        {
+          "video_id": "LIB7Jyqk8F0",
+          "title": "MILIONÁRIO ENTRA EM ALA PEDIÁTRICA NO HOSPITAL E FICA PÁLIDO AO RECONHECER UMA CRIANÇA",
+          "description": "MILIONÁRIO ENTRA EM ALA PEDIÁTRICA NO HOSPITAL E FICA PÁLIDO AO RECONHECER UMA CRIANÇA.\n\nVeja histórias fantásticas contadas de uma forma emocionante, histórias que mostram os diversos...",
+          "thumbnail": "",
+          "duration": "4491.0s",
+          "views": 2455,
+          "likes": 0,
+          "published_at": "",
+          "url": "https://www.youtube.com/watch?v=LIB7Jyqk8F0"
+        },
+        {
+          "video_id": "hj1ztuKrUyY",
+          "title": "MILIONÁRIO FALIDO DÁ CARONA PRA MORADORA DE RUA E SUA FILHA E É DEMITIDO, MAS ELA LHE DÁ UM PRESENTE",
+          "description": "MILIONÁRIO FALIDO DÁ CARONA PARA MORADORA DE RUA E SEU FILHO E É DEMITIDO, MAS ELA LHE DÁ UM PRESENTE.\n\nVeja histórias fantásticas contadas de uma forma emocionante, histórias que mostram...",
+          "thumbnail": "",
+          "duration": "3608.0s",
+          "views": 16088,
+          "likes": 0,
+          "published_at": "",
+          "url": "https://www.youtube.com/watch?v=hj1ztuKrUyY"
+        },
+        {
+          "video_id": "UPyiqBIjRXE",
+          "title": "MILIONÁRIO REJEITOU TODAS AS PRETENDENTES, MAS SE ENCANTA QUANDO ENCONTRA ENTREGADORA MÃE SOLTEIRA",
+          "description": "MILIONÁRIO REJEITOU TODAS AS PRETENDENTES, MAS SE ENCANTA QUANDO ENCONTRA ENTREGADORA MÃE SOLTEIRA.\n\nVeja histórias fantásticas contadas de uma forma emocionante, histórias que mostram...",
+          "thumbnail": "",
+          "duration": "4579.0s",
+          "views": 25982,
+          "likes": 0,
+          "published_at": "",
+          "url": "https://www.youtube.com/watch?v=UPyiqBIjRXE"
+        }
+      ],
+      "total_extracted": 9,
+      "method_used": "yt-dlp",
+      "extraction_time": "2025-08-30T20:01:08.775349"
+    },
+    "titles": {
+      "generated_titles": [
+        "Milionário Chocado! Faxineira Cura Gêmeos Mudos e Muda Sua Vida Para Sempre!"
+      ],
+      "source_titles_count": 9,
+      "provider_used": "gemini",
+      "style": "viral",
+      "generation_time": "2025-08-30T20:01:12.992416"
+    },
+    "premises": {
+      "selected_title": "Milionário Chocado! Faxineira Cura Gêmeos Mudos e Muda Sua Vida Para Sempre!",
+      "premise": "Este vídeo impactante narra a extraordinária história de Arthur, um milionário solitário e cínico, cuja vida monótona é abalada pela chegada de Maria, uma faxineira humilde e carismática.  Os gêmeos de Arthur, até então mudos por um trauma infantil, começam a falar misteriosamente após a chegada de Maria, que utiliza métodos terapêuticos não convencionais, baseados em afeto e conexão humana.  A transformação dos gêmeos é tão profunda quanto a de Arthur, que testemunha não apenas a cura física, mas também uma profunda mudança emocional em seus filhos.  O vídeo se volta para o público adulto, principalmente aqueles interessados em histórias inspiradoras, auto-ajuda e curas alternativas.  Com um tom otimista e inspirador, mas com momentos de drama e emoção, exploraremos a jornada de transformação de ambos, contrastando a frieza do mundo milionário com a genuína compaixão de Maria.  Pontos chave serão: a apresentação de Arthur e sua vida antes da chegada de Maria; o mistério da mudez dos gêmeos; a introdução dos métodos terapêuticos de Maria; a demonstração da cura progressiva dos gêmeos; a transformação da relação de Arthur com seus filhos e consigo mesmo; e a mensagem final sobre o poder da empatia e da conexão humana, mesmo em meio à opulência.  Prepare-se para se emocionar com essa história de cura, redenção e a descoberta de um tesouro inestimável muito além do dinheiro.\n",
+      "word_count": 223,
+      "provider_used": "gemini",
+      "generation_time": "2025-08-30T20:01:16.235727"
+    },
+    "scripts": {
+      "chapters": {
+        "progress": 90.0,
+        "current_chapter": 9,
+        "total_chapters": 10,
+        "chapters": [
+          {
+            "chapter_number": 1,
+            "title": "Capítulo 1",
+            "content": "(Cena 1: Inicia com uma panorâmica de uma mansão imponente e moderna, à noite. Música clássica suave toca ao fundo. A câmera se aproxima lentamente de uma janela, revelando Arthur, um homem de meia-idade, elegantemente vestido, mas com expressão cansada e solitária, sentado em uma poltrona de couro, bebendo uísque.)\n\nNarrador (Voz grave e impactante):  Em um mundo onde o dinheiro parece comprar tudo, existe algo que mesmo a maior fortuna não consegue adquirir: a paz interior.  Conheçam Arthur, um homem que possuía tudo, menos a felicidade.  Sua mansão, um símbolo de sucesso, era também a prisão de sua solidão.  \n\n(Cena 2: Corte para um close no rosto de Arthur, mostrando suas linhas de preocupação e um olhar vazio.)\n\nNarrador: Suas conquistas profissionais eram inúmeras, seus investimentos, lucrativos.  Mas o vazio em seu coração era um abismo insondável.  Dois gêmeos, frutos de um casamento desfeito pela distância e falta de comunicação, completavam o cenário de sua vida solitária.  Pedro e Paulo, dois garotos de dez anos, unidos por um laço invisível, compartilhavam um segredo doloroso: o silêncio.  \n\n(Cena 3:  Mostra flashes rápidos dos gêmeos em momentos diferentes: brincando sozinhos, em tratamento médico sem sorrir, em momentos de frustração tentando se comunicar, Arthur observando de longe com uma expressão de impotência e tristeza.)\n\nNarrador:  Um trauma de infância, um evento que jamais foi totalmente revelado, roubou suas vozes.  Médicos renomados tentaram, terapias avançadas foram aplicadas, mas a mudez persistia, como uma sombra sombria pairando sobre a imponente mansão.  Arthur, em sua dor silenciosa, havia se entregado à solidão, se refugiando em seu trabalho e em bebidas.  Ele construiu um império, mas falhou miseravelmente em construir uma família.\n\n(Cena 4:  Corte para uma cena diurna.  Maria, uma mulher jovem, sorridente e de aparência humilde, entra na mansão carregando seus materiais de limpeza.  Sua energia é contrastante com a frieza do ambiente.)\n\nNarrador:  Então, Maria chegou.  Uma faxineira contratada por um serviço de limpeza terceirizado, com seu sorriso caloroso e uma energia contagiante que parecia penetrar até as paredes frias da mansão.  Maria não era apenas uma faxineira; ela era uma alma generosa, portadora de um dom singular, uma capacidade intuitiva de conectar-se com as pessoas.  Sua simplicidade e afeto genuíno eram armas poderosas contra o silêncio que havia se instalado na vida de Arthur e seus filhos.\n\n(Cena 5:  Mostra Maria interagindo com os gêmeos, utilizando métodos não convencionais, usando desenhos, jogos, música e muito carinho.  Ela sorri, brinca, se comunica com eles, com gestos suaves e um olhar de ternura. Arthur observa de longe, inicialmente cético, mas gradualmente sua expressão se torna menos fechada, mostrando um misto de curiosidade e esperança.)\n\nNarrador:  Sem saber, Maria estava prestes a desencadear uma transformação profunda.  Uma transformação que não apenas curaria a mudez dos gêmeos, mas também quebraria o gelo que aprisionava o coração de um milionário solitário, mostrando que a verdadeira riqueza não está em contas bancárias, mas em conexões humanas, em afeto e compaixão.  A jornada deles estava apenas começando...  Preparem-se para testemunhar o poder mágico de um simples ato de gentileza, capaz de mudar vidas para sempre.\n"
+          },
+          {
+            "chapter_number": 2,
+            "title": "Capítulo 2",
+            "content": "(Cena: Interior da mansão de Arthur.  A câmera acompanha Maria enquanto ela brinca suavemente com os gêmeos, usando fantoches de madeira e cantando cantigas suaves.  Os gêmeos, inicialmente retraídos, começam a sorrir timidamente. Música calma e inspiradora ao fundo.)\n\nNarrador: Maria não era apenas uma faxineira; ela possuía um dom especial, uma sensibilidade aguçada para a alma humana.  Seus métodos eram simples, mas poderosos: afeto, paciência, e uma conexão genuína, algo que faltava drasticamente na vida opulenta de Arthur e seus filhos.  Ela não usava livros ou técnicas complexas, mas sim o poder universal da empatia.\n\n(Cena: Close nos olhos de Maria, transmitindo calma e determinação.  Em seguida, um close nos gêmeos, mostrando o início de uma expressão mais relaxada em seus rostos.)\n\nNarrador:  Dia após dia, Maria cantava, contava histórias, e brincava com os gêmeos.  Lentamente, ela penetrava suas barreiras emocionais, construídas a partir do trauma do passado, um trauma que Arthur ainda hesitava em revelar completamente.  Ele observava tudo de longe, inicialmente cético, mas aos poucos, uma faísca de esperança começava a brilhar em seu coração endurecido.\n\n(Cena: Arthur observando Maria e os gêmeos de longe, com uma expressão hesitante que aos poucos se transforma em admiração.)\n\nNarrador:  Um dia, enquanto Maria lia uma história para os gêmeos, um dos pequenos murmurou uma palavra indistinta. Arthur congelou. Seus olhos, antes cheios de descrença, se encheram de lágrimas.  Era um som quase imperceptível, mas para Arthur, soou como o mais belo concerto.\n\n(Cena:  Primeiro close no rosto de um dos gêmeos, em seguida, no outro,  enquanto eles balbuciam palavras simples, cada vez com mais clareza.)\n\nNarrador:  O progresso era lento, mas constante. A cada dia, novas palavras surgiam, seguidas por frases curtas. A cada sorriso dos gêmeos, um novo pedaço do coração de Arthur se derretia. A riqueza que ele tanto valorizava se tornava irrelevante diante da beleza da recuperação dos seus filhos.  Maria, percebendo a mudança em Arthur, o convidou para participar das sessões de terapia, e ele, pela primeira vez em muito tempo, aceitou.\n\n(Cena: Arthur se junta a Maria e os gêmeos, inicialmente hesitante, mas aos poucos se integrando às atividades, sorrindo e interagindo com seus filhos.)\n\nNarrador:  Arthur começou a ler histórias para os gêmeos, a brincar com eles, e a compartilhar momentos de afeto que antes eram inexistentes em sua vida familiar.  Ele descobriu uma alegria que o dinheiro jamais poderia comprar.  A mansão imponente, antes um símbolo de sua solidão, agora estava repleta de risos e amor, graças a uma faxineira que possuía um coração maior do que toda a sua fortuna.  A transformação dos gêmeos era visível, mas a transformação de Arthur era ainda mais profunda e comovente. A frieza do milionário estava dando lugar à ternura de um pai.  A jornada de cura estava longe de terminar, mas o início dessa jornada já era uma vitória inestimável.\n"
+          },
+          {
+            "chapter_number": 3,
+            "title": "Capítulo 3",
+            "content": "(Cena: O jardim luxuoso da mansão de Arthur.  Os gêmeos, Pedro e Paulo, agora com expressões mais alegres, brincam com um cachorro.  Arthur, sentado num banco, observa-os com um sorriso terno. Maria, sentada ao lado dele, sorri também.)\n\nMaria: Olha só, Arthur. Eles estão se comunicando com mais facilidade a cada dia.  Lembra daquela dificuldade de olhar nos olhos? Agora eles riem, brincam… É incrível, não é?\n\nArthur: (Assentindo com os olhos marejados) É…incrível. Nunca imaginei que pudesse ver meus filhos assim.  Eu era tão cego, tão… envolvido com o meu trabalho, com o meu dinheiro, que não percebi o quanto eles precisavam de mim.\n\n(Flashback: Montagem rápida de cenas mostrando Arthur trabalhando incessantemente, ignorando as crianças em momentos importantes.  Música dramática de fundo.)\n\nArthur (voz off):  A riqueza me cegou.  Acreditava que o dinheiro pudesse comprar tudo, felicidade, amor…  Estava tão errado.\n\n(Volta para a cena atual. Maria coloca uma mão sobre o braço de Arthur com carinho.)\n\nMaria:  O dinheiro compra muitas coisas, Arthur, mas não compra o amor de seus filhos, o sorriso deles, a chance de construir uma família de verdade.  E você está construindo, pouco a pouco, tijolo a tijolo, com cada gesto de carinho, cada palavra dita com amor.\n\n(Cena: Uma sessão de terapia.  Arthur, Maria, Pedro e Paulo estão sentados em círculo.  Arthur está lendo um livro infantil para os gêmeos, sua voz é suave e carinhosa.  Os gêmeos se aproximam dele, abraçando-o.)\n\nMaria (voz off):  As sessões não são mais apenas sobre jogos e atividades.  Agora incluímos leitura, música, momentos de carinho, conversas. Criamos um ambiente seguro e amoroso para que eles se expressem livremente.\n\n(Cena:  Arthur ensinando Pedro e Paulo a jogar damas. Ele está concentrado, paciente, e sorri ao ver a alegria dos filhos.)\n\nArthur (dizendo para as crianças):  Sua vez, Pedro.  Pense bem na sua jogada…\n\n(Pedro hesita por um momento, depois faz sua jogada com um sorriso confiante. Paulo aplaude.)\n\n(Cena: Montagem de cenas mostrando a evolução dos gêmeos: Eles participam de atividades em família, riem, contam histórias para Arthur, demonstram afeto.  Música alegre e inspiradora de fundo.)\n\nMaria (voz off):  A jornada de cura não se limita apenas aos gêmeos.  Arthur também está se curando.  Ele está aprendendo a se conectar com seus próprios sentimentos, a expressar o amor que sempre esteve lá, mas estava adormecido sob uma pilha de dinheiro e responsabilidades.\n\n(Cena: Arthur abraça Maria num gesto de gratidão. Ele parece mais leve, mais feliz. O sol brilha intensamente no jardim.)\n\nArthur:  Eu não sei como te agradecer, Maria. Você salvou não apenas meus filhos, mas a minha alma.  Você me mostrou que a verdadeira riqueza está nos laços humanos, no amor, na família.\n\nMaria:  A riqueza que você me deu, Arthur, foi a oportunidade de mostrar que a compaixão e o afeto são os maiores tesouros que existem.  E foi um prazer dividir essa riqueza com vocês.\n\n(Cena final:  Arthur, Maria, Pedro e Paulo sentados juntos, sorrindo para a câmera. A imagem é iluminada por uma luz aconchegante e um brilho de esperança.)\n"
+          },
+          {
+            "chapter_number": 4,
+            "title": "Capítulo 4",
+            "content": "(Cena: Uma manhã ensolarada na mansão de Arthur.  Pedro e Paulo brincam livremente no jardim, suas risadas ecoando pela propriedade. Arthur observa-os de uma janela, um sorriso discreto em seu rosto. Maria, sentada em uma cadeira de balanço na varanda, lê um livro.)\n\nNarração:  O progresso era notável.  A transformação dos gêmeos não era apenas física – a cura da mudez havia aberto um portal para suas almas, revelando duas crianças cheias de alegria e vitalidade.  E Arthur? Ele finalmente estava aprendendo o significado de verdadeira riqueza.\n\n(Cena: Corte para uma cena interna, mostrando Arthur e Maria conversando em uma sala aconchegante.  A atmosfera é de confiança e respeito mútuo.)\n\nArthur: Maria, eu não sei como te agradecer.  Eles... eles são outros meninos.  Cheios de vida, de amor...  Eu estava tão cego... tão perdido na minha própria bolha de sucesso.\n\nMaria: (Sorriso suave) Arthur, você é um homem bom, no fundo.  Às vezes, a vida precisa nos sacudir para lembrarmos disso.  A cura dos meninos não foi apenas um processo terapêutico; foi uma jornada de reconexão – com eles, consigo mesmo e com a sua própria capacidade de amar.  O que eu fiz foi apenas facilitar o caminho.\n\n(Cena: Montagem de cenas mostrando a progressão da terapia:  Maria usando jogos, música e atividades lúdicas para estimular os gêmeos; Arthur participando ativamente, interagindo com os filhos, demonstrando afeto e paciência; momentos de alegria e conexão familiar, contrastando com imagens anteriores do Arthur frio e distante.)\n\nNarração:  Os métodos de Maria eram simples, porém eficazes.  Ela utilizava a música como ferramenta terapêutica, observando como as melodias suaves acalmavam os meninos e os incentivavam à comunicação.  Jogos que estimulavam a imaginação e a interação, e acima de tudo, o afeto incondicional.  Ela mostrou a Arthur a importância do toque, do abraço, da simples demonstração de carinho.  Algo que ele havia negligenciado por tanto tempo.\n\n(Cena: Arthur lendo uma história para Pedro e Paulo antes de dormir. Eles estão aconchegados a ele, sorrindo.)\n\nNarração: As noites agora eram preenchidas por histórias e canções de ninar, substituindo o silêncio opressor do passado. Arthur aprendeu a valorizar cada momento com seus filhos, construindo memórias preciosas que compensavam anos de ausência.\n\n(Cena: Arthur e Maria num jardim, conversando ao pôr do sol.  Arthur segura um quadro de uma paisagem, pintado pelos gêmeos.)\n\nArthur:  Olhe... eles pintaram isso.  Eu nunca imaginei que eles tivessem essa capacidade.  A felicidade deles… é algo que eu nunca imaginei experimentar.\n\nMaria:  Esses quadros são mais valiosos que qualquer obra-prima de um museu famoso, Arthur.  Eles são a prova do amor, da cura e da transformação.  E tudo isso, você conquistou com seu próprio esforço, sua própria vontade de mudar.\n\n(Cena:  Arthur abraça Maria, agradecido.  A câmera mostra um close em seu rosto, mostrando a profunda paz e contentamento que ele agora sente.)\n\nNarração:  A história de Arthur não é apenas uma história de cura; é uma história de redenção.  Um conto sobre como o verdadeiro tesouro não está em contas bancárias, mas sim nos laços inquebráveis do amor familiar.  A prova de que, mesmo no coração mais frio, a compaixão pode florescer, transformando para sempre uma vida.  E a jornada continua…\n"
+          },
+          {
+            "chapter_number": 5,
+            "title": "Capítulo 5",
+            "content": "[Cena: Um jardim ensolarado na mansão de Arthur. Arthur brinca com os gêmeos, agora falantes e cheios de vida, construindo um castelo de areia. Maria observa sorrindo, sentada em um banco próximo.]\n\nMaria: (Voz suave) Veja como eles estão radiantes, Sr. Arthur.  A alegria deles é contagiante.\n\nArthur: (Sorrindo, com os olhos brilhando) É incrível, Maria.  Eu... eu nunca imaginei que poderia ser assim.  Tão... feliz.  Antes, eu achava que o dinheiro comprava tudo.  Que preenchia os vazios.  Mas estava errado.  Esse vazio só foi preenchido com o sorriso deles.\n\n[Cena: Um flashback mostrando Arthur frio e distante com os gêmeos, comparado com a cena atual.]\n\nNarrador: (Voz grave e inspiradora) A transformação de Arthur foi gradual, mas profunda. Ele aprendeu a se conectar com seus filhos de uma maneira que nunca imaginou ser possível. A riqueza material, outrora seu refúgio, agora parecia pálida em comparação com o tesouro que ele descobriu em sua família.\n\n[Cena: Arthur e Maria conversam em uma sala aconchegante da mansão. Maria está arrumando alguns brinquedos.]\n\nArthur: Eu ainda não consigo entender como você fez isso, Maria.  Você não usou medicamentos, nem terapias sofisticadas… apenas amor e… brincadeiras.\n\nMaria: (Sorrindo levemente) Sr. Arthur, às vezes, a cura mais eficaz é a mais simples.  A mudez dos seus filhos era uma forma de proteger suas feridas emocionais. O afeto, a segurança e a conexão genuína foram a chave para quebrar essas barreiras.  Eles precisavam se sentir amados incondicionalmente para poderem se expressar livremente.\n\n[Cena: Montagem de cenas mostrando os gêmeos participando de atividades cotidianas:  rindo, conversando, aprendendo, interagindo com Arthur.]\n\nNarrador:  A vida na mansão mudou. O silêncio gélido deu lugar ao som das risadas infantis, às conversas animadas, ao barulho de brincadeiras. Arthur, antes um espectro solitário em sua própria riqueza, agora era o centro de um lar amoroso e vibrante. Ele aprendeu a cozinhar para os gêmeos, a contar histórias na hora de dormir, a apreciar os pequenos momentos.\n\n[Cena: Arthur abraça Maria com gratidão. Os gêmeos se aproximam e os abraçam também.]\n\nArthur: Eu não sei como lhe agradecer, Maria.  Você me deu de volta a minha família, a minha vida.  Você me ensinou o verdadeiro significado da riqueza.\n\nMaria: (Um sorriso singelo em seus lábios) A riqueza verdadeira está nos laços afetivos, Sr. Arthur.  Eu apenas ajudei você a redescobrir o que já existia dentro de você.\n\n[Cena: Arthur e os gêmeos estão no jardim, sorrindo para a câmera. O sol se põe, pintando o céu com cores vibrantes.]\n\nNarrador: A jornada de Arthur foi uma transformação profunda, uma redenção guiada pelo amor e pela compaixão de uma mulher que viu além da riqueza material, enxergando a necessidade de cura e de afeto. A história de Arthur e seus filhos é uma prova incontestável de que a verdadeira riqueza está na conexão humana e na capacidade de amar e ser amado.  E que às vezes, a cura mais poderosa reside na simplicidade de um sorriso, de um abraço, e de um coração aberto.\n"
+          },
+          {
+            "chapter_number": 6,
+            "title": "Capítulo 6",
+            "content": "(Cena: Uma manhã ensolarada na mansão de Arthur.  Arthur e seus gêmeos, agora falantes e cheios de energia, tomam café da manhã juntos. Maria sorri, observando a cena.)\n\nArthur olha para seus filhos, um sorriso genuíno no rosto, algo que parecia impossível há apenas algumas semanas.  Ele pega a mão de cada um deles, seus dedos entrelaçados.  “Vocês sabem, hoje é um dia especial”, diz ele, sua voz carregada de emoção.  “Hoje, vamos fazer algo que eu sempre quis fazer, mas nunca achei tempo… vamos ao parque!”\n\nOs gêmeos explodem em alegria, gritando e pulando de emoção.  Maria sorri, sentindo-se gratificada por testemunhar essa transformação familiar.  A cena mostra a alegria contagiante das crianças, contrastando com a frieza e solidão que antes dominavam a mansão.\n\n(Cena:  Arthur, os gêmeos e Maria no parque. As crianças correm e brincam, Arthur participa das brincadeiras, interagindo com eles de forma carinhosa. Maria observa, sentindo uma profunda paz.)\n\nArthur se senta em um banco, observando seus filhos brincarem. Ele sente uma sensação de plenitude que nunca experimentou antes.  A riqueza material, outrora sua única preocupação, parece insignificante comparada à alegria que sente neste momento.\n\n(Cena: Mais tarde, em casa. Arthur está sentado à mesa, escrevendo algo.  Ele parece concentrado e pensativo.)\n\nEle escreve uma carta. Uma carta de agradecimento a Maria, expressando sua imensa gratidão por sua ajuda.  Não é apenas uma carta formal, mas uma demonstração de profunda admiração e respeito. Ele admite seus erros, sua incapacidade de ser um pai presente e amoroso.  Ele descreve a transformação em sua vida, como Maria não apenas curou seus filhos, mas também sua alma.\n\n(Cena: Arthur entrega a carta a Maria.  Ela lê com cuidado, as lágrimas escorrendo pelo rosto.)\n\n“Eu não sei como te agradecer”, diz Arthur, a voz embargada.  “Você me ensinou o verdadeiro significado da riqueza, o valor da conexão humana.”\n\nMaria, emocionada, abraça Arthur. “A verdadeira riqueza está em amar e ser amado”, ela responde suavemente.  “E eu sou grata por ter tido a oportunidade de fazer parte desta jornada.”\n\n(Cena:  Um close nos rostos de Arthur e Maria, ambos sorrindo.  Os gêmeos correm para eles, abraçando-os com carinho.)\n\n(Cena final: Arthur, seus filhos e Maria em uma foto familiar, sorrindo para a câmera.  A foto é emoldurada, exibindo uma cena de amor, felicidade e união. O vídeo termina com uma mensagem inspiradora:  \"A verdadeira riqueza está no amor e na conexão humana. Descubra o tesouro dentro de você.\")\n\nA câmera faz um zoom na foto, mostrando a família feliz. Um texto aparece na tela: \"Descubra o poder da conexão humana. Inscreva-se no nosso canal para mais histórias inspiradoras!\".\n"
+          },
+          {
+            "chapter_number": 7,
+            "title": "Capítulo 7",
+            "content": "(Abertura com imagens de Arthur, seus gêmeos e Maria, sorrindo e brincando em um cenário bucólico, música leve e inspiradora ao fundo.)\n\nCapítulo 7: O Novo Começo\n\nA brisa suave acariciava o rosto de Arthur enquanto ele observava seus gêmeos, agora falantes e cheios de vida, correndo livremente pelo gramado.  Um sorriso genuíno, algo raro em seu rosto antes, se mantinha firme. A carta que ele escreveu para Maria, ainda perfumada com o delicado aroma de seu perfume, repousava em seu bolso.  Ele a revisitaria mais tarde, mas as palavras de gratidão transbordavam em seu coração, mais poderosas do que qualquer cifra em sua conta bancária.\n\nA câmera se aproxima de Arthur, mostrando seus olhos agora mais claros, refletidos na luz suave do pôr do sol. Ele pega seu celular, abrindo uma foto recente.  Uma foto da família, Arthur, seus gêmeos, e Maria sorrindo juntos.  Um sorriso, de fato, que vale mais do que todos os seus negócios.\n\n(Flashback curto mostrando alguns momentos-chave da jornada terapêutica de Maria com os gêmeos: atividades lúdicas, momentos de afeto, pequenos avanços na comunicação.)\n\nA transformação não havia sido mágica, mas sim um processo gradual, paciente. Maria, com sua infinita paciência e intuição, havia alcançado onde anos de terapia tradicional falharam. Ela não havia apenas curado a mudez dos gêmeos, mas também havia desatado os nós emocionais que os prendiam. O trauma infantil, antes um pesado fardo, agora era apenas uma cicatriz tênue, uma lembrança que não mais os dominava.\n\n(Cena de Arthur e Maria em um café aconchegante.  A conversa é tranquila, sem formalidades.)\n\n\"Eu nunca imaginei...\", Arthur começa, sua voz carregada de emoção, \"que uma pessoa pudesse ter tanto impacto na minha vida. Eu estava tão perdido, tão envolvido em meu próprio mundo... você me mostrou um mundo novo.\"\n\nMaria sorri, seus olhos brilhando com a satisfação de uma missão cumprida. \"Arthur, o que eu fiz foi simplesmente mostrar a vocês a beleza da conexão humana.  A cura muitas vezes está em lugares inesperados, nos abraços, nos sorrisos, na simples presença de alguém que se importa.\"\n\n(Cena mostrando Arthur envolvido em atividades com seus filhos: lendo histórias para eles, brincando, participando de suas vidas cotidianas.)\n\nArthur aprendeu a ser pai.  A paternidade, antes um fardo, agora era uma fonte inesgotável de alegria. Ele compreendeu que o verdadeiro tesouro não estava em seus bens materiais, mas no amor que agora compartilhava com seus filhos. A mansão imponente, que antes parecia o centro de seu universo, agora era apenas um cenário para uma vida que finalmente fazia sentido.\n\n(Cena final: a família reunida, Maria entre Arthur e seus gêmeos, todos sorrindo e abraçados. Uma cena quente e acolhedora, repleta de amor e felicidade.  Música inspiradora e emotiva ao fundo.)\n\nArthur olha para seus filhos, então para Maria.  Ele percebe que sua vida havia mudado para sempre.  Ele havia aprendido a verdadeira riqueza da vida, a riqueza de um amor genuíno, um amor que transcende as barreiras do dinheiro e da frieza do isolamento. Sua jornada, repleta de desafios e transformações, havia finalmente chegado ao seu mais belo capítulo.  Um capítulo escrito não com tinta, mas com amor, cura e a inabalável força do espírito humano.  E tudo isso graças a uma faxineira que tocou a alma de um milionário e mudou suas vidas para sempre.\n"
+          },
+          {
+            "chapter_number": 8,
+            "title": "Capítulo 8",
+            "content": "(Cena: Um ano depois.  A mansão de Arthur está repleta de luz natural e alegria.  As crianças, agora falantes e radiantes, brincam no jardim com Maria.  Arthur, sorridente, observa-os de uma varanda, segurando uma xícara de café.)\n\nNarração (voz calorosa e inspiradora): Um ano se passou desde que Maria entrou na vida de Arthur, trazendo consigo não apenas a cura para os gêmeos, mas um bálsamo para a alma de um homem que acreditava ter tudo, mas na verdade, nada possuía.\n\n(Cena: Corte para um close em Arthur, mostrando a sinceridade em seu olhar.)\n\nArthur (voz suave, com emoção):  Eu achava que a minha vida era um sucesso.  Mansão, fortuna, empresas… Mas era um sucesso vazio.  Um castelo frio, sem amor, sem risos de verdade.  Maria me mostrou que a verdadeira riqueza está nas conexões humanas, na alegria simples de um abraço, de um sorriso genuíno.\n\n(Cena: Montagem rápida mostrando momentos significativos do último ano: Arthur brincando com os gêmeos, Maria ensinando as crianças a pintar, Arthur e Maria conversando em um jardim florido, a família reunida em um jantar.)\n\nNarração:  Maria, com sua sabedoria e amor incondicional, não apenas curou os gêmeos, mas também ensinou a Arthur a arte de viver plenamente.  Ela o ajudou a se reconectar com a sua própria criança interior, a abraçar a vulnerabilidade e a encontrar a paz interior que tanto buscava.\n\n(Cena: Arthur e Maria estão sentados em um banco no jardim, compartilhando um momento de conversa tranquila.)\n\nArthur: Eu jamais poderia imaginar o impacto que você teve em nossas vidas, Maria. Você transformou nossa casa em um lar de verdade.\n\nMaria (voz calma e serena): Arthur, a cura veio de vocês mesmos. Eu apenas os ajudei a encontrar o caminho. A força de vocês, a força da sua família, era algo que já existia, apenas estava adormecido.\n\n(Cena: Os gêmeos correm em direção a Arthur e Maria, abraçando-os com entusiasmo.)\n\nNarração:  A transformação de Arthur não se limitou à sua família.  Ele passou a investir em projetos sociais, utilizando sua fortuna para apoiar comunidades carentes e promover a saúde mental infantil.  Ele se tornou um exemplo de filantropia genuína, motivado pelo desejo de retribuir à sociedade a transformação que experimentou.\n\n(Cena: Arthur participa de uma cerimônia de inauguração de um centro de apoio a crianças com traumas, com Maria ao seu lado.)\n\nNarração: A jornada de Arthur e Maria prova que a verdadeira riqueza não se encontra em contas bancárias, mas sim na generosidade do espírito, no poder do amor e da compaixão.  Eles demonstram que a cura, a felicidade, e a transformação são possíveis, mesmo nas situações mais difíceis.  E que às vezes, a faxineira pode ser a chave para abrir a porta para uma vida totalmente nova e maravilhosa.\n\n(Cena: Finaliza com uma imagem da família completa e feliz, Arthur sorrindo amplamente, com Maria ao seu lado, envolvidos em um abraço caloroso dos gêmeos. Uma mensagem na tela: \"A verdadeira riqueza está no amor e na conexão humana.\")\n"
+          },
+          {
+            "chapter_number": 9,
+            "title": "Capítulo 9",
+            "content": "(Cena: Abertura com imagens de Arthur, agora com um sorriso genuíno, brincando com os gêmeos, agora falantes e extrovertidos, em um parque ensolarado. Música alegre e inspiradora ao fundo.)\n\nNarrador: Um ano se passou desde que Maria tocou a vida da família de Arthur para sempre.  A transformação foi completa.  Os gêmeos, antes mergulhados no silêncio, agora enchem o lar com suas gargalhadas e histórias.  Mas a jornada não parou por aí…\n\n(Cena: Transição para uma cena em um centro comunitário. Arthur está envolvido em atividades com crianças carentes, supervisionando a construção de uma pequena horta.)\n\nNarrador: Impulsionado pela gratidão e pela experiência transformadora, Arthur se dedicou integralmente ao projeto “Florescer”, uma iniciativa que proporciona educação, saúde e bem-estar para crianças em situação de vulnerabilidade.  Sua fortuna, antes um símbolo de isolamento, agora se tornou uma ferramenta para semear esperança.\n\n(Cena: Montagem de fotos e vídeos mostrando o progresso do projeto Florescer: crianças sorrindo, aprendendo, participando de atividades recreativas.  Música inspiradora continua.)\n\nNarrador:  O projeto Florescer já impactou a vida de centenas de crianças, oferecendo não apenas alimento e abrigo, mas também um ambiente amoroso e estimulante.  Mas o trabalho árduo não obscurece a alegria de Arthur.  Ele descobriu um propósito muito maior do que a acumulação de riquezas.\n\n(Cena: Arthur conversando com Maria em seu escritório, agora mais aconchegante e menos imponente.  A conversa é leve e cheia de respeito mútuo.)\n\nArthur:  Maria, eu não consigo expressar o quanto sou grato por tudo.  Você não salvou apenas meus filhos, você me salvou.  Me mostrou o verdadeiro significado da riqueza.\n\nMaria: (Sorri docemente)  Arthur, a riqueza verdadeira está no amor, na compaixão, na conexão humana.  Você sempre teve isso dentro de si, só precisava encontrar o caminho.\n\n(Cena:  Arthur e os gêmeos abraçam Maria calorosamente.  A cena é emotiva e demonstra a profunda ligação entre eles.)\n\nNarrador:  A conexão entre Arthur e Maria transcendeu a relação empregador-empregada.  Ela se tornou uma amiga, uma mentora, uma figura materna que preencheu uma lacuna em sua vida.  E essa amizade continua a ser um pilar de apoio em sua nova jornada.\n\n(Cena:  Arthur observando os gêmeos brincando alegremente.  Um close em seu rosto mostra a profunda satisfação e a paz interior que ele encontrou.)\n\nNarrador:  A opulência que um dia definiu a vida de Arthur agora serve de cenário para uma família unida, amorosa e dedicada a fazer a diferença no mundo.  A história de Arthur e seus filhos é um testemunho do poder transformador da compaixão, um lembrete de que a verdadeira riqueza está em conexões genuínas e em um propósito maior que nós mesmos.  E tudo começou com uma faxineira, uma mulher que ensinou a um milionário solitário o maior segredo da vida: o amor incondicional.\n\n(Cena final:  Imagens do projeto Florescer e da família de Arthur, com uma mensagem inspiradora na tela: “Descobrir a verdadeira riqueza está ao seu alcance.  Seja a mudança que você quer ver no mundo!” Música inspiradora finaliza o vídeo.)\n"
+          }
+        ]
+      },
+      "partial": true,
+      "chapters_generated": 4
+    }
+  },
+  "config": {
+    "extraction": {
+      "enabled": true,
+      "method": "yt-dlp",
+      "rapidapi_key": ""
+    },
+    "titles": {
+      "enabled": true,
+      "provider": "gemini",
+      "count": 1,
+      "style": "viral",
+      "language": "pt-BR",
+      "custom_prompt": false,
+      "custom_instructions": ""
+    },
+    "premises": {
+      "enabled": true,
+      "provider": "gemini",
+      "style": "educational",
+      "target_audience": "general",
+      "word_count": 200,
+      "custom_prompt": false,
+      "custom_instructions": ""
+    },
+    "scripts": {
+      "enabled": true,
+      "provider": "gemini",
+      "chapters": 10,
+      "duration_target": "1-2 hours",
+      "include_intro": true,
+      "include_outro": true,
+      "custom_prompts": false,
+      "custom_inicio": "",
+      "custom_meio": "",
+      "custom_fim": "",
+      "detailed_prompt": false,
+      "detailed_prompt_text": "",
+      "contextual_chapters": true
+    },
+    "tts": {
+      "enabled": true,
+      "provider": "kokoro",
+      "voice": "af_bella",
+      "language": "en",
+      "speed": 1,
+      "pitch": 1
+    },
+    "images": {
+      "enabled": true,
+      "provider": "pollinations",
+      "style": "realistic",
+      "quality": "high",
+      "count_per_chapter": 2,
+      "custom_prompt": false,
+      "custom_instructions": ""
+    },
+    "video": {
+      "enabled": true,
+      "resolution": "1920x1080",
+      "fps": 30,
+      "format": "mp4",
+      "include_subtitles": true,
+      "transition_duration": 0.5
+    },
+    "prompts": {
+      "titles": {
+        "viral": "Crie títulos virais e envolventes para o vídeo sobre: {topic}. Os títulos devem ser chamativos, despertar curiosidade e incentivar cliques.",
+        "educational": "Crie títulos educacionais e informativos para o vídeo sobre: {topic}. Os títulos devem ser claros, diretos e indicar o valor educacional.",
+        "professional": "Crie títulos profissionais e sérios para o vídeo sobre: {topic}. Os títulos devem transmitir autoridade e credibilidade."
+      },
+      "premises": {
+        "narrative": "Crie uma premissa narrativa envolvente para um vídeo sobre: {title}. A premissa deve contar uma história cativante em aproximadamente {word_count} palavras.",
+        "educational": "Crie uma premissa educacional estruturada para um vídeo sobre: {title}. A premissa deve apresentar os pontos de aprendizado em aproximadamente {word_count} palavras.",
+        "informative": "Crie uma premissa informativa e objetiva para um vídeo sobre: {title}. A premissa deve apresentar fatos e informações relevantes em aproximadamente {word_count} palavras."
+      },
+      "scripts": {
+        "inicio": "# Prompt — Início\n\nEscreva uma narrativa de {genre} intitulada \"{title}\".\n\nPremissa: {premise}\n\nEste é o INÍCIO da história. Deve estabelecer:\n- Personagens principais e suas motivações\n- Cenário e atmosfera da história\n- Conflito principal que moverá a narrativa\n- Tom inicial da narrativa\n\n**IMPORTANTE:** Seja detalhado, extenso e minucioso na descrição de cenários, personagens, ações e diálogos.",
+        "meio": "# Prompt — Meio\n\nContinue a narrativa de {genre} intitulada \"{title}\".\n\nCONTEXTO ANTERIOR:\n\"{previousContent}\"...\n\nEsta é a continuação do MEIO da história. Deve:\n- Continuar a narrativa de forma orgânica e coerente\n- Desenvolver os personagens e suas relações\n- Intensificar o conflito principal\n- Adicionar novos elementos de tensão\n\n**IMPORTANTE:** Seja detalhado, extenso e minucioso. Cada capítulo deve ter conteúdo substancial e rico em detalhes.",
+        "fim": "# Prompt — Fim\n\nContinue a narrativa de {genre} intitulada \"{title}\".\n\nCONTEXTO ANTERIOR:\n\"{previousContent}\"...\n\nEste é o FIM da história. Deve:\n- Resolver o conflito principal estabelecido no início\n- Proporcionar conclusão satisfatória para todos os personagens principais\n- Entregar o clímax esperado da história\n- Fechar a história de forma impactante\n\n**IMPORTANTE:** Seja detalhado, extenso e minucioso na conclusão. Garanta um fechamento rico e satisfatório."
+      },
+      "images": {
+        "cinematic": "Crie uma descrição cinematográfica para uma imagem que represente: {scene_description}. A imagem deve ter qualidade cinematográfica, boa iluminação e composição profissional.",
+        "minimalist": "Crie uma descrição minimalista para uma imagem que represente: {scene_description}. A imagem deve ser limpa, simples e com foco no elemento principal.",
+        "artistic": "Crie uma descrição artística para uma imagem que represente: {scene_description}. A imagem deve ser criativa, expressiva e visualmente impactante."
+      }
+    }
+  },
+  "progress": {},
+  "version": "1.0"
+}

@@ -459,9 +459,11 @@ def generate_image_gemini(prompt, api_key, width, height, quality):
     """
     Generate image using Gemini 2.0 Flash Preview Image Generation with automatic retry system
     """
-    from routes.automations import get_next_gemini_key, handle_gemini_429_error
+    from routes.automations import get_next_gemini_key, handle_gemini_429_error, get_gemini_keys_count
     
-    max_retries = 3
+    # Usar a quantidade real de chaves disponíveis
+    max_retries = get_gemini_keys_count() if get_gemini_keys_count() > 0 else 1
+    print(f"🔑 Usando {max_retries} chaves Gemini para imagens")
     current_api_key = api_key
     
     for attempt in range(max_retries):

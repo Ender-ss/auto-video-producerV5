@@ -161,11 +161,18 @@ def load_gemini_keys():
             with open(config_path, 'r') as f:
                 keys = json.load(f)
 
-            # Coletar todas as chaves Gemini
+            # Coletar todas as chaves Gemini válidas
             gemini_keys = []
+            invalid_keys = []
+            
             for key, value in keys.items():
-                if 'gemini' in key.lower() and value and len(value) > 10:
-                    gemini_keys.append(value)
+                if 'gemini' in key.lower() and value:
+                    # Verificar se é uma string válida (não um dicionário)
+                    if isinstance(value, str) and len(value) > 10 and value.startswith('AIza'):
+                        gemini_keys.append(value)
+                    else:
+                        invalid_keys.append(key)
+                        print(f"⚠️ Chave Gemini inválida ignorada: {key} (formato incorreto)")
 
             # Adicionar chave padrão se não houver outras
             default_key = 'AIzaSyBqUjzLHNPycDIzvwnI5JisOwmNubkfRRc'
@@ -173,7 +180,9 @@ def load_gemini_keys():
                 gemini_keys.append(default_key)
 
             GEMINI_KEYS_ROTATION['keys'] = gemini_keys
-            print(f"🔑 Carregadas {len(gemini_keys)} chaves Gemini para rotação")
+            print(f"🔑 Carregadas {len(gemini_keys)} chaves Gemini válidas para rotação")
+            if invalid_keys:
+                print(f"⚠️ Ignoradas {len(invalid_keys)} chaves Gemini inválidas")
             
             # Logs detalhados para debug
             for i, key in enumerate(gemini_keys):
@@ -187,6 +196,15 @@ def load_gemini_keys():
         GEMINI_KEYS_ROTATION['keys'] = ['AIzaSyBqUjzLHNPycDIzvwnI5JisOwmNubkfRRc']
 
     return GEMINI_KEYS_ROTATION['keys']
+
+def get_gemini_keys_count():
+    """Obter a quantidade de chaves Gemini disponíveis"""
+    # Carregar chaves se não estiverem carregadas
+    if not GEMINI_KEYS_ROTATION['keys']:
+        load_gemini_keys()
+    
+    # Retornar a quantidade de chaves disponíveis
+    return len(GEMINI_KEYS_ROTATION['keys'])
 
 def load_rapidapi_keys():
     """Carregar chaves RapidAPI do arquivo de configuração"""
@@ -251,25 +269,20 @@ def get_next_gemini_key():
             min_usage = usage
             best_key_index = i
 
-    # Se todas as chaves atingiram o limite (8 por dia para respeitar limite de 50 do Free Tier), retornar None
-    if min_usage >= 8:
-        print("⚠️ Todas as chaves Gemini atingiram o limite diário (8/8). Limite Free Tier: 50 req/dia")
-        add_real_time_log("⚠️ Todas as chaves Gemini atingiram o limite diário. Fallback necessário", "warning", "gemini-rotation")
-        return None  # Retornar None para forçar fallback
-
+    # Não mais limitar arbitrariamente - as chaves serão rotacionadas com base nos erros da API
     selected_key = keys[best_key_index]
 
-    # Incrementar contador de uso
+    # Incrementar contador de uso para fins de monitoramento
     GEMINI_KEYS_ROTATION['usage_count'][selected_key] = GEMINI_KEYS_ROTATION['usage_count'].get(selected_key, 0) + 1
 
     usage_count = GEMINI_KEYS_ROTATION['usage_count'][selected_key]
     
     # Logs detalhados para debug
-    print(f"🔑 Usando chave Gemini {best_key_index + 1}/{len(keys)} (uso: {usage_count}/8) - Free Tier: 50 req/dia")
+    print(f"🔑 Usando chave Gemini {best_key_index + 1}/{len(keys)} (uso total: {usage_count})")
     print(f"🔍 [DEBUG] Chave selecionada: {selected_key[:20]}... (índice: {best_key_index})")
     print(f"🔍 [DEBUG] Estado das chaves: {[(i, GEMINI_KEYS_ROTATION['usage_count'].get(key, 0)) for i, key in enumerate(keys)]}")
     
-    add_real_time_log(f"🔑 Usando chave Gemini {best_key_index + 1}/{len(keys)} (uso: {usage_count}/8)", "info", "gemini-rotation")
+    add_real_time_log(f"🔑 Usando chave Gemini {best_key_index + 1}/{len(keys)} (uso total: {usage_count})", "info", "gemini-rotation")
     add_real_time_log(f"🔍 Chave: {selected_key[:20]}... (índice: {best_key_index})", "debug", "gemini-key-detail")
 
     return selected_key
@@ -288,14 +301,16 @@ def handle_gemini_429_error(error_message, current_key=None):
     
     # Marcar apenas a chave atual como esgotada, não todas
     if current_key and current_key in GEMINI_KEYS_ROTATION['keys']:
-        GEMINI_KEYS_ROTATION['usage_count'][current_key] = 8  # Marcar como limite atingido
+        # Ao invés de definir um valor fixo, manter o contador real mas garantir que essa chave não seja usada novamente
+        # Isso permitirá que a chave seja reutilizada no próximo reset
+        GEMINI_KEYS_ROTATION['usage_count'][current_key] = float('inf')  # Marcar como esgotada
         print(f"⚠️ Chave Gemini {current_key[:20]}... marcada como esgotada.")
         add_real_time_log(f"⚠️ Chave Gemini marcada como esgotada: {current_key[:20]}...", "warning", "gemini-key-exhausted")
     
     # Verificar se ainda há chaves disponíveis
     available_keys = 0
     for key in GEMINI_KEYS_ROTATION['keys']:
-        if GEMINI_KEYS_ROTATION['usage_count'].get(key, 0) < 8:
+        if GEMINI_KEYS_ROTATION['usage_count'].get(key, 0) < 250:
             available_keys += 1
     
     if available_keys == 0:
@@ -321,7 +336,7 @@ def check_gemini_availability():
     # Verificar se alguma chave ainda tem quota disponível
     for key in GEMINI_KEYS_ROTATION['keys']:
         usage = GEMINI_KEYS_ROTATION['usage_count'].get(key, 0)
-        if usage < 8:  # Limite de 8 por chave
+        if usage < 250:  # Limite de 250 por chave (otimizado para free tier)
             return True
     
     return False
@@ -490,16 +505,40 @@ def get_cache_key(endpoint, params):
     cache_string = f"{endpoint}_{str(sorted(params.items()))}"
     return hashlib.md5(cache_string.encode()).hexdigest()
 
-def get_from_cache(endpoint, params, custom_ttl=None):
+def get_from_cache(endpoint, params, custom_ttl=None, cache_subdir=None):
     """Obter dados do cache se ainda válidos - VERSÃO SEM LOCK"""
     try:
         print(f"💾 CACHE DEBUG: Iniciando verificação de cache para {endpoint}")
         cache_key = get_cache_key(endpoint, params)
         print(f"💾 CACHE DEBUG: Cache key gerada: {cache_key[:20]}...")
         
-        if cache_key in RAPIDAPI_CACHE['data']:
+        # Se um subdiretório de cache foi especificado, usar um arquivo de cache separado
+        if cache_subdir:
+            cache_dir = os.path.join(os.path.dirname(__file__), '..', 'cache', cache_subdir)
+            cache_file = os.path.join(cache_dir, 'rapidapi_cache.json')
+            
+            # Carregar cache do arquivo especificado
+            if os.path.exists(cache_file):
+                try:
+                    with open(cache_file, 'r', encoding='utf-8') as f:
+                        cache_data = json.load(f)
+                    cache_store = cache_data.get('data', {})
+                    cache_timestamps = cache_data.get('timestamps', {})
+                except Exception as e:
+                    print(f"❌ Erro ao carregar cache persistente: {e}")
+                    cache_store = {}
+                    cache_timestamps = {}
+            else:
+                cache_store = {}
+                cache_timestamps = {}
+        else:
+            # Usar o cache global
+            cache_store = RAPIDAPI_CACHE['data']
+            cache_timestamps = RAPIDAPI_CACHE['timestamps']
+        
+        if cache_key in cache_store:
             print(f"💾 CACHE DEBUG: Cache encontrado para {endpoint}")
-            timestamp = RAPIDAPI_CACHE['timestamps'].get(cache_key, 0)
+            timestamp = cache_timestamps.get(cache_key, 0)
             
             # Determinar TTL baseado no tipo de endpoint
             if custom_ttl:
@@ -519,13 +558,14 @@ def get_from_cache(endpoint, params, custom_ttl=None):
             if age < ttl:
                 remaining_time = ttl - age
                 print(f"📦 Cache hit para {endpoint} (restam: {remaining_time:.0f}s)")
-                return RAPIDAPI_CACHE['data'][cache_key]
+                return cache_store[cache_key]
             else:
-                # Cache expirado, remover
-                print(f"💾 CACHE DEBUG: Removendo cache expirado")
-                del RAPIDAPI_CACHE['data'][cache_key]
-                del RAPIDAPI_CACHE['timestamps'][cache_key]
+                # Cache expirado
                 print(f"⏰ Cache expirado para {endpoint}")
+                # Se estivermos usando cache global, remover do cache global
+                if not cache_subdir and cache_key in RAPIDAPI_CACHE['data']:
+                    del RAPIDAPI_CACHE['data'][cache_key]
+                    del RAPIDAPI_CACHE['timestamps'][cache_key]
         else:
             print(f"💾 CACHE DEBUG: Nenhum cache encontrado para {endpoint}")
         
@@ -538,21 +578,35 @@ def get_from_cache(endpoint, params, custom_ttl=None):
         traceback.print_exc()
         return None
 
-def save_to_cache(endpoint, params, data, custom_ttl=None):
+def save_to_cache(endpoint, params, data, custom_ttl=None, cache_subdir=None):
     """Salvar dados no cache - VERSÃO OTIMIZADA"""
     print(f"🔍 DEBUG: Iniciando save_to_cache para {endpoint}")
     
     try:
-        print(f"🔍 DEBUG: Adquirindo lock do cache...")
-        with RAPIDAPI_CACHE['lock']:
-            print(f"🔍 DEBUG: Lock adquirido, gerando cache_key...")
-            cache_key = get_cache_key(endpoint, params)
-            print(f"🔍 DEBUG: Cache key gerada: {cache_key[:20]}...")
+        # Se um subdiretório de cache foi especificado, usar um arquivo de cache separado
+        if cache_subdir:
+            cache_dir = os.path.join(os.path.dirname(__file__), '..', 'cache', cache_subdir)
+            cache_file = os.path.join(cache_dir, 'rapidapi_cache.json')
             
-            print(f"🔍 DEBUG: Salvando dados no cache...")
-            RAPIDAPI_CACHE['data'][cache_key] = data
-            RAPIDAPI_CACHE['timestamps'][cache_key] = time.time()
-            print(f"🔍 DEBUG: Dados salvos no cache interno")
+            # Criar diretório se não existir
+            if not os.path.exists(cache_dir):
+                os.makedirs(cache_dir)
+            
+            # Carregar cache existente
+            if os.path.exists(cache_file):
+                try:
+                    with open(cache_file, 'r', encoding='utf-8') as f:
+                        cache_data = json.load(f)
+                except Exception as e:
+                    print(f"❌ Erro ao carregar cache persistente: {e}")
+                    cache_data = {'data': {}, 'timestamps': {}}
+            else:
+                cache_data = {'data': {}, 'timestamps': {}}
+            
+            # Atualizar cache
+            cache_key = get_cache_key(endpoint, params)
+            cache_data['data'][cache_key] = data
+            cache_data['timestamps'][cache_key] = time.time()
             
             # Determinar TTL baseado no tipo de endpoint
             if custom_ttl:
@@ -566,10 +620,40 @@ def save_to_cache(endpoint, params, data, custom_ttl=None):
                 
             print(f"💾 Dados salvos no cache para {endpoint} (TTL: {ttl}s = {ttl/3600:.1f}h)")
             add_real_time_log(f"[CACHE] Cache salvo para {endpoint} (TTL: {ttl/3600:.1f}h)", "info", "rapidapi-cache")
+            
+            # Salvar cache atualizado
+            with open(cache_file, 'w', encoding='utf-8') as f:
+                json.dump(cache_data, f, indent=2, ensure_ascii=False)
+        else:
+            # Usar o cache global
+            print(f"🔍 DEBUG: Adquirindo lock do cache...")
+            with RAPIDAPI_CACHE['lock']:
+                print(f"🔍 DEBUG: Lock adquirido, gerando cache_key...")
+                cache_key = get_cache_key(endpoint, params)
+                print(f"🔍 DEBUG: Cache key gerada: {cache_key[:20]}...")
+                
+                print(f"🔍 DEBUG: Salvando dados no cache...")
+                RAPIDAPI_CACHE['data'][cache_key] = data
+                RAPIDAPI_CACHE['timestamps'][cache_key] = time.time()
+                print(f"🔍 DEBUG: Dados salvos no cache interno")
+                
+                # Determinar TTL baseado no tipo de endpoint
+                if custom_ttl:
+                    ttl = custom_ttl
+                elif 'channel' in endpoint.lower():
+                    ttl = RAPIDAPI_CACHE['channel_ttl']  # 2 horas para dados de canal
+                elif 'video' in endpoint.lower():
+                    ttl = RAPIDAPI_CACHE['video_ttl']  # 30 minutos para vídeos
+                else:
+                    ttl = RAPIDAPI_CACHE['ttl']  # 1 hora padrão
+                    
+                print(f"💾 Dados salvos no cache para {endpoint} (TTL: {ttl}s = {ttl/3600:.1f}h)")
+                add_real_time_log(f"[CACHE] Cache salvo para {endpoint} (TTL: {ttl/3600:.1f}h)", "info", "rapidapi-cache")
+            
+            print(f"🔍 DEBUG: Lock liberado, chamando save_persistent_cache...")
+            # Salvar cache persistente após cada operação
+            save_persistent_cache()
         
-        print(f"🔍 DEBUG: Lock liberado, chamando save_persistent_cache...")
-        # Salvar cache persistente após cada operação
-        save_persistent_cache()
         print(f"🔍 DEBUG: save_to_cache concluído com sucesso para {endpoint}")
         
     except Exception as e:
@@ -1554,7 +1638,9 @@ def generate_premise_with_gemini(title, resume, prompt, api_key=None):
     import google.generativeai as genai
     
     # Tentar múltiplas chaves se necessário
-    max_retries = 3  # Tentar até 3 chaves diferentes
+    # Usar a quantidade real de chaves disponíveis
+    max_retries = get_gemini_keys_count() if get_gemini_keys_count() > 0 else 1
+    print(f"🔑 Usando {max_retries} chaves Gemini para premissa")
     last_error = None
     
     for attempt in range(max_retries):
@@ -1625,7 +1711,9 @@ Por favor, crie uma premissa narrativa envolvente baseada no título e resumo fo
 def generate_script_chapters_with_gemini_retry(title, context, num_chapters, api_key=None):
     """Gerar roteiro usando Gemini com rotação de chaves e retry automático"""
     # Tentar múltiplas chaves se necessário
-    max_key_attempts = 3  # Tentar até 3 chaves diferentes
+    # Usar a quantidade real de chaves disponíveis
+    max_key_attempts = get_gemini_keys_count() if get_gemini_keys_count() > 0 else 1
+    print(f"🔑 Usando {max_key_attempts} chaves Gemini para análise de emoções")
     last_error = None
     
     for attempt in range(max_key_attempts):
@@ -1734,7 +1822,9 @@ def generate_tts_gemini():
         add_real_time_log(f"🎵 Iniciando TTS Job {job_id} - {len(text)} chars", "info", "tts-gemini")
 
         # Tentar múltiplas chaves se necessário
-        max_key_attempts = 3  # Tentar até 3 chaves diferentes
+        # Usar a quantidade real de chaves disponíveis
+        max_key_attempts = get_gemini_keys_count() if get_gemini_keys_count() > 0 else 1
+        print(f"🔑 Usando {max_key_attempts} chaves Gemini para TTS")
         last_error = None
 
         for attempt in range(max_key_attempts):
@@ -2205,7 +2295,7 @@ def get_channel_id_rapidapi(channel_name, api_key):
     try:
         # Verificar cache primeiro
         cache_params = {'channel_name': channel_name}
-        cached_result = get_from_cache('channel_id', cache_params, custom_ttl=3600)  # Cache por 1 hora
+        cached_result = get_from_cache('channel_id', cache_params, custom_ttl=3600, cache_subdir='channel_id')  # Cache por 1 hora
         if cached_result:
             return cached_result
         
@@ -2363,7 +2453,7 @@ def get_channel_id_rapidapi(channel_name, api_key):
         }
         
         # Salvar no cache
-        save_to_cache('channel_id', cache_params, result, custom_ttl=3600)
+        save_to_cache('channel_id', cache_params, result, custom_ttl=3600, cache_subdir='channel_id')
         
         return result
 
@@ -2380,7 +2470,7 @@ def get_channel_details_rapidapi(channel_id, api_key):
     try:
         # Verificar cache primeiro
         cache_params = {'channel_id': channel_id}
-        cached_result = get_from_cache('channel_details', cache_params, custom_ttl=1800)  # Cache por 30 minutos
+        cached_result = get_from_cache('channel_details', cache_params, custom_ttl=1800, cache_subdir='channel_details')  # Cache por 30 minutos
         if cached_result:
             return cached_result
         
@@ -2504,7 +2594,7 @@ def get_channel_details_rapidapi(channel_id, api_key):
         }
         
         # Salvar no cache
-        save_to_cache('channel_details', cache_params, result, custom_ttl=1800)
+        save_to_cache('channel_details', cache_params, result, custom_ttl=1800, cache_subdir='channel_details')
         
         return result
 
@@ -2529,7 +2619,7 @@ def get_channel_videos_rapidapi(channel_id, api_key, max_results=50):
             'channel_id': channel_id,
             'max_results': min(max_results, 50)
         }
-        cached_result = get_from_cache('channel_videos', cache_params, custom_ttl=600)  # Cache por 10 minutos
+        cached_result = get_from_cache('channel_videos', cache_params, custom_ttl=600, cache_subdir='channel_videos')  # Cache por 10 minutos
         if cached_result:
             print(f"✅ CACHE: Resultado encontrado no cache, retornando dados salvos")
             return cached_result
@@ -2661,7 +2751,7 @@ def get_channel_videos_rapidapi(channel_id, api_key, max_results=50):
         print(f"📊 PROGRESSO: Total de vídeos processados: {len(videos)}")
         
         # Salvar no cache para evitar chamadas futuras
-        save_to_cache('channel_videos', cache_params, result, custom_ttl=600)
+        save_to_cache('channel_videos', cache_params, result, custom_ttl=600, cache_subdir='channel_videos')
         
         return result
 
@@ -2799,7 +2889,7 @@ def get_channel_videos_youtube_api(channel_id, api_key, max_results=50):
             'max_results': min(max_results, 50),
             'api_type': 'youtube_official'
         }
-        cached_result = get_from_cache('channel_videos_youtube', cache_params, custom_ttl=600)
+        cached_result = get_from_cache('channel_videos_youtube', cache_params, custom_ttl=600, cache_subdir='channel_videos_youtube')
         if cached_result:
             print(f"✅ CACHE: Resultado encontrado no cache, retornando dados salvos")
             return cached_result
@@ -2862,7 +2952,7 @@ def get_channel_videos_youtube_api(channel_id, api_key, max_results=50):
         }
         
         # Salvar no cache
-        save_to_cache('channel_videos_youtube', cache_params, result, custom_ttl=600)
+        save_to_cache('channel_videos_youtube', cache_params, result, custom_ttl=600, cache_subdir='channel_videos_youtube')
         
         print(f"🎉 PROGRESSO: YouTube API - {len(videos)} vídeos processados com sucesso!")
         return result
@@ -2899,7 +2989,7 @@ def get_channel_videos_ytdlp(channel_url, max_results=50):
             'max_results': min(max_results, 50),
             'api_type': 'ytdlp'
         }
-        cached_result = get_from_cache('channel_videos_ytdlp', cache_params, custom_ttl=600)
+        cached_result = get_from_cache('channel_videos_ytdlp', cache_params, custom_ttl=600, cache_subdir='channel_videos_ytdlp')
         if cached_result:
             print(f"✅ CACHE: Resultado encontrado no cache, retornando dados salvos")
             return cached_result
@@ -3044,7 +3134,7 @@ def get_channel_videos_ytdlp(channel_url, max_results=50):
             }
             
             # Salvar no cache
-            save_to_cache('channel_videos_ytdlp', cache_params, result, custom_ttl=600)
+            save_to_cache('channel_videos_ytdlp', cache_params, result, custom_ttl=600, cache_subdir='channel_videos_ytdlp')
             
             print(f"🎉 PROGRESSO: yt-dlp - {len(videos)} vídeos processados com sucesso!")
             return result
@@ -4670,9 +4760,14 @@ except Exception as e:
 # 🔄 SISTEMA DE RETRY AUTOMÁTICO GEMINI
 # ================================
 
-def generate_content_with_gemini_retry(prompt, max_retries=3):
+def generate_content_with_gemini_retry(prompt, max_retries=None):
     """Gerar conteúdo usando Gemini com retry automático entre múltiplas chaves"""
     import google.generativeai as genai
+    
+    # Se max_retries não for especificado, usar a quantidade real de chaves disponíveis
+    if max_retries is None:
+        max_retries = get_gemini_keys_count() if get_gemini_keys_count() > 0 else 1
+    
     last_error = None
     
     for attempt in range(max_retries):
@@ -4701,8 +4796,8 @@ def generate_content_with_gemini_retry(prompt, max_retries=3):
             # Se é erro 429 (quota exceeded) e não é a última tentativa, tentar próxima chave
             if ("429" in error_str or "quota" in error_str.lower() or "exceeded" in error_str.lower()) and attempt < max_retries - 1:
                 print(f"🔄 Erro de cota detectado, tentando próxima chave...")
-                # Não temos acesso à api_key específica aqui, então passamos None
-                handle_gemini_429_error(error_str, None)
+                # Passamos a chave atual que falhou para registrar corretamente
+                handle_gemini_429_error(error_str, api_key)
                 continue
             else:
                 # Outros erros ou última tentativa, parar

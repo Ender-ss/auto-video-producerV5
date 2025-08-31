@@ -1,0 +1,96 @@
+{
+  "pipeline_id": "a9ee6425-4ae5-400f-b34f-647bada82f3b",
+  "timestamp": "2025-08-29T21:19:55.932001",
+  "current_step": "scripts_failed",
+  "completed_steps": [],
+  "results": {},
+  "config": {
+    "extraction": {
+      "enabled": true,
+      "method": "yt-dlp",
+      "rapidapi_key": ""
+    },
+    "titles": {
+      "enabled": true,
+      "provider": "gemini",
+      "count": 10,
+      "style": "viral",
+      "language": "pt-BR",
+      "custom_prompt": false,
+      "custom_instructions": ""
+    },
+    "premises": {
+      "enabled": true,
+      "provider": "gemini",
+      "style": "educational",
+      "target_audience": "general",
+      "word_count": 200,
+      "custom_prompt": false,
+      "custom_instructions": ""
+    },
+    "scripts": {
+      "enabled": true,
+      "provider": "gemini",
+      "chapters": 12,
+      "duration_target": "1-2 hours",
+      "include_intro": true,
+      "include_outro": true,
+      "custom_prompts": false,
+      "custom_inicio": "",
+      "custom_meio": "",
+      "custom_fim": "",
+      "detailed_prompt": false,
+      "detailed_prompt_text": "",
+      "contextual_chapters": true
+    },
+    "tts": {
+      "enabled": false,
+      "provider": "kokoro",
+      "voice": "af_bella",
+      "language": "en",
+      "speed": 1,
+      "pitch": 1
+    },
+    "images": {
+      "enabled": false,
+      "provider": "pollinations",
+      "style": "realistic",
+      "quality": "high",
+      "count_per_chapter": 2,
+      "custom_prompt": false,
+      "custom_instructions": ""
+    },
+    "video": {
+      "enabled": false,
+      "resolution": "1920x1080",
+      "fps": 30,
+      "format": "mp4",
+      "include_subtitles": true,
+      "transition_duration": 0.5
+    },
+    "prompts": {
+      "titles": {
+        "viral": "Crie títulos virais e envolventes para o vídeo sobre: {topic}. Os títulos devem ser chamativos, despertar curiosidade e incentivar cliques.",
+        "educational": "Crie títulos educacionais e informativos para o vídeo sobre: {topic}. Os títulos devem ser claros, diretos e indicar o valor educacional.",
+        "professional": "Crie títulos profissionais e sérios para o vídeo sobre: {topic}. Os títulos devem transmitir autoridade e credibilidade."
+      },
+      "premises": {
+        "narrative": "Crie uma premissa narrativa envolvente para um vídeo sobre: {title}. A premissa deve contar uma história cativante em aproximadamente {word_count} palavras.",
+        "educational": "Crie uma premissa educacional estruturada para um vídeo sobre: {title}. A premissa deve apresentar os pontos de aprendizado em aproximadamente {word_count} palavras.",
+        "informative": "Crie uma premissa informativa e objetiva para um vídeo sobre: {title}. A premissa deve apresentar fatos e informações relevantes em aproximadamente {word_count} palavras."
+      },
+      "scripts": {
+        "inicio": "# Prompt — Início\n\nEscreva uma narrativa de {genre} intitulada \"{title}\".\n\nPremissa: {premise}\n\nEste é o INÍCIO da história. Deve estabelecer:\n- Personagens principais e suas motivações\n- Cenário e atmosfera da história\n- Conflito principal que moverá a narrativa\n- Tom inicial da narrativa\n\n**IMPORTANTE:** Seja detalhado, extenso e minucioso na descrição de cenários, personagens, ações e diálogos.",
+        "meio": "# Prompt — Meio\n\nContinue a narrativa de {genre} intitulada \"{title}\".\n\nCONTEXTO ANTERIOR:\n\"{previousContent}\"...\n\nEsta é a continuação do MEIO da história. Deve:\n- Continuar a narrativa de forma orgânica e coerente\n- Desenvolver os personagens e suas relações\n- Intensificar o conflito principal\n- Adicionar novos elementos de tensão\n\n**IMPORTANTE:** Seja detalhado, extenso e minucioso. Cada capítulo deve ter conteúdo substancial e rico em detalhes.",
+        "fim": "# Prompt — Fim\n\nContinue a narrativa de {genre} intitulada \"{title}\".\n\nCONTEXTO ANTERIOR:\n\"{previousContent}\"...\n\nEste é o FIM da história. Deve:\n- Resolver o conflito principal estabelecido no início\n- Proporcionar conclusão satisfatória para todos os personagens principais\n- Entregar o clímax esperado da história\n- Fechar a história de forma impactante\n\n**IMPORTANTE:** Seja detalhado, extenso e minucioso na conclusão. Garanta um fechamento rico e satisfatório."
+      },
+      "images": {
+        "cinematic": "Crie uma descrição cinematográfica para uma imagem que represente: {scene_description}. A imagem deve ter qualidade cinematográfica, boa iluminação e composição profissional.",
+        "minimalist": "Crie uma descrição minimalista para uma imagem que represente: {scene_description}. A imagem deve ser limpa, simples e com foco no elemento principal.",
+        "artistic": "Crie uma descrição artística para uma imagem que represente: {scene_description}. A imagem deve ser criativa, expressiva e visualmente impactante."
+      }
+    }
+  },
+  "progress": {},
+  "version": "1.0"
+}

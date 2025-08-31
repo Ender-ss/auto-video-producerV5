@@ -718,7 +718,10 @@ class PipelineService:
                 'include_hooks': include_hooks,
                 'custom_inicio': custom_inicio,
                 'custom_meio': custom_meio,
-                'custom_fim': custom_fim
+                'custom_fim': custom_fim,
+                'detailed_prompt_text': scripts_config.get('detailed_prompt_text', ''),
+                'detailed_prompt': scripts_config.get('detailed_prompt', False),
+                'contextual_chapters': scripts_config.get('contextual_chapters', False)
             }
             
             self._update_progress('scripts', 50)
@@ -736,8 +739,43 @@ class PipelineService:
                 progress = int((len(chapters) / scripts_config.get('chapters', 5)) * 100) if len(chapters) > 0 else 0
                 self._update_progress('scripts', progress)
 
-            # Gerar roteiro com callback
-            result = generate_long_script(script_data, update_scripts_partial)
+            # Verificar se deve usar o novo método de geração com resumos contextuais
+            if scripts_config.get('contextual_chapters', False):
+                # Usar o novo endpoint de geração de roteiros longos com resumos contextuais
+                from routes.long_script_generator import generate_long_script_with_context
+                
+                # Obter provedor da configuração de scripts (padrão: gemini)
+                provider = scripts_config.get('provider', 'gemini')
+                
+                # Preparar prompts personalizados do config
+                custom_prompts = None
+                if scripts_config.get('custom_prompt', False):
+                    custom_prompts = {
+                        'custom_inicio': scripts_config.get('custom_inicio'),
+                        'custom_meio': scripts_config.get('custom_meio'), 
+                        'custom_fim': scripts_config.get('custom_fim'),
+                        'default_prompt_intro': scripts_config.get('default_prompt_intro'),
+                        'default_prompt_middle': scripts_config.get('default_prompt_middle'),
+                        'default_prompt_conclusion': scripts_config.get('default_prompt_conclusion')
+                    }
+                
+                # Gerar roteiro com resumos contextuais
+                # Passando os parâmetros corretamente para a função
+                number_of_chapters = scripts_config.get('chapters', 5)
+                result = generate_long_script_with_context(
+                    titulo=title, 
+                    premissa=premise, 
+                    numero_capitulos=number_of_chapters, 
+                    title_generator=None, 
+                    openrouter_api_key=self.api_keys.get('openrouter'), 
+                    openrouter_model=scripts_config.get('openrouter_model', 'auto'),
+                    update_callback=update_scripts_partial,
+                    long_script_prompt=scripts_config.get('custom_instructions'),  # Prompt adicional legado
+                    custom_prompts=custom_prompts
+                )
+            else:
+                # Usar o método padrão de geração de roteiros
+                result = generate_long_script(script_data, update_scripts_partial)
             
             if not result.get('success'):
                 raise Exception(f"Falha na geração de roteiro: {result.get('error', 'Erro desconhecido')}")
@@ -778,6 +816,29 @@ class PipelineService:
         """Executar geração de áudio TTS"""
         try:
             self._log('info', 'Iniciando geração de áudio TTS')
+            
+            # Verificar se TTS está habilitado na configuração
+            tts_config = self.config.get('tts', {})
+            if not tts_config.get('enabled', True):
+                self._log('info', 'TTS desabilitado na configuração, pulando etapa')
+                
+                # Criar resultado placeholder para compatibilidade
+                tts_result = {
+                    'audio_file_path': None,
+                    'duration': 0,
+                    'file_size': 0,
+                    'provider_used': 'disabled',
+                    'voice': 'none',
+                    'speed': 1.0,
+                    'emotion': 'neutral',
+                    'generation_time': datetime.utcnow().isoformat(),
+                    'status': 'skipped',
+                    'message': 'TTS desabilitado pelo usuário'
+                }
+                
+                self.results['tts'] = tts_result
+                self._update_progress('tts', 100)
+                return tts_result
             
             # Verificar se temos roteiro
             if 'scripts' not in self.results:
@@ -866,6 +927,27 @@ class PipelineService:
         try:
             self._log('info', 'Iniciando geração de imagens')
             
+            # Verificar se geração de imagens está habilitada na configuração
+            images_config = self.config.get('images', {})
+            if not images_config.get('enabled', True):
+                self._log('info', 'Geração de imagens desabilitada na configuração, pulando etapa')
+                
+                # Criar resultado placeholder para compatibilidade
+                images_result = {
+                    'generated_images': [],
+                    'total_images': 0,
+                    'provider_used': 'disabled',
+                    'style': 'none',
+                    'resolution': 'none',
+                    'generation_time': datetime.utcnow().isoformat(),
+                    'status': 'skipped',
+                    'message': 'Geração de imagens desabilitada pelo usuário'
+                }
+                
+                self.results['images'] = images_result
+                self._update_progress('images', 100)
+                return images_result
+            
             # Verificar se temos roteiro
             if 'scripts' not in self.results:
                 raise Exception('Geração de roteiros não foi executada')
@@ -931,9 +1013,45 @@ class PipelineService:
         try:
             self._log('info', 'Iniciando criação do vídeo final')
             
-            # Verificar se temos todos os recursos necessários
-            required_results = ['scripts', 'tts', 'images']
-            for req in required_results:
+            # Verificar se criação de vídeo está habilitada na configuração
+            video_config = self.config.get('video', {})
+            if not video_config.get('enabled', True):
+                self._log('info', 'Criação de vídeo desabilitada na configuração, pulando etapa')
+                
+                # Criar resultado placeholder para compatibilidade
+                video_result = {
+                    'video_file_path': None,
+                    'duration': 0,
+                    'file_size': 0,
+                    'resolution': 'none',
+                    'fps': 0,
+                    'quality': 'none',
+                    'transitions': False,
+                    'subtitles': False,
+                    'creation_time': datetime.utcnow().isoformat(),
+                    'status': 'skipped',
+                    'message': 'Criação de vídeo desabilitada pelo usuário'
+                }
+                
+                self.results['video'] = video_result
+                self._update_progress('video', 100)
+                return video_result
+            
+            # Verificar quais recursos estão disponíveis baseado nas etapas habilitadas
+            available_resources = ['scripts']
+            
+            # Adicionar TTS se habilitado e executado
+            tts_config = self.config.get('tts', {})
+            if tts_config.get('enabled', True) and 'tts' in self.results and self.results['tts'].get('status') != 'skipped':
+                available_resources.append('tts')
+            
+            # Adicionar imagens se habilitado e executado
+            images_config = self.config.get('images', {})
+            if images_config.get('enabled', True) and 'images' in self.results and self.results['images'].get('status') != 'skipped':
+                available_resources.append('images')
+            
+            # Verificar se temos recursos mínimos (pelo menos roteiro)
+            for req in ['scripts']:
                 if req not in self.results:
                     raise Exception(f'Etapa {req} não foi executada')
             
@@ -1137,12 +1255,18 @@ class PipelineService:
                 try:
                     self._log('info', f'Executando etapa: {step}')
                     
-                    if step == 'scripts':
-                        self.run_script_generation()
+                    if step == 'extraction':
+                        self.run_extraction()
+                    elif step == 'titles':
+                        self.run_titles_generation()
+                    elif step == 'premises':
+                        self.run_premises_generation()
+                    elif step == 'scripts':
+                        self.run_scripts_generation()
                     elif step == 'tts':
                         self.run_tts_generation()
                     elif step == 'images':
-                        self.run_image_generation()
+                        self.run_images_generation()
                     elif step == 'video':
                         self.run_video_creation()
                     elif step == 'cleanup':
@@ -1175,8 +1299,30 @@ class PipelineService:
             raise
     
     def _get_default_steps(self) -> List[str]:
-        """Obter lista padrão de etapas da pipeline"""
-        return ['scripts', 'tts', 'images', 'video', 'cleanup']
+        """Obter lista padrão de etapas da pipeline baseada na configuração"""
+        enabled_steps = []
+        
+        # Verificar quais etapas estão habilitadas
+        if self.config.get('extraction', {}).get('enabled', True):
+            enabled_steps.append('extraction')
+        if self.config.get('titles', {}).get('enabled', True):
+            enabled_steps.append('titles')
+        if self.config.get('premises', {}).get('enabled', True):
+            enabled_steps.append('premises')
+        if self.config.get('scripts', {}).get('enabled', True):
+            enabled_steps.append('scripts')
+        if self.config.get('tts', {}).get('enabled', True):
+            enabled_steps.append('tts')
+        if self.config.get('images', {}).get('enabled', True):
+            enabled_steps.append('images')
+        if self.config.get('video', {}).get('enabled', True):
+            enabled_steps.append('video')
+        
+        # Cleanup sempre habilitado se há pelo menos uma etapa
+        if enabled_steps:
+            enabled_steps.append('cleanup')
+            
+        return enabled_steps
     
     def _get_remaining_steps(self, next_step: str, all_steps: List[str] = None) -> List[str]:
         """Obter etapas restantes a partir de uma etapa específica"""

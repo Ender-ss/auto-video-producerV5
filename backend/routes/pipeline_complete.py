@@ -143,7 +143,9 @@ def start_complete_automation():
                 'chapters': 5,
                 'style': 'inicio',
                 'duration_target': '5-7 minutes',
-                'include_hooks': True
+                'include_hooks': True,
+                'detailed_prompt_text': '',
+                'detailed_prompt': False
             },
             'tts': {
                 'provider': 'kokoro',
@@ -551,22 +553,40 @@ def process_complete_pipeline(pipeline_id: str):
             add_pipeline_log(pipeline_id, 'warning', f'Erro na execução automática, tentando execução manual: {str(e)}')
         
         # Executar etapas do pipeline manualmente (fallback)
+        # Verificar quais etapas estão habilitadas na configuração
+        config = pipeline_state.get('config', {})
+        
         steps = [
-            (PipelineSteps.EXTRACTION, service.run_extraction),
-            (PipelineSteps.TITLES, service.run_titles_generation),
-            (PipelineSteps.PREMISES, service.run_premises_generation),
-            (PipelineSteps.SCRIPTS, service.run_scripts_generation),
-            (PipelineSteps.TTS, service.run_tts_generation),
-            (PipelineSteps.IMAGES, service.run_images_generation),
-            (PipelineSteps.VIDEO, service.run_video_creation),
-            (PipelineSteps.CLEANUP, service.run_cleanup)
+            (PipelineSteps.EXTRACTION, service.run_extraction, config.get('extraction', {}).get('enabled', True)),
+            (PipelineSteps.TITLES, service.run_titles_generation, config.get('titles', {}).get('enabled', True)),
+            (PipelineSteps.PREMISES, service.run_premises_generation, config.get('premises', {}).get('enabled', True)),
+            (PipelineSteps.SCRIPTS, service.run_scripts_generation, config.get('scripts', {}).get('enabled', True)),
+            (PipelineSteps.TTS, service.run_tts_generation, config.get('tts', {}).get('enabled', True)),
+            (PipelineSteps.IMAGES, service.run_images_generation, config.get('images', {}).get('enabled', True)),
+            (PipelineSteps.VIDEO, service.run_video_creation, config.get('video', {}).get('enabled', True)),
+            (PipelineSteps.CLEANUP, service.run_cleanup, True)  # Cleanup sempre habilitado
         ]
         
-        for step_name, step_function in steps:
+        for step_name, step_function, is_enabled in steps:
             # Verificar se pipeline foi cancelado ou pausado
             if pipeline_state['status'] in [PipelineStatus.CANCELLED, PipelineStatus.PAUSED]:
                 add_pipeline_log(pipeline_id, 'warning', f'Pipeline interrompido na etapa {step_name}')
                 return
+            
+            # Verificar se a etapa está habilitada
+            if not is_enabled:
+                add_pipeline_log(pipeline_id, 'info', f'Etapa {step_name} desabilitada na configuração, pulando')
+                update_pipeline_progress(pipeline_id, step_name, 100, 'skipped')
+                
+                # Criar resultado placeholder para compatibilidade
+                placeholder_result = {
+                    'status': 'skipped',
+                    'message': f'Etapa {step_name} desabilitada pelo usuário',
+                    'timestamp': datetime.utcnow().isoformat()
+                }
+                pipeline_state['steps'][step_name]['result'] = placeholder_result
+                pipeline_state['results'][step_name] = placeholder_result
+                continue
             
             # Validar dependências da etapa atual
             if not validate_step_dependencies(pipeline_id, step_name):

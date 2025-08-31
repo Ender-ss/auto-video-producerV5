@@ -54,7 +54,52 @@ const AutomationCompleteForm = ({ onSubmit, onClose }) => {
         custom_prompts: false,
         custom_inicio: '',
         custom_meio: '',
-        custom_fim: ''
+        custom_fim: '',
+        detailed_prompt: false,
+        detailed_prompt_text: '',
+        contextual_chapters: false,
+        show_default_prompts: false,
+        default_prompt_intro: `Você é um roteirista profissional especializado em conteúdo para YouTube.
+
+TÍTULO: \{titulo\}
+PREMISSA: \{premissa\}
+
+INSTRUÇÕES:
+- Escreva o primeiro capítulo (introdução) deste roteiro
+- O capítulo deve ter aproximadamente 500 palavras
+- Estabeleça os personagens principais, cenário e conflito inicial
+- Use uma linguagem envolvente adequada para vídeos do YouTube
+- Escreva apenas o conteúdo do capítulo, sem títulos ou marcações`,
+        default_prompt_middle: `Você é um roteirista profissional especializado em conteúdo para YouTube.
+
+TÍTULO: \{titulo\}
+PREMISSA: \{premissa\}
+
+CONTEXTO DO CAPÍTULO ANTERIOR:
+\{resumos[i-2]\}
+
+INSTRUÇÕES:
+- Escreva o capítulo \{i\} deste roteiro, continuando a história
+- O capítulo deve ter aproximadamente 500 palavras
+- Mantenha coerência com o contexto fornecido
+- Desenvolva a narrativa de forma orgânica
+- Use uma linguagem envolvente adequada para vídeos do YouTube
+- Escreva apenas o conteúdo do capítulo, sem títulos ou marcações`,
+        default_prompt_conclusion: `Você é um roteirista profissional especializado em conteúdo para YouTube.
+
+TÍTULO: \{titulo\}
+PREMISSA: \{premissa\}
+
+CONTEXTO DO CAPÍTULO ANTERIOR:
+\{resumos[-1]\}
+
+INSTRUÇÕES:
+- Escreva o capítulo final (conclusão) deste roteiro
+- O capítulo deve ter aproximadamente 500 palavras
+- Amarre todas as pontas soltas da história
+- Proporcione um fechamento satisfatório para os personagens
+- Use uma linguagem envolvente adequada para vídeos do YouTube
+- Escreva apenas o conteúdo do capítulo, sem títulos ou marcações`
       },
       tts: {
         enabled: true,
@@ -83,21 +128,21 @@ const AutomationCompleteForm = ({ onSubmit, onClose }) => {
       },
       prompts: {
         titles: {
-          viral: 'Crie títulos virais e envolventes para o vídeo sobre: {topic}. Os títulos devem ser chamativos, despertar curiosidade e incentivar cliques.',
-          educational: 'Crie títulos educacionais e informativos para o vídeo sobre: {topic}. Os títulos devem ser claros, diretos e indicar o valor educacional.',
-          professional: 'Crie títulos profissionais e sérios para o vídeo sobre: {topic}. Os títulos devem transmitir autoridade e credibilidade.'
+          viral: 'Crie títulos virais e envolventes para o vídeo sobre: \{topic\}. Os títulos devem ser chamativos, despertar curiosidade e incentivar cliques.',
+          educational: 'Crie títulos educacionais e informativos para o vídeo sobre: \{topic\}. Os títulos devem ser claros, diretos e indicar o valor educacional.',
+          professional: 'Crie títulos profissionais e sérios para o vídeo sobre: \{topic\}. Os títulos devem transmitir autoridade e credibilidade.'
         },
         premises: {
-          narrative: 'Crie uma premissa narrativa envolvente para um vídeo sobre: {title}. A premissa deve contar uma história cativante em aproximadamente {word_count} palavras.',
-          educational: 'Crie uma premissa educacional estruturada para um vídeo sobre: {title}. A premissa deve apresentar os pontos de aprendizado em aproximadamente {word_count} palavras.',
-          informative: 'Crie uma premissa informativa e objetiva para um vídeo sobre: {title}. A premissa deve apresentar fatos e informações relevantes em aproximadamente {word_count} palavras.'
+          narrative: 'Crie uma premissa narrativa envolvente para um vídeo sobre: \{title\}. A premissa deve contar uma história cativante em aproximadamente \{word_count\} palavras.',
+          educational: 'Crie uma premissa educacional estruturada para um vídeo sobre: \{title\}. A premissa deve apresentar os pontos de aprendizado em aproximadamente \{word_count\} palavras.',
+          informative: 'Crie uma premissa informativa e objetiva para um vídeo sobre: \{title\}. A premissa deve apresentar fatos e informações relevantes em aproximadamente \{word_count\} palavras.'
         },
         scripts: {
           inicio: `# Prompt — Início
 
-Escreva uma narrativa de {genre} intitulada "{title}".
+Escreva uma narrativa de \{genre\} intitulada "\{title\}".
 
-Premissa: {premise}
+Premissa: \{premise\}
 
 Este é o INÍCIO da história. Deve estabelecer:
 - Personagens principais e suas motivações
@@ -108,10 +153,10 @@ Este é o INÍCIO da história. Deve estabelecer:
 **IMPORTANTE:** Seja detalhado, extenso e minucioso na descrição de cenários, personagens, ações e diálogos.`,
           meio: `# Prompt — Meio
 
-Continue a narrativa de {genre} intitulada "{title}".
+Continue a narrativa de \{genre\} intitulada "\{title\}".
 
 CONTEXTO ANTERIOR:
-"{previousContent}"...
+"\{previousContent\}"...
 
 Esta é a continuação do MEIO da história. Deve:
 - Continuar a narrativa de forma orgânica e coerente
@@ -122,10 +167,10 @@ Esta é a continuação do MEIO da história. Deve:
 **IMPORTANTE:** Seja detalhado, extenso e minucioso. Cada capítulo deve ter conteúdo substancial e rico em detalhes.`,
           fim: `# Prompt — Fim
 
-Continue a narrativa de {genre} intitulada "{title}".
+Continue a narrativa de \{genre\} intitulada "\{title\}".
 
 CONTEXTO ANTERIOR:
-"{previousContent}"...
+"\{previousContent\}"...
 
 Este é o FIM da história. Deve:
 - Resolver o conflito principal estabelecido no início
@@ -136,9 +181,9 @@ Este é o FIM da história. Deve:
 **IMPORTANTE:** Seja detalhado, extenso e minucioso na conclusão. Garanta um fechamento rico e satisfatório.`
         },
         images: {
-          cinematic: 'Crie uma descrição cinematográfica para uma imagem que represente: {scene_description}. A imagem deve ter qualidade cinematográfica, boa iluminação e composição profissional.',
-          minimalist: 'Crie uma descrição minimalista para uma imagem que represente: {scene_description}. A imagem deve ser limpa, simples e com foco no elemento principal.',
-          artistic: 'Crie uma descrição artística para uma imagem que represente: {scene_description}. A imagem deve ser criativa, expressiva e visualmente impactante.'
+          cinematic: 'Crie uma descrição cinematográfica para uma imagem que represente: \{scene_description\}. A imagem deve ter qualidade cinematográfica, boa iluminação e composição profissional.',
+          minimalist: 'Crie uma descrição minimalista para uma imagem que represente: \{scene_description\}. A imagem deve ser limpa, simples e com foco no elemento principal.',
+          artistic: 'Crie uma descrição artística para uma imagem que represente: \{scene_description\}. A imagem deve ser criativa, expressiva e visualmente impactante.'
         }
       }
     }
@@ -597,21 +642,33 @@ const AISection = ({ formData, onChange }) => {
               <input
                 type="number"
                 min="3"
-                max="10"
                 value={formData.config.scripts.chapters}
                 onChange={(e) => onChange('config.scripts.chapters', parseInt(e.target.value))}
                 className="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded text-white text-sm"
               />
+              <p className="text-xs text-gray-500 mt-1">
+                Sem limite máximo de capítulos
+              </p>
             </div>
             <div>
               <label className="block text-sm font-medium text-gray-300 mb-1">
                 Duração Alvo
               </label>
+              <select
+                value={formData.config.scripts.duration_target}
+                onChange={(e) => onChange('config.scripts.duration_target', e.target.value)}
+                className="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded text-white text-sm mb-2"
+              >
+                <option value="5-7 minutes">5-7 minutos</option>
+                <option value="10-15 minutes">10-15 minutos</option>
+                <option value="20-30 minutes">20-30 minutos</option>
+                <option value="1-2 hours">1-2 horas</option>
+              </select>
               <input
                 type="text"
                 value={formData.config.scripts.duration_target}
                 onChange={(e) => onChange('config.scripts.duration_target', e.target.value)}
-                placeholder="Ex: 5-7 minutes"
+                placeholder="Ou digite uma duração personalizada"
                 className="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded text-white text-sm"
               />
             </div>
@@ -649,6 +706,58 @@ const AISection = ({ formData, onChange }) => {
                   Usar prompts personalizados
                 </label>
               </div>
+              <div className="flex items-center space-x-2 mb-2">
+              <input
+                type="checkbox"
+                id="scripts-detailed-prompt"
+                checked={formData.config.scripts.detailed_prompt}
+                onChange={(e) => onChange('config.scripts.detailed_prompt', e.target.checked)}
+                className="rounded border-gray-600 bg-gray-700 text-purple-600 focus:ring-purple-500"
+              />
+              <label htmlFor="scripts-detailed-prompt" className="text-sm font-medium text-gray-300">
+                Usar prompt detalhado para roteiros longos
+              </label>
+            </div>
+            <div className="flex items-center space-x-2 mb-2">
+              <input
+                type="checkbox"
+                id="scripts-contextual-chapters"
+                checked={formData.config.scripts.contextual_chapters}
+                onChange={(e) => onChange('config.scripts.contextual_chapters', e.target.checked)}
+                className="rounded border-gray-600 bg-gray-700 text-purple-600 focus:ring-purple-500"
+              />
+              <label htmlFor="scripts-contextual-chapters" className="text-sm font-medium text-gray-300">
+                Gerar roteiro longo com resumos contextuais entre capítulos
+              </label>
+            </div>
+            <div className="flex items-center space-x-2 mb-2">
+              <input
+                type="checkbox"
+                id="scripts-show-default-prompts"
+                checked={formData.config.scripts.show_default_prompts}
+                onChange={(e) => onChange('config.scripts.show_default_prompts', e.target.checked)}
+                className="rounded border-gray-600 bg-gray-700 text-purple-600 focus:ring-purple-500"
+              />
+              <label htmlFor="scripts-show-default-prompts" className="text-sm font-medium text-gray-300">
+                Mostrar e editar prompts padrão do sistema
+              </label>
+            </div>
+              {formData.config.scripts.detailed_prompt && (
+                <div className="space-y-3">
+                  <div>
+                    <label className="block text-sm font-medium text-gray-300 mb-1">
+                      Prompt Detalhado para Roteiro Longo
+                    </label>
+                    <textarea
+                      value={formData.config.scripts.detailed_prompt_text}
+                      onChange={(e) => onChange('config.scripts.detailed_prompt_text', e.target.value)}
+                      placeholder="Instruções detalhadas para a geração do roteiro longo, incluindo estilo, tom, elementos narrativos, estrutura desejada, etc..."
+                      rows={5}
+                      className="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded text-white text-sm resize-none"
+                    />
+                  </div>
+                </div>
+              )}
               {formData.config.scripts.custom_prompts && (
                 <div className="space-y-3">
                   <div>
@@ -686,6 +795,54 @@ const AISection = ({ formData, onChange }) => {
                       rows={3}
                       className="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded text-white text-sm resize-none"
                     />
+                  </div>
+                </div>
+              )}
+              {formData.config.scripts.show_default_prompts && (
+                <div className="space-y-4 border-t border-gray-600 pt-4">
+                  <div className="flex items-center space-x-2">
+                    <Info size={16} className="text-blue-400" />
+                    <h5 className="text-sm font-medium text-gray-300">Prompts Padrão do Sistema</h5>
+                  </div>
+                  <div className="text-xs text-gray-400 bg-gray-700 p-2 rounded">
+                    Estes são os prompts padrão que o sistema usa para gerar roteiros longos contextuais. Você pode visualizar e editá-los aqui.
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-300 mb-1">
+                      Prompt Padrão - Introdução (1º capítulo)
+                    </label>
+                    <textarea
+                      value={formData.config.scripts.default_prompt_intro}
+                      onChange={(e) => onChange('config.scripts.default_prompt_intro', e.target.value)}
+                      rows={8}
+                      className="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded text-white text-sm resize-none font-mono"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-300 mb-1">
+                      Prompt Padrão - Desenvolvimento (capítulos do meio)
+                    </label>
+                    <textarea
+                      value={formData.config.scripts.default_prompt_middle}
+                      onChange={(e) => onChange('config.scripts.default_prompt_middle', e.target.value)}
+                      rows={8}
+                      className="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded text-white text-sm resize-none font-mono"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-300 mb-1">
+                      Prompt Padrão - Conclusão (último capítulo)
+                    </label>
+                    <textarea
+                      value={formData.config.scripts.default_prompt_conclusion}
+                      onChange={(e) => onChange('config.scripts.default_prompt_conclusion', e.target.value)}
+                      rows={8}
+                      className="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded text-white text-sm resize-none font-mono"
+                    />
+                  </div>
+                  <div className="text-xs text-amber-400 bg-amber-900/20 p-2 rounded flex items-start space-x-2">
+                    <AlertCircle size={14} className="mt-0.5 flex-shrink-0" />
+                    <span>Variáveis disponíveis: {'{titulo}'}, {'{premissa}'}, {'{resumos[i-2]}'} (capítulos do meio), {'{resumos[-1]}'} (conclusão), {'{i}'} (número do capítulo)</span>
                   </div>
                 </div>
               )}

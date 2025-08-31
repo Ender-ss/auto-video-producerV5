@@ -121,10 +121,11 @@ def generate_titles_with_gemini(source_titles, instructions, api_key, update_cal
             }
         
         # Importar diretamente para usar a mesma instância global
-        from routes.automations import get_next_gemini_key, handle_gemini_429_error
+        from routes.automations import get_next_gemini_key, handle_gemini_429_error, get_gemini_keys_count
         
-        # Tentar múltiplas chaves se necessário
-        max_retries = 3  # Tentar até 3 chaves diferentes
+        # Usar a quantidade real de chaves disponíveis
+        max_retries = get_gemini_keys_count() if get_gemini_keys_count() > 0 else 1
+        print(f"🔑 Usando {max_retries} chaves Gemini para títulos")
         last_error = None
         
         for attempt in range(max_retries):
@@ -445,10 +446,11 @@ def generate_script_chapters_with_gemini(title, context, num_chapters, api_key=N
     
     # Adicionar o diretório routes ao path para importar funções
     sys.path.append(os.path.join(os.path.dirname(__file__), '..', 'routes'))
-    from routes.automations import get_next_gemini_key, handle_gemini_429_error
+    from routes.automations import get_next_gemini_key, handle_gemini_429_error, get_gemini_keys_count
     
-    # Tentar múltiplas chaves se necessário
-    max_retries = 3  # Tentar até 3 chaves diferentes
+    # Usar a quantidade real de chaves disponíveis
+    max_retries = get_gemini_keys_count() if get_gemini_keys_count() > 0 else 1
+    print(f"🔑 Usando {max_retries} chaves Gemini para roteiro")
     last_error = None
     
     for attempt in range(max_retries):
@@ -548,12 +550,12 @@ Forneça apenas o novo capítulo, sem explicações ou comentários adicionais.
             if "429" in error_str or "quota" in error_str.lower() or "rate limit" in error_str.lower():
                 if attempt < max_retries - 1:  # Not the last attempt
                     print(f"🔄 Erro de quota detectado, tentando próxima chave Gemini...")
-                    handle_gemini_429_error(error_str)
+                    handle_gemini_429_error(error_str, api_key)
                     api_key = None  # Forçar nova chave na próxima tentativa
                     continue
                 else:
                     print("❌ Todas as tentativas de retry falharam")
-                    handle_gemini_429_error(error_str)
+                    handle_gemini_429_error(error_str, api_key)
             else:
                 # For non-quota errors, don't retry
                 print(f"❌ Erro não relacionado à quota, parando tentativas: {error_str}")
@@ -565,3 +567,219 @@ Forneça apenas o novo capítulo, sem explicações ou comentários adicionais.
         'success': False,
         'error': final_error
     }
+
+def generate_script_chapters_with_claude(title, context, num_chapters, api_key):
+    """Gerar roteiro completo com múltiplos capítulos usando Claude da Anthropic"""
+    try:
+        if not ANTHROPIC_AVAILABLE:
+            return {
+                'success': False,
+                'error': 'Biblioteca anthropic não instalada'
+            }
+        
+        client = anthropic.Anthropic(api_key=api_key)
+        
+        base_prompt = f"""
+        Você é um roteirista especializado em conteúdo viral para YouTube.
+        
+        Título: {title}
+        Contexto: {context}
+        
+        Escreva uma história de aproximadamente 500 palavras que seja o primeiro capítulo desta narrativa. 
+        A história deve começar com uma versão sensacionalista do gancho baseada no título. 
+        
+        O tom da escrita deve ser simples, direto e emocional, como se a história estivesse sendo contada 
+        por um amigo em uma conversa informal. Use palavras fáceis, frases curtas e um ritmo leve.
+        
+        Regras importantes:
+        1. Intensidade Emotiva - Cada frase deve transmitir emoção
+        2. Urgência e Ritmo - Intercale frases curtas de ação
+        3. Sensação Cinematográfica - Altere o foco entre close-ups e planos gerais
+        4. Narrador Observador e Próximo - Terceira pessoa com tom coloquial
+        5. Linguagem de Choque - Termos impactantes
+        6. Proximidade com a Dor - Retrate de forma direta a dor física e emocional
+        
+        Forneça apenas o texto da história, sem explicações ou comentários adicionais.
+        """
+        
+        # Gerar primeiro capítulo
+        response = client.messages.create(
+            model="claude-3-sonnet-20240229",
+            max_tokens=1000,
+            messages=[{"role": "user", "content": base_prompt}]
+        )
+        
+        chapters = []
+        current_story = response.content[0].text.strip()
+        chapters.append({
+            'chapter_number': 1,
+            'content': current_story,
+            'word_count': len(current_story.split())
+        })
+        
+        # Gerar capítulos subsequentes
+        for i in range(2, num_chapters + 1):
+            continuation_prompt = f"""
+            {current_story}
+            
+            Escreva um novo capítulo, de aproximadamente 500 palavras, que continue os eventos descritos acima, 
+            introduzindo uma reviravolta extremamente chocante e impactante que transforme completamente a narrativa.
+            
+            {"Se este for o último capítulo, encerre definitivamente a história e adicione uma mensagem urgente de CTA." if i == num_chapters else "Não finalize a trama, mas use essa reviravolta para criar um gancho ainda mais poderoso."}
+            
+            Forneça apenas o novo capítulo, sem explicações ou comentários adicionais.
+            """
+            
+            response = client.messages.create(
+                model="claude-3-sonnet-20240229",
+                max_tokens=1000,
+                messages=[{"role": "user", "content": continuation_prompt}]
+            )
+            
+            new_chapter = response.content[0].text.strip()
+            chapters.append({
+                'chapter_number': i,
+                'content': new_chapter,
+                'word_count': len(new_chapter.split())
+            })
+            
+            current_story += "\n\n" + new_chapter
+        
+        total_words = sum(chapter['word_count'] for chapter in chapters)
+        
+        return {
+            'success': True,
+            'data': {
+                'chapters': chapters,
+                'total_chapters': len(chapters),
+                'total_words': total_words,
+                'agent': 'Claude',
+                'title': title
+            }
+        }
+    
+    except Exception as e:
+        return {
+            'success': False,
+            'error': f'Erro ao gerar roteiro com Claude: {str(e)}'
+        }
+
+def generate_script_chapters_with_openrouter(title, context, num_chapters, api_key):
+    """Gerar roteiro completo com múltiplos capítulos usando OpenRouter"""
+    try:
+        base_prompt = f"""
+        Você é um roteirista especializado em conteúdo viral para YouTube.
+        
+        Título: {title}
+        Contexto: {context}
+        
+        Escreva uma história de aproximadamente 500 palavras que seja o primeiro capítulo desta narrativa. 
+        A história deve começar com uma versão sensacionalista do gancho baseada no título. 
+        
+        O tom da escrita deve ser simples, direto e emocional, como se a história estivesse sendo contada 
+        por um amigo em uma conversa informal. Use palavras fáceis, frases curtas e um ritmo leve.
+        
+        Regras importantes:
+        1. Intensidade Emotiva - Cada frase deve transmitir emoção
+        2. Urgência e Ritmo - Intercale frases curtas de ação
+        3. Sensação Cinematográfica - Altere o foco entre close-ups e planos gerais
+        4. Narrador Observador e Próximo - Terceira pessoa com tom coloquial
+        5. Linguagem de Choque - Termos impactantes
+        6. Proximidade com a Dor - Retrate de forma direta a dor física e emocional
+        
+        Forneça apenas o texto da história, sem explicações ou comentários adicionais.
+        """
+        
+        headers = {
+            "Authorization": f"Bearer {api_key}",
+            "Content-Type": "application/json",
+            "HTTP-Referer": "http://localhost:5173",
+            "X-Title": "Auto Video Producer"
+        }
+        
+        # Gerar primeiro capítulo
+        data = {
+            "model": "anthropic/claude-3-sonnet",
+            "messages": [{"role": "user", "content": base_prompt}],
+            "max_tokens": 1000,
+            "temperature": 0.8
+        }
+        
+        response = requests.post(
+            "https://openrouter.ai/api/v1/chat/completions",
+            headers=headers,
+            json=data,
+            timeout=60
+        )
+        
+        if response.status_code != 200:
+            raise Exception(f"OpenRouter API error: {response.status_code}")
+        
+        result = response.json()
+        current_story = result['choices'][0]['message']['content'].strip()
+        
+        chapters = []
+        chapters.append({
+            'chapter_number': 1,
+            'content': current_story,
+            'word_count': len(current_story.split())
+        })
+        
+        # Gerar capítulos subsequentes
+        for i in range(2, num_chapters + 1):
+            continuation_prompt = f"""
+            {current_story}
+            
+            Escreva um novo capítulo, de aproximadamente 500 palavras, que continue os eventos descritos acima, 
+            introduzindo uma reviravolta extremamente chocante e impactante que transforme completamente a narrativa.
+            
+            {"Se este for o último capítulo, encerre definitivamente a história e adicione uma mensagem urgente de CTA." if i == num_chapters else "Não finalize a trama, mas use essa reviravolta para criar um gancho ainda mais poderoso."}
+            
+            Forneça apenas o novo capítulo, sem explicações ou comentários adicionais.
+            """
+            
+            data = {
+                "model": "anthropic/claude-3-sonnet",
+                "messages": [{"role": "user", "content": continuation_prompt}],
+                "max_tokens": 1000,
+                "temperature": 0.8
+            }
+            
+            response = requests.post(
+                "https://openrouter.ai/api/v1/chat/completions",
+                headers=headers,
+                json=data,
+                timeout=60
+            )
+            
+            if response.status_code != 200:
+                raise Exception(f"OpenRouter API error: {response.status_code}")
+            
+            result = response.json()
+            new_chapter = result['choices'][0]['message']['content'].strip()
+            chapters.append({
+                'chapter_number': i,
+                'content': new_chapter,
+                'word_count': len(new_chapter.split())
+            })
+            
+            current_story += "\n\n" + new_chapter
+        
+        total_words = sum(chapter['word_count'] for chapter in chapters)
+        
+        return {
+            'success': True,
+            'data': {
+                'chapters': chapters,
+                'total_chapters': len(chapters),
+                'total_words': total_words,
+                'agent': 'OpenRouter',
+                'title': title
+            }
+        }
+    
+    except Exception as e:
+        return {
+            'success': False,
+            'error': f'Erro ao gerar roteiro com OpenRouter: {str(e)}'
+        }

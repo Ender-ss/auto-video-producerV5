@@ -393,10 +393,12 @@ def generate_premises_openrouter(titles, prompt, model, api_key, script_size='me
 def generate_content_with_gemini_retry(prompt):
     """Gerar conteúdo usando Gemini com retry automático entre múltiplas chaves"""
     import google.generativeai as genai
-    from routes.automations import get_next_gemini_key, handle_gemini_429_error
+    from routes.automations import get_next_gemini_key, handle_gemini_429_error, get_gemini_keys_count
     
     # Tentar múltiplas chaves se necessário
-    max_key_attempts = 3  # Tentar até 3 chaves diferentes
+    # Usar a quantidade real de chaves disponíveis
+    max_key_attempts = get_gemini_keys_count() if get_gemini_keys_count() > 0 else 1
+    print(f"🔑 Usando {max_key_attempts} chaves Gemini para premissas")
     last_error = None
     
     for attempt in range(max_key_attempts):
@@ -519,8 +521,8 @@ def generate_premises_gemini(titles, prompt, title_generator, script_size='medio
         # Tratar erro 429 especificamente
         if '429' in error_str or 'quota' in error_str.lower() or 'exceeded' in error_str.lower():
             print(f"🚫 [GEMINI] Erro 429 detectado nas premissas: {error_str}")
-            # Não temos acesso à api_key específica aqui, então passamos None
-            handle_gemini_429_error(error_str, None)
+            # Nota: O tratamento do erro 429 já é feito internamente pela função generate_content_with_gemini_retry
+            # que chama handle_gemini_429_error com a chave correta
             
             # Tentar fallback automático
             try:
@@ -847,6 +849,7 @@ def generate_agent_script():
         title = data.get('title', '').strip()
         premise = data.get('premise', '').strip()
         custom_prompt = data.get('custom_prompt', '').strip()
+        detailed_prompt_text = data.get('detailed_prompt_text', '').strip()  # Prompt detalhado para roteiros longos
         ai_provider = data.get('ai_provider', 'gemini').lower()
         openrouter_model = data.get('openrouter_model', 'auto')
         api_keys = data.get('api_keys', {})
@@ -855,15 +858,18 @@ def generate_agent_script():
         num_chapters = data.get('num_chapters', default_chapters)  # Número de capítulos (1-15)
         script_size = data.get('script_size', 'medio')  # Tamanho do roteiro
         use_parts_generation = data.get('use_parts_generation', False)  # Usar geração em partes
+        detailed_prompt = data.get('detailed_prompt', False)  # Usar prompt detalhado
 
         print(f"🎬 [AGENTE] Iniciando geração de roteiro...")
         print(f"📝 [AGENTE] Título: {title[:100]}...")
         print(f"🎯 [AGENTE] Premissa: {premise[:100]}...")
         print(f"📄 [AGENTE] Prompt personalizado: {len(custom_prompt)} caracteres")
+        print(f"📋 [AGENTE] Prompt detalhado: {len(detailed_prompt_text)} caracteres")
         print(f"📚 [AGENTE] Número de capítulos: {num_chapters}")
         print(f"🤖 [AGENTE] Provider: {ai_provider}")
         print(f"📏 [AGENTE] Tamanho: {script_size}")
         print(f"🔄 [AGENTE] Geração em partes: {use_parts_generation}")
+        print(f"🔍 [AGENTE] Usar prompt detalhado: {detailed_prompt}")
 
         if not title:
             return jsonify({
@@ -877,14 +883,75 @@ def generate_agent_script():
                 'error': 'Premissa é obrigatória'
             }), 400
 
-        if not custom_prompt:
+        # Se estiver usando prompt detalhado, o custom_prompt não é obrigatório
+        if not custom_prompt and not detailed_prompt:
             return jsonify({
                 'success': False,
-                'error': 'Prompt personalizado é obrigatório'
+                'error': 'Prompt personalizado é obrigatório quando não está usando prompt detalhado'
+            }), 400
+            
+        # Se estiver usando prompt detalhado, verificar se foi fornecido
+        if detailed_prompt and not detailed_prompt_text:
+            return jsonify({
+                'success': False,
+                'error': 'Prompt detalhado é obrigatório quando a opção está ativada'
             }), 400
 
         # Detectar se deve usar geração em partes
         should_use_parts = use_parts_generation and script_size == 'longo'
+        
+        # Se estiver usando prompt detalhado, usar a função específica
+        if detailed_prompt and detailed_prompt_text:
+            print(f"📋 [AGENTE] Usando geração com prompt detalhado...")
+            
+            # Importar a função de scripts.py
+            from .scripts import generate_script_with_detailed_prompt
+            
+            # Gerar roteiro usando prompt detalhado
+            result = generate_script_with_detailed_prompt(
+                title=title,
+                context=premise,
+                base_prompt=custom_prompt,
+                detailed_prompt_text=detailed_prompt_text,
+                number_of_chapters=num_chapters,
+                ai_provider=ai_provider,
+                api_keys=api_keys
+            )
+            
+            # Formatar o resultado para o formato esperado pelo frontend
+            if result and 'chapters' in result:
+                # Combinar capítulos em roteiro completo
+                full_script = "\n\n".join([chapter['content'] for chapter in result['chapters']])
+                
+                # Formatar partes para compatibilidade
+                script_parts = []
+                for i, chapter in enumerate(result['chapters']):
+                    script_parts.append({
+                        'part': f'CAPÍTULO {i+1}',
+                        'content': chapter['content'],
+                        'characters': len(chapter['content'])
+                    })
+                
+                return jsonify({
+                    'success': True,
+                    'script': {
+                        'title': title,
+                        'premise': premise,
+                        'content': full_script,
+                        'character_count': len(full_script),
+                        'word_count': len(full_script.split()),
+                        'estimated_duration_minutes': len(full_script) // 200,
+                        'parts': script_parts,
+                        'num_chapters': num_chapters
+                    },
+                    'provider_used': ai_provider,
+                    'generation_method': 'detailed_prompt'
+                })
+            else:
+                return jsonify({
+                    'success': False,
+                    'error': 'Falha ao gerar roteiro com prompt detalhado'
+                }), 500
         
         if should_use_parts:
             print(f"🔄 [AGENTE] Usando geração em partes para roteiro longo...")
@@ -1250,8 +1317,8 @@ def generate_script_gemini(prompt, title_generator):
         # Tratar erro 429 especificamente
         if '429' in error_str or 'quota' in error_str.lower() or 'exceeded' in error_str.lower():
             print(f"🚫 [GEMINI] Erro 429 detectado: {error_str}")
-            # Não temos acesso à api_key específica aqui, então passamos None
-            handle_gemini_429_error(error_str, None)
+            # Nota: O tratamento do erro 429 já é feito internamente pela função generate_content_with_gemini_retry
+            # que chama handle_gemini_429_error com a chave correta
             
             # Tentar fallback automático
             try:
@@ -1666,8 +1733,8 @@ def generate_script_part_gemini(prompt, title_generator):
         # Tratar erro 429 especificamente
         if '429' in error_str or 'quota' in error_str.lower() or 'exceeded' in error_str.lower():
             print(f"🚫 [GEMINI] Erro 429 detectado na parte: {error_str}")
-            # Não temos acesso à api_key específica aqui, então passamos None
-            handle_gemini_429_error(error_str, None)
+            # Nota: O tratamento do erro 429 já é feito internamente pela função generate_content_with_gemini_retry
+            # que chama handle_gemini_429_error com a chave correta
             
             # Tentar fallback automático
             try:
@@ -1882,6 +1949,90 @@ def daily_reset_quota():
     except Exception as e:
         print(f"❌ [RESET] Erro no reset diário: {e}")
         return False
+
+
+@premise_bp.route('/generate-long-script', methods=['POST'])
+def generate_long_script():
+    """Gerar roteiro longo com capítulos sequenciais e resumos contextuais"""
+    try:
+        logger.info(f"🚀 [LONG_SCRIPT] Iniciando geração de roteiro longo...")
+        data = request.get_json()
+        
+        # Extrair parâmetros obrigatórios - aceitando formatos alternativos
+        titulo = data.get('title')
+        # Aceitar premissa ou usar título como fallback se não houver
+        premissa = data.get('premise', data.get('title', 'Roteiro sem premissa'))
+        # Aceitar number_of_chapters ou chapters
+        numero_capitulos = data.get('number_of_chapters', data.get('chapters', 10))
+        
+        # Extrair parâmetros opcionais - aceitando formatos alternativos
+        ai_provider = data.get('ai_provider', data.get('provider', 'auto'))
+        openrouter_model = data.get('openrouter_model', 'auto')
+        api_keys = data.get('api_keys', {})
+        # Novo parâmetro para prompt personalizado do roteiro longo
+        long_script_prompt = data.get('long_script_prompt', '')
+        
+        logger.info(f"🔍 [LONG_SCRIPT] Parâmetros recebidos: título={titulo}, capítulos={numero_capitulos}, provider={ai_provider}")
+        
+        # Validar parâmetros obrigatórios
+        if not titulo:
+            logger.error(f"❌ [LONG_SCRIPT] Erro: Título não fornecido")
+            return jsonify({
+                'success': False,
+                'error': 'Título não fornecido'
+            }), 400
+        
+        if numero_capitulos < 1:
+            logger.error(f"❌ [LONG_SCRIPT] Erro: Número de capítulos inválido")
+            return jsonify({
+                'success': False,
+                'error': 'Número de capítulos deve ser maior que zero'
+            }), 400
+        
+        # Carregar chaves de API do arquivo se não foram fornecidas
+        if not api_keys:
+            api_keys = load_api_keys_from_file()
+            logger.info(f"🔑 [LONG_SCRIPT] Chaves carregadas do arquivo: {list(api_keys.keys())}")
+        
+        # Importar o gerador de roteiros longos
+        from routes.long_script_generator import generate_long_script_with_context
+        
+        # Criar instância do TitleGenerator para acesso às APIs
+        title_generator = TitleGenerator()
+        
+        # Função de callback para atualizações de progresso
+        def progress_callback(progress_data):
+            logger.info(f"📊 [LONG_SCRIPT] Progresso: {progress_data['progress']:.1f}% (Capítulo {progress_data['current_chapter']}/{progress_data['total_chapters']})")
+        
+        # Gerar roteiro longo
+        result = generate_long_script_with_context(
+            titulo=titulo,
+            premissa=premissa,
+            numero_capitulos=numero_capitulos,
+            title_generator=title_generator,
+            openrouter_api_key=api_keys.get('openrouter'),
+            openrouter_model=openrouter_model,
+            update_callback=progress_callback,
+            long_script_prompt=long_script_prompt  # Passando o prompt personalizado
+        )
+        
+        if result['success']:
+            logger.info(f"✅ [LONG_SCRIPT] Roteiro longo gerado com sucesso: {result['data']['number_of_chapters']} capítulos, {result['data']['word_count']} palavras")
+            return jsonify(result)
+        else:
+            logger.error(f"❌ [LONG_SCRIPT] Erro na geração: {result['error']}")
+            return jsonify({
+                'success': False,
+                'error': result['error']
+            }), 500
+            
+    except Exception as e:
+        error_msg = f"Erro ao gerar roteiro longo: {str(e)}"
+        logger.error(f"❌ [LONG_SCRIPT] {error_msg}")
+        return jsonify({
+            'success': False,
+            'error': error_msg
+        }), 500
 
 
 def get_optimized_fallback_provider():

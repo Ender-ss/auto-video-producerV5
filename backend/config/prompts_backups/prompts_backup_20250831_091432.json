@@ -1,0 +1,37 @@
+{
+  "titles": {
+    "name": "Geração de Títulos",
+    "description": "Prompt usado pelo Gemini para gerar títulos alternativos",
+    "prompt": "Você é um especialista em criação de conteúdo para YouTube. Sua tarefa é analisar o título original de um vídeo e criar versões alternativas que sejam:\n\n1. Mais atrativas e chamativas\n2. Otimizadas para SEO\n3. Que despertem curiosidade\n4. Mantendo a essência do conteúdo original\n\nTítulo original: {original_title}\n\nCrie 5 versões alternativas do título, cada uma em uma linha separada. Foque em:\n- Usar palavras-chave relevantes\n- Criar senso de urgência ou curiosidade\n- Manter entre 50-60 caracteres quando possível\n- Usar números quando apropriado\n- Evitar clickbait excessivo\n\nTítulos alternativos:",
+    "variables": [
+      "original_title"
+    ]
+  },
+  "premises": {
+    "name": "Geração de Premissas",
+    "description": "Prompt usado pelo Gemini para criar premissas do roteiro",
+    "prompt": "Você é um roteirista experiente especializado em conteúdo educativo e envolvente. Sua tarefa é criar premissas sólidas para um roteiro baseado no título fornecido.\n\nTítulo: {title}\n\nCrie 3 premissas diferentes para este conteúdo, cada uma deve:\n\n1. Definir o objetivo principal do vídeo\n2. Identificar o público-alvo\n3. Estabelecer o tom e estilo\n4. Sugerir a estrutura narrativa\n5. Destacar os pontos-chave a serem abordados\n\nCada premissa deve ter entre 100-150 palavras e ser numerada (1, 2, 3).\n\nPremissas:",
+    "variables": [
+      "title"
+    ]
+  },
+  "scripts": {
+    "name": "Geração de Roteiros",
+    "description": "Prompt usado para gerar roteiros completos",
+    "prompt": "Você é um roteirista profissional especializado em conteúdo para YouTube. Crie um roteiro envolvente e bem estruturado.\n\nTítulo: {title}\nPremissa: {premise}\nNúmero de capítulos: {chapters}\nPalavras-alvo: {target_words}\n\nEstruture o roteiro seguindo este formato:\n\n**INTRODUÇÃO** (10% do conteúdo)\n- Hook inicial para capturar atenção\n- Apresentação do tema\n- Preview do que será abordado\n\n**DESENVOLVIMENTO** (80% do conteúdo)\n- Divida em {chapters} capítulos claros\n- Cada capítulo deve ter título e conteúdo detalhado\n- Use transições suaves entre capítulos\n- Inclua exemplos práticos quando relevante\n\n**CONCLUSÃO** (10% do conteúdo)\n- Resumo dos pontos principais\n- Call-to-action\n- Encerramento envolvente\n\nObjetivo de palavras: aproximadamente {target_words} palavras\n\nRoteiro:",
+    "variables": [
+      "title",
+      "premise",
+      "chapters",
+      "target_words"
+    ]
+  },
+  "image_prompts": {
+    "name": "Geração de Prompts de Imagem",
+    "description": "Prompt usado pelo Gemini para criar prompts de imagem a partir do roteiro",
+    "prompt": "Você é um especialista em direção de arte e criação de prompts para IA de geração de imagens. Sua tarefa é analisar um trecho de roteiro e criar prompts detalhados para gerar imagens que complementem o conteúdo.\n\nTrecho do roteiro:\n{script_segment}\n\nCrie um prompt detalhado para geração de imagem que:\n\n1. Capture a essência visual do conteúdo\n2. Seja específico sobre estilo, cores e composição\n3. Inclua detalhes técnicos (iluminação, ângulo, etc.)\n4. Seja otimizado para IA de geração de imagens\n5. Mantenha consistência visual com o tema\n\nFormato do prompt:\n- Descrição principal (o que mostrar)\n- Estilo visual (fotográfico, ilustração, etc.)\n- Cores dominantes\n- Composição e enquadramento\n- Qualidade e detalhes técnicos\n\nPrompt de imagem:",
+    "variables": [
+      "script_segment"
+    ]
+  }
+}

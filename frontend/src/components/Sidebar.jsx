@@ -126,6 +126,18 @@ const Sidebar = ({ onClose }) => {
       description: 'Gerador de roteiros longos (teste)'
     },
     {
+      path: '/long-script-generator',
+      icon: PenSquare,
+      label: '🎬 Gerador de Roteiros',
+      description: 'Gerador de roteiros longos com resumos contextuais'
+    },
+    {
+      path: '/long-script-test',
+      icon: TestTube,
+      label: '🧪 TESTE: Roteiro Longo',
+      description: 'Testar geração de roteiros longos isoladamente'
+    },
+    {
       path: '/youtube-comparison',
       icon: TestTube,
       label: '🧪 DEV: YouTube Comparação',

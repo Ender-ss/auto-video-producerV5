@@ -660,9 +660,11 @@ Gere os {count} títulos agora:
             raise Exception("Gemini não configurado")
 
         try:
-            from routes.automations import get_next_gemini_key, handle_gemini_429_error
+            from routes.automations import get_next_gemini_key, handle_gemini_429_error, get_gemini_keys_count
             
-            max_retries = 3
+            # Usar a quantidade real de chaves disponíveis
+            max_retries = get_gemini_keys_count() if get_gemini_keys_count() > 0 else 1
+            print(f"🔑 Usando {max_retries} chaves Gemini para geração de títulos")
             
             for attempt in range(max_retries):
                 try:

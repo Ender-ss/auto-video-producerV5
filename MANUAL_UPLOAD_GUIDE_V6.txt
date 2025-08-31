@@ -1,0 +1,55 @@
+======= GUIA PASSO A PASSO PARA ENVIAR O PROJETO PARA https://github.com/Ender-ss/auto-video-producerV6.git =======
+
+Siga estas instruções para enviar seu projeto para o novo repositório:
+
+1. **ABRA O PROMPT DE COMANDO COMO ADMINISTRADOR**
+   - Pressione WINDOWS + R
+   - Digite "cmd"
+   - Pressione CTRL+SHIFT+ENTER para abrir como Administrador
+
+2. **NAVEGUE ATÉ O DIRETÓRIO DO PROJETO**
+   Execute este comando:
+   cd /d "C:\Users\Enderson\Documents\APP\auto-video-producer - v2\auto-video-producer"
+
+3. **CONFIGURAR O GIT**
+   Execute estes comandos:
+   git config --global user.name "Ender-ss"
+   git config --global user.email "enderson.developer@gmail.com"
+
+4. **CRIAR UMA CÓPIA TEMPORÁRIA DO REPOSITÓRIO**
+   Execute estes comandos:
+   mkdir %TEMP%\temp-v6-repo
+   cd /d %TEMP%\temp-v6-repo
+   git clone https://github.com/Ender-ss/auto-video-producerV6.git .
+
+5. **LIMPAR O REPOSITÓRIO CLONADO (MANTENDO O .git)**
+   Execute estes comandos:
+   for /d %i in (*) do if /i not "%i"==".git" rmdir /s /q "%i"
+   for %i in (*) do if /i not "%i"==".gitignore" del /q "%i"
+
+6. **COPIAR OS ARQUIVOS DO PROJETO ORIGINAL**
+   Execute este comando:
+   xcopy "C:\Users\Enderson\Documents\APP\auto-video-producer - v2\auto-video-producer\*" . /e /i /h /k /y
+
+7. **FAZER COMMIT DAS ALTERAÇÕES**
+   Execute estes comandos:
+   git add .
+   git commit -m "Initial commit - Projeto completo auto-video-producer"
+
+8. **TENTAR ENVIAR PARA O REPOSITÓRIO**
+   Execute este comando:
+   git push origin main
+
+   Se o push para a main falhar, tente com uma branch alternativa:
+   git checkout -b versao-completa
+   git push -u origin versao-completa
+
+9. **CONCLUSÃO**
+   - Se tudo der certo, o projeto foi enviado com sucesso!
+   - Se houver erros, verifique suas permissões no repositório
+   - Acesse https://github.com/Ender-ss/auto-video-producerV6 para confirmar
+
+Dicas:
+- Certifique-se de que você tem permissões de escrita no repositório
+- Verifique se o repositório existe e se você está conectado à internet
+- Se houver regras de proteção de branch, crie um Pull Request da branch alternativa para a main

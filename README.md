@@ -1,293 +1,216 @@
 # 🎬 Auto Video Producer
 
-**Sistema Completo de Produção Automática de Vídeos usando IA**
+Sistema completo de produção automatizada de vídeos usando inteligência artificial.
 
-Um sistema avançado que automatiza todo o processo de criação de vídeos, desde a extração de conteúdo do YouTube até a geração de roteiros, áudio e vídeos finais usando múltiplas APIs de IA.
+## 🚀 Características Principais
 
-## ✨ Características Principais
+- **Extração Automática**: Extrai conteúdo de canais do YouTube
+- **Geração de Títulos**: Cria títulos virais usando IA (OpenAI, Gemini, Claude)
+- **Roteiros Inteligentes**: Gera roteiros multi-capítulos com contexto
+- **Text-to-Speech**: Converte roteiros em áudio com vozes naturais
+- **Geração de Imagens**: Cria imagens relevantes para o conteúdo
+- **Pipeline Completa**: Automação end-to-end da produção de vídeos
 
-### 🤖 **Automações de IA**
-- **Extração YouTube**: Coleta automática de títulos e métricas de canais
-- **Geração de Títulos**: Criação de títulos virais usando OpenAI, Gemini, Claude
-- **Roteiros Inteligentes**: Geração de roteiros completos com múltiplos capítulos
-- **Premissas Narrativas**: Criação de premissas envolventes para histórias
-- **Text-to-Speech**: Conversão de texto em áudio com vozes naturais
+## 🛠️ Tecnologias
 
-### 📊 **Interface Completa**
-- **Dashboard**: Visão geral com estatísticas em tempo real
-- **Gerenciamento de Canais**: Monitoramento de canais do YouTube
-- **Pipeline de Produção**: Acompanhamento de vídeos em produção
-- **Biblioteca de Vídeos**: Organização e download de vídeos produzidos
-- **Analytics**: Relatórios detalhados de performance
-- **Configurações**: Gerenciamento de APIs e preferências
+### Frontend
+- React 18
+- Vite
+- Tailwind CSS
+- Framer Motion
 
-### 🔧 **Tecnologias**
-- **Backend**: Python + Flask + SQLAlchemy
-- **Frontend**: React + Vite + Tailwind CSS + Framer Motion
-- **IA**: OpenAI, Google Gemini, Anthropic Claude, ElevenLabs
-- **APIs**: RapidAPI YouTube V2, Together.ai, OpenRouter
-
-## 🚀 Instalação Rápida
-
-### Pré-requisitos
+### Backend
 - Python 3.8+
-- Node.js 16+
+- Flask
+- SQLAlchemy
+- SQLite
+
+### APIs de IA
+- Google Gemini (múltiplas chaves com rotação)
+- OpenAI GPT
+- Anthropic Claude
+- ElevenLabs TTS
+- OpenRouter
+- Together.ai
+
+## 📋 Pré-requisitos
+
+- Python 3.8 ou superior
+- Node.js 16 ou superior
 - Git
 
-### 1. Clone o Repositório
+## 🔧 Instalação
+
+### 1. Clone o repositório
 ```bash
-git clone https://github.com/SEU_USUARIO/auto-video-producer.git
+git clone https://github.com/seu-usuario/auto-video-producer.git
 cd auto-video-producer
 ```
 
-> **📋 Primeira vez?** Veja o arquivo `GITHUB_SETUP.md` para instruções de configuração do Git e GitHub.
-
-### 2. Instalação Automática
+### 2. Instalação automática
 ```bash
 python start.py
 ```
 
-O script `start.py` irá:
-- ✅ Verificar dependências
-- 📦 Instalar pacotes Python e Node.js
-- 🗂️ Criar diretórios necessários
-- 🚀 Iniciar backend e frontend
-- 🌐 Abrir interface web
+### 3. Instalação manual
 
-### 3. Acesse a Interface
-- **Frontend**: http://localhost:5173
-- **Backend API**: http://localhost:5000
-
-## ⚙️ Configuração
-
-### 1. Configure suas APIs
-Acesse **Configurações** na interface web e adicione suas chaves:
-
-#### 🔑 **APIs Essenciais**
-- **RapidAPI YouTube V2**: Para extração de conteúdo
-- **Google Gemini**: IA gratuita para títulos e roteiros
-- **OpenAI**: IA premium para melhor qualidade
-
-#### 🔑 **APIs Opcionais**
-- **Anthropic Claude**: IA alternativa
-- **ElevenLabs**: Text-to-speech premium
-- **Together.ai**: Geração de imagens
-- **OpenRouter**: Acesso a múltiplos modelos
-
-### 2. Teste as Conexões
-Use o botão "Testar" em cada API para verificar se estão funcionando.
-
-## 📖 Como Usar
-
-### 🎯 **Fluxo Básico**
-
-1. **📺 Adicione Canais**
-   - Vá para "Canais"
-   - Adicione canais do YouTube para monitorar
-   - Configure estilo de vídeo e parâmetros
-
-2. **🤖 Use as Automações**
-   - Acesse "Automações"
-   - Extraia conteúdo de canais
-   - Gere títulos virais
-   - Crie roteiros completos
-
-3. **🎬 Execute Pipelines**
-   - Vá para "Pipeline"
-   - Inicie produção automática
-   - Acompanhe progresso em tempo real
-
-4. **📥 Baixe os Vídeos**
-   - Acesse "Vídeos"
-   - Visualize biblioteca completa
-   - Faça download individual ou em lote
-
-### 🛠️ **Automações Disponíveis**
-
-#### **Extração YouTube**
-```
-Input: URL do canal (@NomeCanal ou link completo)
-Output: Lista de títulos, views, likes, dados do canal
-```
-
-#### **Geração de Títulos**
-```
-Input: Títulos originais + instruções
-Output: 5 títulos virais otimizados
-```
-
-#### **Roteiros IA**
-```
-Input: Título + contexto + número de capítulos
-Output: Roteiro completo dividido em capítulos
-```
-
-#### **Premissas Narrativas**
-```
-Input: Título + resumo
-Output: Premissa envolvente para história
-```
-
-## 🏗️ Arquitetura
-
-```
-auto-video-producer/
-├── 🐍 backend/           # API Python + Flask
-│   ├── app.py           # Aplicação principal
-│   ├── routes/          # Rotas da API
-│   ├── services/        # Serviços de IA
-│   └── requirements.txt # Dependências Python
-├── ⚛️ frontend/          # Interface React
-│   ├── src/
-│   │   ├── pages/       # Páginas da aplicação
-│   │   ├── components/  # Componentes reutilizáveis
-│   │   └── services/    # Serviços de API
-│   └── package.json     # Dependências Node.js
-├── 🚀 start.py          # Script de inicialização
-└── 📚 README.md         # Este arquivo
-```
-
-## 🔌 API Endpoints
-
-### **Automações**
-- `POST /api/automations/extract-youtube` - Extrair conteúdo YouTube
-- `POST /api/automations/generate-titles` - Gerar títulos
-- `POST /api/automations/generate-script` - Gerar roteiros
-- `POST /api/automations/generate-premise` - Gerar premissas
-- `POST /api/automations/generate-tts` - Text-to-speech
-
-### **Gerenciamento**
-- `GET /api/channels` - Listar canais
-- `GET /api/pipelines` - Listar pipelines
-- `GET /api/videos` - Listar vídeos
-- `GET /api/settings/apis` - Configurações de API
-
-### **Sistema**
-- `GET /api/system/status` - Status do sistema
-- `GET /` - Informações da API
-
-## 🎨 Interface
-
-### **Dashboard**
-- 📊 Estatísticas em tempo real
-- 🎬 Pipelines ativos
-- 📈 Gráficos de performance
-- ⚡ Ações rápidas
-
-### **Automações**
-- 🤖 6 tipos de automação
-- 🔄 Status dos agentes de IA
-- 📝 Histórico de execuções
-- ⚙️ Configurações personalizadas
-
-### **Pipeline**
-- 🎯 Monitoramento em tempo real
-- 📊 Barras de progresso
-- 🔍 Logs detalhados
-- ⏹️ Controles de execução
-
-## 🛠️ Desenvolvimento
-
-### **Backend**
+#### Backend
 ```bash
 cd backend
 pip install -r requirements.txt
 python app.py
 ```
 
-### **Frontend**
+#### Frontend
 ```bash
 cd frontend
 npm install
 npm run dev
 ```
 
-### **Estrutura do Banco**
-- `APIConfig`: Configurações de APIs
-- `Channel`: Canais monitorados
-- `Pipeline`: Pipelines de produção
-- `Video`: Vídeos produzidos
-- `AutomationLog`: Logs de automações
+## 🌐 Acesso
 
-## 🔧 Configurações Avançadas
+- **Frontend**: http://localhost:5173
+- **Backend API**: http://localhost:5000
 
-### **Variáveis de Ambiente**
-```bash
-MAX_CONCURRENT_PIPELINES=3
-DEFAULT_VIDEO_QUALITY=1080p
-AUTO_RETRY_FAILED=true
-MAX_VIDEO_DURATION=600
-STORAGE_PATH=./outputs
-TEMP_PATH=./temp
-LOG_LEVEL=INFO
+## ⚙️ Configuração
+
+### Chaves de API
+
+Configure suas chaves de API no arquivo `backend/config/api_keys.json`:
+
+```json
+{
+  "gemini": {
+    "gemini_1": "sua-chave-gemini-1",
+    "gemini_2": "sua-chave-gemini-2",
+    "gemini_3": "sua-chave-gemini-3"
+  },
+  "openai": "sua-chave-openai",
+  "elevenlabs": "sua-chave-elevenlabs",
+  "rapidapi": "sua-chave-rapidapi"
+}
 ```
 
-### **Personalização**
-- Modifique prompts de IA em `services/ai_services.py`
-- Ajuste interface em `frontend/src/pages/`
-- Configure novos agentes de IA nas rotas
+### Sistema de Rotação de Chaves Gemini
 
-## 📊 Monitoramento
+O sistema suporta múltiplas chaves Gemini com rotação automática:
+- ✅ **Rotação inteligente**: Seleciona a chave com menor uso
+- ✅ **Limite dinâmico**: Usa todas as chaves disponíveis em caso de falha
+- ✅ **Otimização para tier gratuito**: 250 requests/dia por chave
+- ✅ **Retry automático**: Tenta com todas as chaves disponíveis
 
-### **Logs**
-- Backend: Console do Python
-- Frontend: Console do navegador
-- Automações: Página "Automações" → Logs
+## 🎯 Funcionalidades
 
-### **Métricas**
-- Taxa de sucesso dos pipelines
-- Uso de APIs por agente
-- Performance de canais
-- Estatísticas de vídeos
+### 📝 Roteiros Longos Contextuais
+- Geração de roteiros multi-capítulos
+- Resumos contextuais entre capítulos
+- Prompts personalizáveis por fase (início, meio, fim)
+- Limpeza automática de conteúdo para TTS
 
-## 🆘 Solução de Problemas
+### 🎨 Prompts Personalizados
+- Prompts padrão editáveis na interface
+- Prompts por fase narrativa
+- Sistema hierárquico: personalizado → editado → padrão
 
-### **Erros Comuns**
+### 🔄 Pipeline Automatizada
+- Checkpoints automáticos
+- Retomada de execução
+- Monitoramento em tempo real
+- Logs detalhados
 
-#### ❌ "API não configurada"
-- Verifique se adicionou a chave correta
-- Teste a conexão na página de configurações
+## 📊 Limites e Otimizações
 
-#### ❌ "Erro ao extrair canal"
-- Verifique se a URL está correta
-- Confirme se a chave RapidAPI está válida
+### Gemini Free Tier
+- **1,500 requests/dia** por chave
+- **15 requests/minuto** por chave
+- **Configuração otimizada**: 250 requests/dia por chave
+- **Capacidade**: ~30 roteiros longos/dia com 7 chaves
 
-#### ❌ "Frontend não carrega"
-- Verifique se Node.js está instalado
-- Execute `npm install` no diretório frontend
+## 🔧 Desenvolvimento
 
-#### ❌ "Backend não inicia"
-- Verifique se Python 3.8+ está instalado
-- Execute `pip install -r requirements.txt`
+### Estrutura do Projeto
+```
+auto-video-producer/
+├── backend/                 # API Flask
+│   ├── routes/             # Endpoints da API
+│   ├── services/           # Lógica de negócio
+│   ├── config/             # Configurações
+│   └── database.py         # Modelos do banco
+├── frontend/               # App React
+│   ├── src/
+│   │   ├── pages/          # Páginas
+│   │   ├── components/     # Componentes
+│   │   └── services/       # Clientes da API
+└── start.py               # Launcher principal
+```
 
-### **Suporte**
-- 📧 Verifique logs para detalhes do erro
-- 🔍 Teste APIs individualmente
-- 🔄 Reinicie o sistema com `python start.py`
+### Scripts Úteis
+- `python start.py` - Inicia todo o sistema
+- `python backend/check_gemini_keys_status.py` - Verifica status das chaves
+- `python backend/verify_gemini_system.py` - Testa sistema Gemini
 
-## 📈 Roadmap
+## 🐛 Resolução de Problemas
 
-### **Próximas Funcionalidades**
-- 🎵 Geração automática de música de fundo
-- 🖼️ Criação de thumbnails personalizados
-- 📱 Upload automático para YouTube
-- 🔄 Agendamento de produções
-- 📊 Analytics avançados
-- 🌐 Suporte a múltiplos idiomas
+### Erro de Chaves Gemini
+```bash
+python backend/check_gemini_keys_status.py
+```
 
-### **Melhorias Planejadas**
-- ⚡ Otimização de performance
-- 🔒 Sistema de autenticação
-- 📱 Interface mobile responsiva
-- 🎨 Temas personalizáveis
-- 🔌 Plugin system para extensões
+### Verificar Pipeline
+```bash
+python backend/check_pipeline_status.py
+```
+
+### Limpar Cache
+```bash
+# Remover arquivos de cache
+rm -rf backend/cache/
+rm -rf backend/checkpoints/
+```
+
+## 📈 Performance
+
+- **Concorrência**: Até 3 pipelines simultâneas
+- **Duração máxima**: 10 minutos por vídeo
+- **Retry automático**: Habilitado
+- **Throttling**: 1-3 segundos entre requests
+
+## 🔒 Segurança
+
+- Chaves de API armazenadas localmente
+- Sem autenticação (uso individual)
+- Logs não expõem informações sensíveis
+
+## 🚀 Roadmap
+
+- [ ] Sistema de autenticação
+- [ ] Armazenamento em nuvem
+- [ ] WebSockets para updates em tempo real
+- [ ] Containerização com Docker
+- [ ] Suporte a múltiplos usuários
+- [ ] Integração com mais provedores de IA
+
+## 🤝 Contribuição
+
+1. Faça um fork do projeto
+2. Crie uma branch para sua feature (`git checkout -b feature/nova-feature`)
+3. Commit suas mudanças (`git commit -am 'Adiciona nova feature'`)
+4. Push para a branch (`git push origin feature/nova-feature`)
+5. Abra um Pull Request
 
 ## 📄 Licença
 
-Este projeto está sob a licença MIT. Veja o arquivo `LICENSE` para mais detalhes.
+Este projeto está sob a licença MIT. Veja o arquivo [LICENSE](LICENSE) para detalhes.
+
+## 🙏 Agradecimentos
+
+- OpenAI pela API GPT
+- Google pelo Gemini
+- Anthropic pelo Claude
+- ElevenLabs pelo TTS
+- Comunidade open source
 
 ---
 
-**🎬 Auto Video Producer** - Transformando ideias em vídeos automaticamente!
-
-*Desenvolvido com ❤️ para criadores de conteúdo*
+**Desenvolvido com ❤️ para automatizar a criação de conteúdo**

@@ -33,6 +33,8 @@ import ImageQueue from './pages/ImageQueue';
 import YouTubeExtractTest from './pages/YouTubeExtractTest';
 import YouTubeExtractComparison from './pages/YouTubeExtractComparison';
 import ScreenplayGeneratorTest from './pages/ScreenplayGeneratorTest';
+import LongScriptGenerator from './pages/LongScriptGenerator';
+import LongScriptTest from './pages/LongScriptTest';
 import PromptsConfig from './pages/PromptsConfig';
 import ConteudosGerados from './pages/ConteudosGerados';
 
@@ -46,7 +48,7 @@ const mockSystemStatus = {
     youtube_api: true
   },
   available_services: {
-    text_models: ['gemini:gemini-pro', 'openai:gpt-3.5-turbo'],
+    text_models: ['gemini:gemini-1.5-flash', 'openai:gpt-3.5-turbo'],
     tts_services: ['gemini', 'edge'],
     image_services: ['flux']
   }
@@ -425,6 +427,38 @@ function App() {
                       transition={{ duration: 0.3 }}
                     >
                       <ScreenplayGeneratorTest />
+                    </motion.div>
+                  }
+                />
+
+                {/* Long Script Generator */}
+                <Route
+                  path="/long-script-generator"
+                  element={
+                    <motion.div
+                      key="long-script-generator"
+                      initial={{ opacity: 0, y: 20 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      exit={{ opacity: 0, y: -20 }}
+                      transition={{ duration: 0.3 }}
+                    >
+                      <LongScriptGenerator />
+                    </motion.div>
+                  }
+                />
+
+                {/* Long Script Test */}
+                <Route
+                  path="/long-script-test"
+                  element={
+                    <motion.div
+                      key="long-script-test"
+                      initial={{ opacity: 0, y: 20 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      exit={{ opacity: 0, y: -20 }}
+                      transition={{ duration: 0.3 }}
+                    >
+                      <LongScriptTest />
                     </motion.div>
                   }
                 />
