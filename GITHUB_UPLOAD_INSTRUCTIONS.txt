@@ -1,0 +1,45 @@
+# 📋 INSTRUÇÕES PARA UPLOAD NO GITHUB
+
+## 1. Criar repositório no GitHub
+1. Acesse: https://github.com
+2. Clique em "New repository"
+3. Nome: auto-video-producer
+4. Descrição: 🎬 Sistema completo de produção automatizada de vídeos usando IA
+5. Deixe Public ou Private (sua escolha)
+6. NÃO marque "Initialize with README"
+7. Clique "Create repository"
+
+## 2. Comandos para executar (substitua SEU-USUARIO pelo seu nome de usuário GitHub)
+
+# Navegar para o diretório do projeto
+cd "c:\Users\Enderson\Documents\APP\auto-video-producer - v2\auto-video-producer"
+
+# Conectar ao repositório remoto (SUBSTITUA SEU-USUARIO)
+git remote add origin https://github.com/SEU-USUARIO/auto-video-producer.git
+
+# Fazer upload do código
+git push -u origin main
+
+## 3. Verificar se funcionou
+Após executar os comandos acima, acesse:
+https://github.com/SEU-USUARIO/auto-video-producer
+
+Você deve ver todos os arquivos do projeto lá!
+
+## 4. Para futuras atualizações
+# Adicionar mudanças
+git add .
+
+# Fazer commit
+git commit -m "Descrição das mudanças"
+
+# Enviar para GitHub
+git push
+
+## ⚠️ IMPORTANTE: Segurança
+O arquivo .gitignore já está configurado para NÃO enviar:
+- Suas chaves de API (backend/config/api_keys.json)
+- Cache e arquivos temporários
+- Logs sensíveis
+
+✅ Suas chaves de API estão seguras e não serão enviadas para o GitHub!
