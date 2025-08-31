@@ -22,6 +22,8 @@ import {
   Activity
 } from 'lucide-react'
 
+import PromptSourceIndicator from './PromptSourceIndicator'
+
 // Componente auxiliar para seções de conteúdo
 const ContentSection = ({ title, icon, content, downloadData, filename }) => {
   const [isExpanded, setIsExpanded] = useState(false)
@@ -87,7 +89,7 @@ const formatFileSize = (bytes) => {
  const downloadAllContent = (pipeline) => {
    if (!pipeline.results) return
    
-   let content = `Pipeline #${pipeline.pipeline_id?.slice(-8) || 'Unknown'}\n`
+   let content = `Pipeline #${pipeline.display_name || pipeline.pipeline_id?.slice(-8) || 'Unknown'}\n`
    content += `Status: ${pipeline.status}\n`
    content += `Iniciado em: ${new Date(pipeline.started_at).toLocaleString()}\n\n`
    
@@ -113,7 +115,7 @@ const formatFileSize = (bytes) => {
    const url = URL.createObjectURL(blob)
    const link = document.createElement('a')
    link.href = url
-   link.download = `pipeline_${pipeline.pipeline_id?.slice(-8) || 'content'}.txt`
+   link.download = `pipeline_${pipeline.display_name || pipeline.pipeline_id?.slice(-8) || 'content'}.txt`
    document.body.appendChild(link)
    link.click()
    document.body.removeChild(link)
@@ -145,7 +147,7 @@ const formatFileSize = (bytes) => {
   }
   
   // Função para baixar todas as imagens
-  const downloadAllImages = async (images, pipelineId) => {
+  const downloadAllImages = async (images, pipeline) => {
     if (!images || images.length === 0) return
     
     for (let i = 0; i < images.length; i++) {
@@ -157,7 +159,7 @@ const formatFileSize = (bytes) => {
           const url = URL.createObjectURL(blob)
           const link = document.createElement('a')
           link.href = url
-          link.download = `imagem_${i + 1}_${pipelineId?.slice(-8) || 'pipeline'}.jpg`
+          link.download = `imagem_${i + 1}_${pipeline?.display_name || pipeline?.pipeline_id?.slice(-8) || 'pipeline'}.jpg`
           document.body.appendChild(link)
           link.click()
           document.body.removeChild(link)
@@ -319,7 +321,7 @@ const PipelineProgress = ({ pipeline, onPause, onCancel, onViewDetails, index })
             {getStatusIcon(pipeline.status)}
             <div>
               <h4 className="text-white font-medium">
-                Pipeline #{pipeline.pipeline_id?.slice(-8) || 'Unknown'}
+                Pipeline #{pipeline.display_name || pipeline.pipeline_id?.slice(-8) || 'Unknown'}
               </h4>
               <p className="text-sm text-gray-400">
                 Iniciado {formatTimeAgo(pipeline.started_at)}
@@ -751,16 +753,35 @@ const PipelineProgress = ({ pipeline, onPause, onCancel, onViewDetails, index })
                   title="Títulos Gerados"
                   icon={<FileText size={16} className="text-blue-400" />}
                   content={
-                    <div className="space-y-2">
-                      {pipeline.results.titles.generated_titles?.map((title, idx) => (
-                        <div key={idx} className="bg-gray-800 rounded p-2 text-sm text-gray-300">
-                          {idx + 1}. {title}
-                        </div>
-                      ))}
+                    <div className="space-y-3">
+                      {/* Indicador da origem do prompt */}
+                      <div className="mb-3">
+                        <div className="text-xs text-gray-400 mb-2">Prompt utilizado:</div>
+                        <PromptSourceIndicator 
+                          promptSource={pipeline.results.titles.prompt_source}
+                          agentInfo={pipeline.results.titles.agent_info}
+                          style={pipeline.results.titles.style}
+                        />
+                      </div>
+                      
+                      {/* Lista de títulos */}
+                      <div className="space-y-2">
+                        {pipeline.results.titles.generated_titles?.map((title, idx) => (
+                          <div key={idx} className="bg-gray-800 rounded p-2 text-sm text-gray-300">
+                            {idx + 1}. {title}
+                          </div>
+                        ))}
+                      </div>
+                      
+                      {/* Estatísticas */}
+                      <div className="flex items-center justify-between text-xs text-gray-400 pt-2 border-t border-gray-700">
+                        <span>Gerados: {pipeline.results.titles.generated_titles?.length || 0}</span>
+                        <span>Provider: {pipeline.results.titles.provider_used}</span>
+                      </div>
                     </div>
                   }
                   downloadData={pipeline.results.titles.generated_titles?.join('\n')}
-                  filename={`titulos_${pipeline.pipeline_id?.slice(-8)}.txt`}
+                  filename={`titulos_${pipeline.display_name || pipeline.pipeline_id?.slice(-8)}.txt`}
                 />
               )}
               
@@ -770,12 +791,31 @@ const PipelineProgress = ({ pipeline, onPause, onCancel, onViewDetails, index })
                   title="Premissa"
                   icon={<FileText size={16} className="text-purple-400" />}
                   content={
-                    <div className="bg-gray-800 rounded p-3 text-sm text-gray-300 whitespace-pre-wrap">
-                      {pipeline.results.premises.premise}
+                    <div className="space-y-3">
+                      {/* Indicador da origem do prompt */}
+                      <div className="mb-3">
+                        <div className="text-xs text-gray-400 mb-2">Prompt utilizado:</div>
+                        <PromptSourceIndicator 
+                          promptSource={pipeline.results.premises.prompt_source}
+                          agentInfo={pipeline.results.premises.agent_info}
+                          style={"premises"}
+                        />
+                      </div>
+                      
+                      {/* Conteúdo da premissa */}
+                      <div className="bg-gray-800 rounded p-3 text-sm text-gray-300 whitespace-pre-wrap">
+                        {pipeline.results.premises.premise}
+                      </div>
+                      
+                      {/* Estatísticas */}
+                      <div className="flex items-center justify-between text-xs text-gray-400 pt-2 border-t border-gray-700">
+                        <span>Palavras: {pipeline.results.premises.word_count || 0}</span>
+                        <span>Provider: {pipeline.results.premises.provider_used}</span>
+                      </div>
                     </div>
                   }
                   downloadData={pipeline.results.premises.premise}
-                  filename={`premissa_${pipeline.pipeline_id?.slice(-8)}.txt`}
+                  filename={`premissa_${pipeline.display_name || pipeline.pipeline_id?.slice(-8)}.txt`}
                 />
               )}
               
@@ -790,7 +830,7 @@ const PipelineProgress = ({ pipeline, onPause, onCancel, onViewDetails, index })
                     </div>
                   }
                   downloadData={pipeline.results.scripts.script}
-                  filename={`roteiro_${pipeline.pipeline_id?.slice(-8)}.txt`}
+                  filename={`roteiro_${pipeline.display_name || pipeline.pipeline_id?.slice(-8)}.txt`}
                 />
               )}
               
@@ -840,7 +880,7 @@ const PipelineProgress = ({ pipeline, onPause, onCancel, onViewDetails, index })
                             <div className="flex items-center justify-between mt-2">
                               <a 
                                 href={pipeline.results.tts.audio_url} 
-                                download={`audio_${pipeline.pipeline_id?.slice(-8)}.wav`}
+                                download={`audio_${pipeline.display_name || pipeline.pipeline_id?.slice(-8)}.wav`}
                                 className="text-blue-400 hover:text-blue-300 text-sm flex items-center space-x-1"
                               >
                                 <Download size={14} />
@@ -895,7 +935,7 @@ const PipelineProgress = ({ pipeline, onPause, onCancel, onViewDetails, index })
                             <div className="flex items-center justify-between mb-3">
                               <h6 className="text-pink-400 font-medium">Galeria de Imagens</h6>
                               <button 
-                                onClick={() => downloadAllImages(pipeline.results.images.generated_images, pipeline.pipeline_id)}
+                                onClick={() => downloadAllImages(pipeline.results.images.generated_images, pipeline)}
                                 className="text-blue-400 hover:text-blue-300 text-sm flex items-center space-x-1"
                               >
                                 <Download size={14} />
@@ -910,7 +950,7 @@ const PipelineProgress = ({ pipeline, onPause, onCancel, onViewDetails, index })
                                     {img.url && (
                                       <a 
                                         href={img.url} 
-                                        download={`imagem_${idx + 1}_${pipeline.pipeline_id?.slice(-8)}.jpg`}
+                                        download={`imagem_${idx + 1}_${pipeline.display_name || pipeline.pipeline_id?.slice(-8)}.jpg`}
                                         className="text-blue-400 hover:text-blue-300 text-xs flex items-center space-x-1"
                                       >
                                         <Download size={12} />

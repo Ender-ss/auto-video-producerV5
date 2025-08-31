@@ -1,5 +1,7 @@
 import React, { useState } from 'react'
 import { motion } from 'framer-motion'
+import SavedChannelsManager from './SavedChannelsManager'
+import CustomPromptManager from './CustomPromptManager'
 import {
   X,
   Youtube,
@@ -13,13 +15,21 @@ import {
   FileText,
   Zap,
   AlertCircle,
-  Info
+  Info,
+  BookOpen,
+  Save,
+  Eye,
+  User
 } from 'lucide-react'
 
 const AutomationCompleteForm = ({ onSubmit, onClose }) => {
   const [formData, setFormData] = useState({
     channel_url: '',
     video_count: 5,
+    agent: {
+      type: 'default', // 'default' or 'specialized'
+      specialized_type: 'millionaire_stories'
+    },
     config: {
       extraction: {
         enabled: true,
@@ -114,7 +124,7 @@ INSTRUÇÕES:
         provider: 'pollinations',
         style: 'realistic',
         quality: 'high',
-        count_per_chapter: 2,
+        total_images: 10,
         custom_prompt: false,
         custom_instructions: ''
       },
@@ -191,6 +201,164 @@ Este é o FIM da história. Deve:
 
   const [activeSection, setActiveSection] = useState('basic')
   const [isSubmitting, setIsSubmitting] = useState(false)
+  const [showChannelsManager, setShowChannelsManager] = useState(false)
+  const [showPromptManager, setShowPromptManager] = useState(false)
+
+  // Specialized agents configuration
+  const [customAgents, setCustomAgents] = useState({
+    millionaire_stories: {
+      name: 'Histórias de Milionários',
+      description: 'Especializado em narrativas com contraste social, transformação de vida e descobertas emocionais',
+      prompts: {
+        titles: {
+          viral: `Crie títulos virais para histórias de milionários e contraste social sobre: {topic}. 
+Os títulos devem:
+- Destacar o contraste social (rico vs pobre)
+- Despertar curiosidade sobre a transformação
+- Incluir elementos emocionais
+- Ser chamativos e clickbait
+Exemplos: "Milionário Descobre Segredo Chocante...", "Rica Empresária Não Sabia Que Sua Faxineira..."`,
+          educational: `Crie títulos educacionais para histórias de milionários sobre: {topic}. 
+Foque em:
+- Lições de vida e valores
+- Contrastes sociais educativos
+- Mensagens inspiracionais
+- Reflexões sobre riqueza e humanidade`
+        },
+        premises: {
+          narrative: `Crie uma premissa narrativa para história de milionário sobre: {title}.
+A premissa deve incluir:
+- Personagem milionário/rico com vida aparentemente perfeita
+- Personagem de classe baixa com qualidades humanas especiais
+- Situação que os conecta (trabalho, acaso, família)
+- Descoberta emocional que muda perspectivas
+- Contraste entre riqueza material e riqueza humana
+- Aproximadamente {word_count} palavras`,
+          educational: `Crie uma premissa educacional para história de milionário sobre: {title}.
+Deve abordar:
+- Lições sobre valores versus dinheiro
+- Importância das relações humanas
+- Crítica social construtiva
+- Mensagens inspiracionais
+- Aproximadamente {word_count} palavras`
+        },
+        scripts: {
+          inicio: `Você é um roteirista especializado em HISTÓRIAS DE MILIONÁRIOS com contraste social.
+
+TÍTULO: {titulo}
+PREMISSA: {premissa}
+
+ESTILO NARRATIVO - Histórias de Milionários:
+- Contraste forte entre riqueza material e pobreza emocional
+- Personagens ricos aparentemente bem-sucedidos mas vazios
+- Personagens pobres com riqueza humana e valores sólidos
+- Descobertas familiares/pessoais que abalam estruturas
+- Transformação através do reconhecimento de valores verdadeiros
+
+ESTRUTURA DO INÍCIO:
+1. Apresente o protagonista milionário em seu mundo de luxo
+2. Mostre sua vida aparentemente perfeita mas emocionalmente vazia
+3. Introduza o personagem de classe baixa com suas qualidades humanas
+4. Estabeleça a situação que os conectará
+5. Plante as sementes da descoberta que mudará tudo
+
+ELEMENTOS OBRIGATÓRIOS:
+- Contraste visual entre os dois mundos (luxo vs simplicidade)
+- Características que humanizam o personagem pobre
+- Sinais de vazio emocional no personagem rico
+- Situação inicial que permitirá a descoberta
+
+IMPORTANTE: Seja detalhado, extenso e minucioso. Crie uma introdução rica que estabeleça claramente os contrastes e prepare o terreno para a transformação emocional.`,
+          meio: `Você é um roteirista especializado em HISTÓRIAS DE MILIONÁRIOS com contraste social.
+
+TÍTULO: {titulo}
+PREMISSA: {premissa}
+
+CONTEXTO ANTERIOR:
+{resumos[i-2]}
+
+DESENVOLVIMENTO - Histórias de Milionários:
+Esta é a continuação do MEIO da história. Deve desenvolver:
+
+1. APROXIMAÇÃO DOS MUNDOS:
+- Situações que forçam a convivência entre os personagens
+- Quebra gradual de preconceitos do personagem rico
+- Demonstração das qualidades humanas do personagem pobre
+
+2. CONFLITOS E DESCOBERTAS:
+- Resistência inicial do milionário em aceitar a realidade
+- Pequenas revelações que abalam suas certezas
+- Contraste entre valores materiais e humanos
+
+3. INTENSIFICAÇÃO EMOCIONAL:
+- Momentos de vulnerabilidade do personagem rico
+- Demonstrações de generosidade/sabedoria do personagem pobre
+- Pistas sobre a descoberta principal que está por vir
+
+ELEMENTOS ESSENCIAIS:
+- Diálogos que revelem diferenças de perspectiva
+- Situações que testem os valores de cada personagem
+- Crescimento emocional gradual do protagonista
+- Preparação para o clímax da descoberta
+
+IMPORTANTE: Seja detalhado, extenso e minucioso. Desenvolva as relações de forma orgânica, mostrando a transformação gradual através de situações concretas.`,
+          fim: `Você é um roteirista especializado em HISTÓRIAS DE MILIONÁRIOS com contraste social.
+
+TÍTULO: {titulo}
+PREMISSA: {premissa}
+
+CONTEXTO ANTERIOR:
+{resumos[-1]}
+
+CONCLUSÃO - Histórias de Milionários:
+Este é o FIM da história. Deve proporcionar:
+
+1. REVELAÇÃO PRINCIPAL:
+- A descoberta emocional que muda tudo (parentesco, passado, sacrifício)
+- Momento de reconhecimento da verdade
+- Impacto emocional profundo no protagonista rico
+
+2. TRANSFORMAÇÃO COMPLETA:
+- Mudança radical de perspectiva do milionário
+- Reconhecimento do valor das pessoas sobre o dinheiro
+- Ações concretas que demonstram a mudança
+
+3. RESOLUÇÃO EMOCIONAL:
+- Reconexão com valores humanos verdadeiros
+- Reparação de danos causados pela arrogância
+- Novo equilíbrio entre riqueza material e emocional
+
+4. MENSAGEM FINAL:
+- Reflexão sobre o que realmente importa na vida
+- Valorização das relações humanas
+- Crítica construtiva aos valores puramente materialistas
+
+ELEMENTOS FINAIS OBRIGATÓRIOS:
+- Momento catártico de reconhecimento
+- Ação redentora do protagonista
+- Desfecho que honra ambos os personagens
+- Mensagem inspiracional sobre valores humanos
+
+IMPORTANTE: Seja detalhado, extenso e minucioso na conclusão. Crie um final emocionalmente impactante que entregue a transformação completa e deixe uma mensagem poderosa sobre valores humanos versus materiais.`
+        },
+        images: {
+          cinematic: `Crie uma descrição cinematográfica para uma imagem de história de milionários que represente: {scene_description}. 
+A imagem deve:
+- Destacar contrastes sociais (luxo vs simplicidade)
+- Mostrar elementos emocionais da cena
+- Ter qualidade cinematográfica e iluminação dramática
+- Refletir a transformação ou descoberta emocional
+- Incluir simbolismo sobre valores humanos vs materiais`,
+          contrast: `Crie uma descrição para imagem que contraste classes sociais representando: {scene_description}.
+Foque em:
+- Diferenças visuais claras entre riqueza e simplicidade
+- Elementos que humanizem ambos os personagens
+- Composição que destaque a conexão emocional
+- Simbolismo sobre verdadeira riqueza`
+        }
+      }
+    }
+  })
 
   const handleInputChange = (path, value) => {
     setFormData(prev => {
@@ -213,7 +381,12 @@ Este é o FIM da história. Deve:
     setIsSubmitting(true)
     
     try {
-      await onSubmit(formData)
+      // Include specialized agent data in submission
+      const submissionData = {
+        ...formData,
+        specialized_agents: customAgents
+      }
+      await onSubmit(submissionData)
     } catch (error) {
       console.error('Erro ao submeter formulário:', error)
     } finally {
@@ -221,9 +394,36 @@ Este é o FIM da história. Deve:
     }
   }
 
+  // Handlers for saved selections
+  const handleSelectChannel = (channel) => {
+    setFormData(prev => ({
+      ...prev,
+      channel_url: channel.url || channel.channel_id || ''
+    }))
+    setShowChannelsManager(false)
+  }
+
+  const handleSelectPrompt = (prompt) => {
+    const { prompt_text } = prompt
+    
+    // Update the appropriate prompt field based on current context
+    setFormData(prev => ({
+      ...prev,
+      config: {
+        ...prev.config,
+        titles: {
+          ...prev.config.titles,
+          custom_instructions: prompt_text
+        }
+      }
+    }))
+    setShowPromptManager(false)
+  }
+
   const sections = [
     { id: 'basic', label: 'Básico', icon: Youtube },
-    { id: 'ai', label: 'IA & Conteúdo', icon: Bot },
+    { id: 'agents', label: 'Agentes', icon: Bot },
+    { id: 'ai', label: 'IA & Conteúdo', icon: Sparkles },
     { id: 'media', label: 'Mídia & Vídeo', icon: Video },
     { id: 'prompts', label: 'Prompts', icon: FileText },
     { id: 'advanced', label: 'Avançado', icon: Settings }
@@ -290,10 +490,26 @@ Este é o FIM da história. Deve:
           <div className="flex-1 overflow-y-auto">
             <form onSubmit={handleSubmit} className="p-6">
               {activeSection === 'basic' && (
-                <BasicSection formData={formData} onChange={handleInputChange} />
+                <BasicSection 
+                  formData={formData} 
+                  onChange={handleInputChange}
+                  onOpenChannelsManager={() => setShowChannelsManager(true)}
+                />
+              )}
+              {activeSection === 'agents' && (
+                <AgentSection 
+                  formData={formData} 
+                  onChange={handleInputChange}
+                  specialized_agents={customAgents}
+                  onUpdateAgent={setCustomAgents}
+                />
               )}
               {activeSection === 'ai' && (
-                <AISection formData={formData} onChange={handleInputChange} />
+                <AISection 
+                  formData={formData} 
+                  onChange={handleInputChange}
+                  onOpenPromptManager={() => setShowPromptManager(true)}
+                />
               )}
               {activeSection === 'media' && (
                 <MediaSection formData={formData} onChange={handleInputChange} />
@@ -344,12 +560,61 @@ Este é o FIM da história. Deve:
           </div>
         </div>
       </motion.div>
+
+      {/* Modals */}
+      {showChannelsManager && (
+        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-[60] flex items-center justify-center p-4">
+          <div className="bg-gray-900 rounded-xl border border-gray-700 w-full max-w-4xl max-h-[80vh] overflow-hidden">
+            <div className="bg-gradient-to-r from-purple-900/50 to-blue-900/50 p-4 border-b border-gray-700">
+              <div className="flex items-center justify-between">
+                <h3 className="text-lg font-semibold text-white">Canais Salvos</h3>
+                <button
+                  onClick={() => setShowChannelsManager(false)}
+                  className="p-2 text-gray-400 hover:text-white hover:bg-gray-700 rounded-lg transition-colors"
+                >
+                  <X size={18} />
+                </button>
+              </div>
+            </div>
+            <div className="p-4 overflow-y-auto max-h-[60vh]">
+              <SavedChannelsManager 
+                onSelectChannel={handleSelectChannel}
+                showInModal={true}
+              />
+            </div>
+          </div>
+        </div>
+      )}
+
+      {showPromptManager && (
+        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-[60] flex items-center justify-center p-4">
+          <div className="bg-gray-900 rounded-xl border border-gray-700 w-full max-w-4xl max-h-[80vh] overflow-hidden">
+            <div className="bg-gradient-to-r from-purple-900/50 to-blue-900/50 p-4 border-b border-gray-700">
+              <div className="flex items-center justify-between">
+                <h3 className="text-lg font-semibold text-white">Prompts Salvos</h3>
+                <button
+                  onClick={() => setShowPromptManager(false)}
+                  className="p-2 text-gray-400 hover:text-white hover:bg-gray-700 rounded-lg transition-colors"
+                >
+                  <X size={18} />
+                </button>
+              </div>
+            </div>
+            <div className="p-4 overflow-y-auto max-h-[60vh]">
+              <CustomPromptManager 
+                onSelectPrompt={handleSelectPrompt}
+                showInModal={true}
+              />
+            </div>
+          </div>
+        </div>
+      )}
     </motion.div>
   )
 }
 
 // Seção Básica
-const BasicSection = ({ formData, onChange }) => {
+const BasicSection = ({ formData, onChange, onOpenChannelsManager }) => {
   return (
     <div className="space-y-6">
       <div>
@@ -361,9 +626,19 @@ const BasicSection = ({ formData, onChange }) => {
 
       <div className="space-y-4">
         <div>
-          <label className="block text-sm font-medium text-gray-300 mb-2">
-            URL do Canal do YouTube *
-          </label>
+          <div className="flex items-center justify-between mb-2">
+            <label className="block text-sm font-medium text-gray-300">
+              URL do Canal do YouTube *
+            </label>
+            <button
+              type="button"
+              onClick={onOpenChannelsManager}
+              className="flex items-center space-x-1 px-3 py-1 bg-blue-600 hover:bg-blue-700 text-white rounded text-sm transition-colors"
+            >
+              <Save size={14} />
+              <span>Canais Salvos</span>
+            </button>
+          </div>
           <input
             type="url"
             value={formData.channel_url}
@@ -411,8 +686,401 @@ const BasicSection = ({ formData, onChange }) => {
   )
 }
 
+// Seção de Agentes Especializados
+const AgentSection = ({ formData, onChange, specialized_agents, onUpdateAgent }) => {
+  const [editingAgent, setEditingAgent] = useState(null)
+  const [editingPromptType, setEditingPromptType] = useState(null)
+  const [editingPromptSubtype, setEditingPromptSubtype] = useState(null)
+  const [promptText, setPromptText] = useState('')
+
+  const openPromptEditor = (agentKey, promptType, subtype = null) => {
+    const agent = specialized_agents[agentKey]
+    let currentPrompt = ''
+    
+    if (subtype) {
+      currentPrompt = agent.prompts[promptType]?.[subtype] || ''
+    } else {
+      currentPrompt = agent.prompts[promptType] || ''
+    }
+    
+    setEditingAgent(agentKey)
+    setEditingPromptType(promptType)
+    setEditingPromptSubtype(subtype)
+    setPromptText(currentPrompt)
+  }
+
+  const savePrompt = () => {
+    const updatedAgents = { ...specialized_agents }
+    
+    if (editingPromptSubtype) {
+      if (!updatedAgents[editingAgent].prompts[editingPromptType]) {
+        updatedAgents[editingAgent].prompts[editingPromptType] = {}
+      }
+      updatedAgents[editingAgent].prompts[editingPromptType][editingPromptSubtype] = promptText
+    } else {
+      updatedAgents[editingAgent].prompts[editingPromptType] = promptText
+    }
+    
+    onUpdateAgent(updatedAgents)
+    setEditingAgent(null)
+    setEditingPromptType(null)
+    setEditingPromptSubtype(null)
+    setPromptText('')
+  }
+
+  const cancelEdit = () => {
+    setEditingAgent(null)
+    setEditingPromptType(null)
+    setEditingPromptSubtype(null)
+    setPromptText('')
+  }
+  return (
+    <div className="space-y-6">
+      <div>
+        <h3 className="text-xl font-semibold text-white mb-4 flex items-center space-x-2">
+          <Bot size={20} className="text-purple-400" />
+          <span>Agentes Especializados</span>
+        </h3>
+        <p className="text-gray-400 mb-6">
+          Escolha um agente especializado otimizado para tipos específicos de conteúdo ou use o sistema padrão.
+        </p>
+      </div>
+
+      <div className="space-y-4">
+        {/* Tipo de Agente */}
+        <div className="bg-gray-800 rounded-lg p-4 border border-gray-700">
+          <h4 className="text-lg font-medium text-white mb-3">Tipo de Agente</h4>
+          <div className="space-y-3">
+            <label className="flex items-center space-x-3 p-3 border border-gray-600 rounded-lg cursor-pointer hover:bg-gray-700/50 transition-colors">
+              <input
+                type="radio"
+                name="agent_type"
+                value="default"
+                checked={formData.agent?.type === 'default'}
+                onChange={(e) => onChange('agent.type', e.target.value)}
+                className="text-purple-600 focus:ring-purple-500"
+              />
+              <div>
+                <div className="text-white font-medium">Sistema Padrão</div>
+                <div className="text-gray-400 text-sm">Prompts genéricos versáteis para qualquer tipo de conteúdo</div>
+              </div>
+            </label>
+            
+            <label className="flex items-center space-x-3 p-3 border border-gray-600 rounded-lg cursor-pointer hover:bg-gray-700/50 transition-colors">
+              <input
+                type="radio"
+                name="agent_type"
+                value="specialized"
+                checked={formData.agent?.type === 'specialized'}
+                onChange={(e) => onChange('agent.type', e.target.value)}
+                className="text-purple-600 focus:ring-purple-500"
+              />
+              <div className="flex-1">
+                <div className="text-white font-medium">Agente Especializado (Recomendado)</div>
+                <div className="text-gray-400 text-sm">Prompts otimizados para nichos específicos com melhor qualidade</div>
+              </div>
+              <div className="bg-purple-600 text-white text-xs px-2 py-1 rounded-full">
+                RECOMENDADO
+              </div>
+            </label>
+          </div>
+        </div>
+
+        {/* Seleção de Agente Especializado */}
+        {formData.agent?.type === 'specialized' && (
+          <div className="bg-gray-800 rounded-lg p-4 border border-gray-700">
+            <h4 className="text-lg font-medium text-white mb-3">Escolha o Agente Especializado</h4>
+            <div className="space-y-3">
+              {Object.entries(specialized_agents).map(([key, agent]) => (
+                <label key={key} className="flex items-start space-x-3 p-4 border border-gray-600 rounded-lg cursor-pointer hover:bg-gray-700/50 transition-colors">
+                  <input
+                    type="radio"
+                    name="specialized_agent"
+                    value={key}
+                    checked={formData.agent?.specialized_type === key}
+                    onChange={(e) => onChange('agent.specialized_type', e.target.value)}
+                    className="mt-1 text-purple-600 focus:ring-purple-500"
+                  />
+                  <div className="flex-1">
+                    <div className="text-white font-medium mb-1">{agent.name}</div>
+                    <div className="text-gray-400 text-sm mb-2">{agent.description}</div>
+                    <div className="flex items-center space-x-4 text-xs">
+                      <span className="text-green-400">✅ Prompts especializados</span>
+                      <span className="text-green-400">✅ Consistência de estilo</span>
+                      <span className="text-green-400">✅ Otimizado para o nicho</span>
+                    </div>
+                  </div>
+                </label>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {/* Editor de Prompts */}
+        {formData.agent?.type === 'specialized' && formData.agent?.specialized_type && (
+          <div className="bg-gray-800 rounded-lg p-4 border border-gray-700">
+            <h4 className="text-lg font-medium text-white mb-3 flex items-center space-x-2">
+              <Settings size={18} className="text-blue-400" />
+              <span>Personalizar Prompts do Agente</span>
+            </h4>
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+              {/* Títulos */}
+              <div className="space-y-2">
+                <h5 className="text-white font-medium">Títulos</h5>
+                <button
+                  type="button"
+                  onClick={() => openPromptEditor(formData.agent.specialized_type, 'titles', 'viral')}
+                  className="w-full text-left px-3 py-2 bg-gray-700 hover:bg-gray-600 rounded text-sm text-gray-300 transition-colors"
+                >
+                  📈 Viral
+                </button>
+                <button
+                  type="button"
+                  onClick={() => openPromptEditor(formData.agent.specialized_type, 'titles', 'educational')}
+                  className="w-full text-left px-3 py-2 bg-gray-700 hover:bg-gray-600 rounded text-sm text-gray-300 transition-colors"
+                >
+                  🎓 Educacional
+                </button>
+              </div>
+
+              {/* Premissas */}
+              <div className="space-y-2">
+                <h5 className="text-white font-medium">Premissas</h5>
+                <button
+                  type="button"
+                  onClick={() => openPromptEditor(formData.agent.specialized_type, 'premises', 'narrative')}
+                  className="w-full text-left px-3 py-2 bg-gray-700 hover:bg-gray-600 rounded text-sm text-gray-300 transition-colors"
+                >
+                  📜 Narrativa
+                </button>
+                <button
+                  type="button"
+                  onClick={() => openPromptEditor(formData.agent.specialized_type, 'premises', 'educational')}
+                  className="w-full text-left px-3 py-2 bg-gray-700 hover:bg-gray-600 rounded text-sm text-gray-300 transition-colors"
+                >
+                  🎓 Educacional
+                </button>
+              </div>
+
+              {/* Roteiros */}
+              <div className="space-y-2">
+                <h5 className="text-white font-medium">Roteiros</h5>
+                <button
+                  type="button"
+                  onClick={() => openPromptEditor(formData.agent.specialized_type, 'scripts', 'inicio')}
+                  className="w-full text-left px-3 py-2 bg-gray-700 hover:bg-gray-600 rounded text-sm text-gray-300 transition-colors"
+                >
+                  🎦 Início
+                </button>
+                <button
+                  type="button"
+                  onClick={() => openPromptEditor(formData.agent.specialized_type, 'scripts', 'meio')}
+                  className="w-full text-left px-3 py-2 bg-gray-700 hover:bg-gray-600 rounded text-sm text-gray-300 transition-colors"
+                >
+                  🎦 Meio
+                </button>
+                <button
+                  type="button"
+                  onClick={() => openPromptEditor(formData.agent.specialized_type, 'scripts', 'fim')}
+                  className="w-full text-left px-3 py-2 bg-gray-700 hover:bg-gray-600 rounded text-sm text-gray-300 transition-colors"
+                >
+                  🎦 Fim
+                </button>
+              </div>
+
+              {/* Imagens */}
+              <div className="space-y-2">
+                <h5 className="text-white font-medium">Imagens</h5>
+                <button
+                  type="button"
+                  onClick={() => openPromptEditor(formData.agent.specialized_type, 'images', 'cinematic')}
+                  className="w-full text-left px-3 py-2 bg-gray-700 hover:bg-gray-600 rounded text-sm text-gray-300 transition-colors"
+                >
+                  🎥 Cinematográfico
+                </button>
+                <button
+                  type="button"
+                  onClick={() => openPromptEditor(formData.agent.specialized_type, 'images', 'contrast')}
+                  className="w-full text-left px-3 py-2 bg-gray-700 hover:bg-gray-600 rounded text-sm text-gray-300 transition-colors"
+                >
+                  ⚖️ Contraste
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Visualização de Prompts Ativos */}
+        {formData.agent?.type === 'specialized' && formData.agent?.specialized_type && (
+          <div className="bg-gradient-to-r from-green-900/30 to-teal-900/30 border border-green-500/30 rounded-lg p-4">
+            <div className="flex items-start space-x-3">
+              <Eye size={20} className="text-green-400 mt-0.5" />
+              <div className="flex-1">
+                <h4 className="text-green-300 font-medium mb-3">Prompts que serão utilizados nesta pipeline</h4>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  {/* Títulos */}
+                  <div className="bg-gray-800/50 rounded-lg p-3">
+                    <div className="flex items-center space-x-2 mb-2">
+                      <FileText size={16} className="text-blue-400" />
+                      <span className="text-white font-medium">Títulos</span>
+                    </div>
+                    {formData.config?.titles?.custom_prompt ? (
+                      <div className="flex items-center space-x-2 text-sm">
+                        <User size={14} className="text-blue-400" />
+                        <span className="text-blue-300">Prompt personalizado do usuário</span>
+                      </div>
+                    ) : (
+                      <div className="flex items-center space-x-2 text-sm">
+                        <Bot size={14} className="text-purple-400" />
+                        <span className="text-purple-300">
+                          Agente: {specialized_agents[formData.agent.specialized_type]?.name} - {formData.config?.titles?.style || 'viral'}
+                        </span>
+                      </div>
+                    )}
+                  </div>
+                  
+                  {/* Premissas */}
+                  <div className="bg-gray-800/50 rounded-lg p-3">
+                    <div className="flex items-center space-x-2 mb-2">
+                      <FileText size={16} className="text-purple-400" />
+                      <span className="text-white font-medium">Premissas</span>
+                    </div>
+                    {formData.config?.premises?.custom_prompt ? (
+                      <div className="flex items-center space-x-2 text-sm">
+                        <User size={14} className="text-blue-400" />
+                        <span className="text-blue-300">Prompt personalizado do usuário</span>
+                      </div>
+                    ) : (
+                      <div className="space-y-1">
+                        <div className="flex items-center space-x-2 text-sm">
+                          <Bot size={14} className="text-purple-400" />
+                          <span className="text-purple-300">
+                            Agente: {specialized_agents[formData.agent.specialized_type]?.name}
+                          </span>
+                        </div>
+                        <div className="text-xs text-gray-400">
+                          ⚠️ Note: Forms não tem "narrativa", usará "educational" do agente
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                </div>
+                
+                <div className="mt-3 text-xs text-green-400">
+                  ℹ️ Prioridade: Prompt Personalizado &gt; Agente Especializado &gt; Sistema Padrão
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
+        
+        {/* Se não tiver agente especializado, mostrar o que será usado */}
+        {formData.agent?.type !== 'specialized' && (
+          <div className="bg-gray-800/30 border border-gray-600/30 rounded-lg p-4">
+            <div className="flex items-start space-x-3">
+              <Eye size={20} className="text-gray-400 mt-0.5" />
+              <div className="flex-1">
+                <h4 className="text-gray-300 font-medium mb-3">Prompts que serão utilizados (Sistema Padrão)</h4>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div className="bg-gray-800/50 rounded-lg p-3">
+                    <div className="flex items-center space-x-2 mb-2">
+                      <FileText size={16} className="text-blue-400" />
+                      <span className="text-white font-medium">Títulos</span>
+                    </div>
+                    <div className="flex items-center space-x-2 text-sm">
+                      <Settings size={14} className="text-gray-400" />
+                      <span className="text-gray-300">Sistema Padrão - {formData.config?.titles?.style || 'viral'}</span>
+                    </div>
+                  </div>
+                  
+                  <div className="bg-gray-800/50 rounded-lg p-3">
+                    <div className="flex items-center space-x-2 mb-2">
+                      <FileText size={16} className="text-purple-400" />
+                      <span className="text-white font-medium">Premissas</span>
+                    </div>
+                    <div className="flex items-center space-x-2 text-sm">
+                      <Settings size={14} className="text-gray-400" />
+                      <span className="text-gray-300">Sistema Padrão</span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
+      </div>
+
+      {/* Modal de Edição de Prompt */}
+      {editingAgent && (
+        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-[70] flex items-center justify-center p-4">
+          <div className="bg-gray-900 rounded-xl border border-gray-700 w-full max-w-4xl max-h-[90vh] overflow-hidden">
+            <div className="bg-gradient-to-r from-purple-900/50 to-blue-900/50 p-4 border-b border-gray-700">
+              <div className="flex items-center justify-between">
+                <h3 className="text-lg font-semibold text-white">
+                  Editar Prompt: {editingPromptType} - {editingPromptSubtype || 'Geral'}
+                </h3>
+                <button
+                  type="button"
+                  onClick={cancelEdit}
+                  className="p-2 text-gray-400 hover:text-white hover:bg-gray-700 rounded-lg transition-colors"
+                >
+                  <X size={18} />
+                </button>
+              </div>
+            </div>
+            <div className="p-6">
+              <div className="space-y-4">
+                <div>
+                  <label className="block text-sm font-medium text-gray-300 mb-2">
+                    Conteúdo do Prompt
+                  </label>
+                  <textarea
+                    value={promptText}
+                    onChange={(e) => setPromptText(e.target.value)}
+                    rows={20}
+                    className="w-full px-4 py-3 bg-gray-800 border border-gray-600 rounded-lg text-white placeholder-gray-400 focus:border-purple-500 focus:ring-1 focus:ring-purple-500 outline-none transition-colors resize-none font-mono text-sm"
+                    placeholder="Digite o conteúdo do prompt personalizado..."
+                  />
+                </div>
+                <div className="bg-blue-900/20 border border-blue-500/30 rounded-lg p-4">
+                  <div className="flex items-start space-x-3">
+                    <Info size={16} className="text-blue-400 mt-0.5 flex-shrink-0" />
+                    <div className="text-sm">
+                      <p className="text-blue-200 font-medium mb-1">Variáveis Disponíveis</p>
+                      <p className="text-blue-300">
+                        Use variáveis como <code>{'{titulo}'}</code>, <code>{'{premissa}'}</code>, <code>{'{resumos[i-2]}'}</code> para conteúdo dinâmico.
+                        Para roteiros, use <code>{'{resumos[-1]}'}</code> no final.
+                      </p>
+                    </div>
+                  </div>
+                </div>
+              </div>
+              <div className="flex items-center justify-end space-x-3 mt-6">
+                <button
+                  type="button"
+                  onClick={cancelEdit}
+                  className="px-6 py-2 text-gray-400 hover:text-white transition-colors"
+                >
+                  Cancelar
+                </button>
+                <button
+                  type="button"
+                  onClick={savePrompt}
+                  className="px-6 py-3 bg-gradient-to-r from-purple-600 to-blue-600 text-white rounded-lg hover:from-purple-700 hover:to-blue-700 transition-colors"
+                >
+                  Salvar Prompt
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+    </div>
+  )
+}
+
 // Seção de IA
-const AISection = ({ formData, onChange }) => {
+const AISection = ({ formData, onChange, onOpenPromptManager }) => {
   const handleOpenPromptsConfig = () => {
     window.open('/prompts-config', '_blank')
   }
@@ -421,18 +1089,28 @@ const AISection = ({ formData, onChange }) => {
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <h3 className="text-xl font-semibold text-white mb-4 flex items-center space-x-2">
-          <Bot size={20} className="text-purple-400" />
+          <Sparkles size={20} className="text-purple-400" />
           <span>Configuração de IA & Conteúdo</span>
         </h3>
-        <button
-          type="button"
-          onClick={handleOpenPromptsConfig}
-          className="flex items-center space-x-2 px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition-colors text-sm"
-          title="Abrir configuração de prompts personalizados"
-        >
-          <Settings size={16} />
-          <span>Configurar Prompts</span>
-        </button>
+        <div className="flex items-center space-x-2">
+          <button
+            type="button"
+            onClick={onOpenPromptManager}
+            className="flex items-center space-x-2 px-3 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition-colors text-sm"
+          >
+            <Save size={14} />
+            <span>Prompts Salvos</span>
+          </button>
+          <button
+            type="button"
+            onClick={handleOpenPromptsConfig}
+            className="flex items-center space-x-2 px-4 py-2 bg-gray-600 hover:bg-gray-700 text-white rounded-lg transition-colors text-sm"
+            title="Abrir configuração de prompts personalizados"
+          >
+            <Settings size={16} />
+            <span>Configurar</span>
+          </button>
+        </div>
       </div>
       
       {/* Aviso sobre prompts personalizados */}
@@ -555,6 +1233,7 @@ const AISection = ({ formData, onChange }) => {
                 className="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded text-white text-sm"
               >
                 <option value="educational">Educacional</option>
+                <option value="narrative">Narrativo</option>
                 <option value="entertaining">Entretenimento</option>
                 <option value="informative">Informativo</option>
                 <option value="persuasive">Persuasivo</option>
@@ -1021,16 +1700,18 @@ const MediaSection = ({ formData, onChange }) => {
             </div>
             <div>
               <label className="block text-sm font-medium text-gray-300 mb-1">
-                Imagens por Capítulo
+                Total de Imagens
               </label>
               <input
                 type="number"
-                min="1"
-                max="5"
-                value={formData.config.images.count_per_chapter}
-                onChange={(e) => onChange('config.images.count_per_chapter', parseInt(e.target.value))}
+                min="5"
+                max="100"
+                value={formData.config.images.total_images}
+                onChange={(e) => onChange('config.images.total_images', parseInt(e.target.value))}
                 className="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded text-white text-sm"
+                placeholder="Ex: 50 imagens para todo o roteiro"
               />
+              <p className="text-xs text-gray-400 mt-1">Será distribuído uniformemente ao longo do roteiro completo</p>
             </div>
             <div className="col-span-2">
               <div className="flex items-center space-x-2 mb-2">

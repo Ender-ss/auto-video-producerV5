@@ -1,0 +1,33 @@
+{
+  "channel_url": "https://www.youtube.com/@test",
+  "video_count": 1,
+  "config": {
+    "extraction": {
+      "enabled": true,
+      "method": "auto"
+    },
+    "titles": {
+      "enabled": true,
+      "provider": "gemini",
+      "count": 3
+    },
+    "premises": {
+      "enabled": true,
+      "provider": "gemini",
+      "style": "narrative"
+    },
+    "scripts": {
+      "enabled": true,
+      "chapters": 3
+    },
+    "tts": {
+      "enabled": false
+    },
+    "images": {
+      "enabled": false
+    },
+    "video": {
+      "enabled": false
+    }
+  }
+}

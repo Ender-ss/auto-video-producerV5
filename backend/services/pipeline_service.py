@@ -361,13 +361,31 @@ class PipelineService:
             # Preparar títulos de origem
             source_titles = [title.get('title', '') for title in extracted_titles]
             
-            # Usar prompts personalizados ou padrão
+            # PRIORIDADE DE PROMPTS: Custom > Agent > System Default
+            prompt_source = 'system_default'
+            instructions = ''
+            
+            # 1. PRIMEIRA PRIORIDADE: Custom prompt do usuário
             if custom_prompt and 'custom_instructions' in titles_config:
                 instructions = titles_config['custom_instructions']
+                prompt_source = 'custom_user'
+                self._log('info', f'🎭 Usando prompt personalizado do usuário para títulos')
+            
+            # 2. SEGUNDA PRIORIDADE: Agent prompt especializado
+            elif 'agent_prompts' in titles_config and style in titles_config['agent_prompts']:
+                instructions = titles_config['agent_prompts'][style]
+                prompt_source = 'agent_specialized'
+                agent_info = self.config.get('agent', {})
+                agent_name = agent_info.get('name', 'Agente Especializado')
+                self._log('info', f'🎆 Usando prompt do agente "{agent_name}" - Estilo: {style}')
+            
+            # 3. TERCEIRA PRIORIDADE: System default
             else:
-                # Usar prompts personalizados carregados
+                # Usar prompts personalizados carregados ou padrão do sistema
                 titles_prompts = self.custom_prompts.get('titles', {})
                 instructions = titles_prompts.get(style, titles_prompts.get('viral', 'Crie títulos virais e chamativos que gerem curiosidade e cliques'))
+                prompt_source = 'system_default'
+                self._log('info', f'📝 Usando prompt padrão do sistema - Estilo: {style}')
             
             self._update_progress('titles', 50)
             
@@ -394,7 +412,7 @@ class PipelineService:
                     self.results['titles'] = {'generated_titles': current_titles, 'partial': True}
                     progress = int((len(current_titles) / count) * 100)
                     self._update_progress('titles', progress)
-                result = generate_titles_with_gemini(source_titles, instructions, api_key, update_callback=update_titles_partial)
+                result = generate_titles_with_gemini(source_titles, instructions, api_key, update_callback=update_titles_partial, count=count)
             
             elif provider == 'auto':
                 # Tentar OpenAI primeiro, depois Gemini em caso de erro
@@ -430,7 +448,7 @@ class PipelineService:
                                 self.results['titles'] = {'generated_titles': current_titles, 'partial': True}
                                 progress = int((len(current_titles) / count) * 100)
                                 self._update_progress('titles', progress)
-                            result = generate_titles_with_gemini(source_titles, instructions, api_key, update_callback=update_titles_partial)
+                            result = generate_titles_with_gemini(source_titles, instructions, api_key, update_callback=update_titles_partial, count=count)
                             self._log('info', 'Títulos gerados com Gemini (fallback)')
                         except Exception as gemini_error:
                             self._log('error', f'Gemini também falhou: {str(gemini_error)}')
@@ -451,6 +469,8 @@ class PipelineService:
                 'source_titles_count': len(source_titles),
                 'provider_used': provider,
                 'style': style,
+                'prompt_source': prompt_source,  # Indicar origem do prompt
+                'agent_info': self.config.get('agent', {}) if prompt_source == 'agent_specialized' else None,
                 'generation_time': datetime.utcnow().isoformat()
             }
             
@@ -495,9 +515,59 @@ class PipelineService:
             # Selecionar o melhor título (primeiro da lista)
             selected_title = generated_titles[0]
             
-            # Preparar prompt para premissas usando prompts personalizados
+            # PRIORIDADE DE PROMPTS: Custom > Agent > System Default
+            prompt_source = 'system_default'
+            instructions = ''
+            
+            # 1. PRIMEIRA PRIORIDADE: Custom prompt do usuário
             if custom_prompt and 'custom_instructions' in premises_config:
                 instructions = premises_config['custom_instructions']
+                prompt_source = 'custom_user'
+                self._log('info', f'🎭 Usando prompt personalizado do usuário para premissas')
+            
+            # 2. SEGUNDA PRIORIDADE: Agent prompt especializado
+            elif 'agent_prompts' in premises_config:
+                # Para premissas, verificar estilos disponíveis no agente
+                agent_prompts = premises_config['agent_prompts']
+                
+                # Tentar encontrar um estilo compatível (narrative, educational)
+                # Se não tiver "narrative" no form, usar "educational" do agente
+                premise_style = premises_config.get('style', 'educational')
+                if premise_style in agent_prompts:
+                    selected_style = premise_style
+                elif 'educational' in agent_prompts:
+                    selected_style = 'educational'
+                elif 'narrative' in agent_prompts:
+                    selected_style = 'narrative'
+                else:
+                    # Se agente não tem estilos compatíveis, usar primeiro disponível
+                    selected_style = list(agent_prompts.keys())[0] if agent_prompts else None
+                
+                if selected_style and selected_style in agent_prompts:
+                    # Formatar prompt do agente com variáveis
+                    agent_prompt_template = agent_prompts[selected_style]
+                    instructions = agent_prompt_template.format(
+                        title=selected_title,
+                        word_count=word_count
+                    )
+                    prompt_source = 'agent_specialized'
+                    agent_info = self.config.get('agent', {})
+                    agent_name = agent_info.get('name', 'Agente Especializado')
+                    self._log('info', f'🎆 Usando prompt do agente "{agent_name}" - Estilo: {selected_style}')
+                else:
+                    # Fallback para sistema se agente não tem estilos compatíveis
+                    premises_prompts = self.custom_prompts.get('premises', {})
+                    prompt_template = premises_prompts.get('default', 
+                        "Baseado no título '{title}', crie uma premissa detalhada para um vídeo.\n\nA premissa deve:\n- Ter aproximadamente {word_count} palavras\n- Explicar o conceito principal do vídeo\n- Definir o público-alvo\n- Estabelecer o tom e estilo\n- Incluir pontos-chave a serem abordados\n- Ser envolvente e clara\n\nRetorne apenas a premissa, sem formatação extra.")
+                    
+                    instructions = prompt_template.format(
+                        title=selected_title,
+                        word_count=word_count
+                    )
+                    prompt_source = 'system_default'
+                    self._log('info', f'📝 Usando prompt padrão do sistema (agente sem estilos compatíveis)')
+            
+            # 3. TERCEIRA PRIORIDADE: System default
             else:
                 # Usar prompt personalizado carregado
                 premises_prompts = self.custom_prompts.get('premises', {})
@@ -509,6 +579,8 @@ class PipelineService:
                     title=selected_title,
                     word_count=word_count
                 )
+                prompt_source = 'system_default'
+                self._log('info', f'📝 Usando prompt padrão do sistema para premissas')
             
             self._update_progress('premises', 50)
             
@@ -651,9 +723,16 @@ class PipelineService:
             
             premises_result = {
                 'selected_title': selected_title,
-                'premise': premise_text,
+                'premises': [{
+                    'title': selected_title,
+                    'premise': premise_text,
+                    'word_count': len(premise_text.split())
+                }],
+                'premise': premise_text,  # Manter compatibilidade
                 'word_count': len(premise_text.split()),
                 'provider_used': provider,
+                'prompt_source': prompt_source,  # Indicar origem do prompt
+                'agent_info': self.config.get('agent', {}) if prompt_source == 'agent_specialized' else None,
                 'generation_time': datetime.utcnow().isoformat()
             }
             
@@ -959,7 +1038,8 @@ class PipelineService:
             provider = images_config.get('provider', 'pollinations')
             style = images_config.get('style', 'cinematic')
             resolution = images_config.get('resolution', '1920x1080')
-            per_chapter = images_config.get('per_chapter', 2)
+            per_chapter = images_config.get('per_chapter', 2)  # Manter para compatibilidade
+            total_images = images_config.get('total_images', per_chapter * 3)  # Padrão: 6 imagens total
             
             self._update_progress('images', 25)
             
@@ -974,9 +1054,9 @@ class PipelineService:
             
             self._update_progress('images', 50)
             
-            # Gerar imagens com prompt personalizado
-            result = image_service.generate_images_for_script(
-                script_text, provider, style, resolution, per_chapter, custom_image_prompt
+            # Gerar imagens com prompt personalizado usando nova lógica de total
+            result = image_service.generate_images_for_script_total(
+                script_text, provider, style, resolution, total_images, custom_image_prompt
             )
             
             self._update_progress('images', 100)
@@ -1292,6 +1372,15 @@ class PipelineService:
                     raise
             
             self._log('info', 'Pipeline executada com sucesso!')
+            self._log('info', f'Resultados finais: {list(self.results.keys())}')
+            
+            # Debug: verificar conteúdo dos resultados
+            for step, result in self.results.items():
+                if isinstance(result, dict):
+                    self._log('info', f'Step {step}: {len(str(result))} chars de dados')
+                else:
+                    self._log('info', f'Step {step}: tipo {type(result)}')
+            
             return self.results
             
         except Exception as e:

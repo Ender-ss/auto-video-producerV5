@@ -2004,6 +2004,19 @@ def generate_long_script():
         def progress_callback(progress_data):
             logger.info(f"📊 [LONG_SCRIPT] Progresso: {progress_data['progress']:.1f}% (Capítulo {progress_data['current_chapter']}/{progress_data['total_chapters']})")
         
+        # Processar configuração de agentes especializados
+        agent_config = data.get('agent', {})
+        specialized_agents = data.get('specialized_agents', {})
+        
+        # Preparar configuração da requisição para agentes especializados
+        request_config = {}
+        if agent_config.get('type') == 'specialized' and agent_config.get('specialized_type'):
+            agent_type = agent_config['specialized_type']
+            if agent_type in specialized_agents:
+                agent_prompts = specialized_agents[agent_type].get('prompts', {}).get('scripts', {})
+                request_config['agent_prompts'] = agent_prompts
+                logger.info(f"🎆 [LONG_SCRIPT] Agente especializado ativado: {agent_type}")
+        
         # Gerar roteiro longo
         result = generate_long_script_with_context(
             titulo=titulo,
@@ -2013,7 +2026,8 @@ def generate_long_script():
             openrouter_api_key=api_keys.get('openrouter'),
             openrouter_model=openrouter_model,
             update_callback=progress_callback,
-            long_script_prompt=long_script_prompt  # Passando o prompt personalizado
+            long_script_prompt=long_script_prompt,  # Passando o prompt personalizado
+            request_config=request_config  # Passando configuração do agente
         )
         
         if result['success']:

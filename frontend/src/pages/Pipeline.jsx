@@ -390,7 +390,7 @@ const AutomationSection = ({ automationPipelines, setAutomationPipelines, isPoll
       
       try {
         console.log('INIT_LOAD: Carregando pipelines ativos...')
-        const response = await fetch('/api/pipeline/active?status=processing,queued,paused')
+        const response = await fetch('/api/pipeline/active?status=processing,queued,paused,completed,failed&history=true')
         
         if (response.ok) {
           const result = await response.json()
@@ -700,6 +700,63 @@ const AutomationSection = ({ automationPipelines, setAutomationPipelines, isPoll
     }
   }
 
+  const handleClearTestPipelines = async () => {
+    try {
+      // Confirmar ação com o usuário
+      const confirmed = window.confirm(
+        'Tem certeza que deseja limpar todas as pipelines de teste em aguardo?\n\n' +
+        'Esta ação cancelará pipelines que contenham as palavras: teste, test, exemplo, demo, ou que não tenham título.'
+      )
+      
+      if (!confirmed) {
+        return
+      }
+      
+      console.log('CLEAR_TEST_PIPELINES: Limpando pipelines de teste...')
+      
+      const response = await fetch('/api/pipeline/clear-test-pipelines', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        }
+      })
+      
+      if (response.ok) {
+        const result = await response.json()
+        console.log('CLEAR_TEST_PIPELINES: Resposta da API:', result)
+        
+        if (result.success) {
+          const { cancelled_count, remaining_pending, cancelled_pipelines } = result.data
+          
+          // Remover pipelines canceladas do estado local
+          if (cancelled_pipelines && cancelled_pipelines.length > 0) {
+            const cancelledIds = cancelled_pipelines.map(p => p.pipeline_id)
+            setAutomationPipelines(prev => 
+              prev.filter(p => !cancelledIds.includes(p.pipeline_id))
+            )
+          }
+          
+          // Mostrar mensagem de sucesso
+          const message = cancelled_count > 0 
+            ? `✅ ${cancelled_count} pipelines de teste foram canceladas com sucesso!\n\n📊 Pipelines restantes em aguardo: ${remaining_pending}`
+            : '✅ Nenhuma pipeline de teste encontrada para cancelar.'
+          
+          alert(message)
+          console.log('CLEAR_TEST_PIPELINES: Limpeza concluída com sucesso')
+        } else {
+          console.error('CLEAR_TEST_PIPELINES: Erro na resposta:', result.error)
+          alert(`Erro ao limpar pipelines de teste: ${result.error}`)
+        }
+      } else {
+        console.error('CLEAR_TEST_PIPELINES: Erro HTTP:', response.status)
+        alert(`Erro HTTP ao limpar pipelines: ${response.status}`)
+      }
+    } catch (error) {
+      console.error('CLEAR_TEST_PIPELINES: Erro geral:', error)
+      alert('Erro ao conectar com o servidor')
+    }
+  }
+
   // useEffect para limpeza automática de pipelines inválidos
   useEffect(() => {
     if (automationPipelines.length > 0) {
@@ -778,6 +835,35 @@ const AutomationSection = ({ automationPipelines, setAutomationPipelines, isPoll
             </div>
             <Clock size={24} className="text-blue-400" />
           </div>
+        </div>
+      </div>
+
+      {/* Botões de Ação */}
+      <div className="flex items-center justify-between bg-gray-800 rounded-lg p-4 border border-gray-700">
+        <div className="flex items-center space-x-4">
+          <h3 className="text-lg font-semibold text-white">Gerenciamento</h3>
+          <div className="flex items-center space-x-2 text-sm text-gray-400">
+            <span>
+              {automationPipelines.filter(p => ['queued', 'processing', 'paused'].includes(p.status)).length} em aguardo
+            </span>
+          </div>
+        </div>
+        <div className="flex items-center space-x-3">
+          <button
+            onClick={handleClearTestPipelines}
+            className="px-4 py-2 bg-red-600 hover:bg-red-700 text-white rounded-lg transition-colors flex items-center space-x-2 text-sm font-medium"
+            title="Limpar pipelines de teste em aguardo"
+          >
+            <XCircle size={16} />
+            <span>Limpar Testes</span>
+          </button>
+          <button
+            onClick={() => window.location.reload()}
+            className="px-4 py-2 bg-gray-700 hover:bg-gray-600 text-gray-300 rounded-lg transition-colors flex items-center space-x-2 text-sm"
+          >
+            <RefreshCw size={16} />
+            <span>Atualizar</span>
+          </button>
         </div>
       </div>
 

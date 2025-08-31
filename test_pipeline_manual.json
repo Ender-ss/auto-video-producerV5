@@ -34,7 +34,7 @@
       "provider": "pollinations",
       "style": "cinematic",
       "resolution": "1920x1080",
-      "per_chapter": 2
+      "total_images": 8
     },
     "tts": {
       "provider": "kokoro",

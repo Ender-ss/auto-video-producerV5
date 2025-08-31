@@ -108,8 +108,8 @@ def generate_titles_with_openai(source_titles, instructions, api_key, update_cal
             'error': f'Erro ao gerar títulos com ChatGPT: {error_str}'
         }
 
-def generate_titles_with_gemini(source_titles, instructions, api_key, update_callback=None):
-    """Gerar títulos usando Google Gemini com retry automático, gerando um por vez com callback"""
+def generate_titles_with_gemini(source_titles, instructions, api_key, update_callback=None, count=5):
+    """Gerar títulos usando Google Gemini com retry automático, gerando todos de uma vez (otimizado)"""
     import sys
     import os
     
@@ -145,37 +145,63 @@ def generate_titles_with_gemini(source_titles, instructions, api_key, update_cal
                 
                 titles_text = '\n'.join([f"- {title}" for title in source_titles])
                 
+                # OTIMIZAÇÃO: Gerar todos os títulos em uma única chamada API
+                prompt = f"""
+                {instructions}
+                
+                Títulos de origem:
+                {titles_text}
+                
+                Gere {count} novos títulos virais baseados nos títulos acima. Cada título deve:
+                - Ter entre 60-100 caracteres
+                - Ser chamativo e viral
+                - Manter o tema dos títulos originais
+                - Usar técnicas de copywriting para YouTube
+                - Ser adequado para o público brasileiro
+                
+                Retorne APENAS os {count} títulos, um por linha, sem numeração, sem formatação extra, sem explicações.
+                """
+                
+                response = model.generate_content(prompt)
+                
+                if not response.text:
+                    return {
+                        'success': False,
+                        'error': 'Gemini não retornou conteúdo'
+                    }
+                
+                # Processar a resposta para extrair os títulos
+                response_text = response.text.strip()
                 generated_titles = []
-                for i in range(5):
-                    prompt = f"""
-                    {instructions}
+                
+                # Dividir por linhas e limpar cada título
+                lines = response_text.split('\n')
+                for line in lines:
+                    title = line.strip()
+                    # Remover numeração se existir (1., 2., -, *, etc.)
+                    title = __import__('re').sub(r'^[\d\-\*\.\)\]\}\s]+', '', title).strip()
+                    # Remover aspas se existir
+                    title = title.strip('"\'"`')
                     
-                    Títulos de origem:
-                    {titles_text}
+                    if title and len(title) > 10:  # Filtrar títulos muito curtos
+                        generated_titles.append(title)
                     
-                    Gere 1 novo título viral baseado nos títulos acima. O título deve:
-                    - Ter entre 60-100 caracteres
-                    - Ser chamativo e viral
-                    - Manter o tema dos títulos originais
-                    - Usar técnicas de copywriting para YouTube
-                    - Ser adequado para o público brasileiro
-                    
-                    Retorne apenas o título, sem formatação extra.
-                    """
-                    
-                    response = model.generate_content(prompt)
-                    
-                    if not response.text:
-                        return {
-                            'success': False,
-                            'error': 'Gemini não retornou conteúdo'
-                        }
-                    
-                    title = response.text.strip()
-                    generated_titles.append(title)
-                    
-                    if update_callback:
-                        update_callback(generated_titles)
+                    # Parar se já temos a quantidade solicitada
+                    if len(generated_titles) >= count:
+                        break
+                
+                # Garantir que temos pelo menos alguns títulos
+                if not generated_titles:
+                    # Fallback: se não conseguiu parsear, usar o texto completo
+                    generated_titles = [response_text[:100]] if response_text else []
+                
+                # Limitar ao número solicitado
+                generated_titles = generated_titles[:count]
+                
+                # Callback para progresso (simular progresso incremental)
+                if update_callback:
+                    for i in range(1, len(generated_titles) + 1):
+                        update_callback(generated_titles[:i])
                 
                 print(f"✅ Sucesso na geração de títulos com Gemini na tentativa {attempt + 1}")
                 

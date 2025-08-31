@@ -128,33 +128,179 @@ class Pipeline(db.Model):
     __table_args__ = {'extend_existing': True}
     
     id = db.Column(db.Integer, primary_key=True)
+    pipeline_id = db.Column(db.String(100), unique=True, nullable=False)  # UUID consistente
+    display_name = db.Column(db.String(50), unique=True, nullable=False)  # Nome amigável (ex: 2025-01-31-001)
     title = db.Column(db.String(500), nullable=False)
+    channel_url = db.Column(db.String(500), nullable=True)  # URL do canal processado
     channel_id = db.Column(db.Integer, db.ForeignKey('channel.id'), nullable=True)
     status = db.Column(db.String(50), default='pending')
     progress = db.Column(db.Integer, default=0)
     current_step = db.Column(db.String(200), nullable=True)
     video_style = db.Column(db.String(50), default='motivational')
     target_duration = db.Column(db.Integer, default=300)  # segundos
+    
+    # Configuração completa da pipeline
+    config_json = db.Column(db.Text, nullable=True)  # JSON da configuração completa
+    agent_config = db.Column(db.Text, nullable=True)  # JSON da configuração do agente
+    
+    # Resultados de cada step
+    extraction_results = db.Column(db.Text, nullable=True)  # JSON dos títulos extraídos
+    titles_results = db.Column(db.Text, nullable=True)  # JSON dos títulos gerados
+    premises_results = db.Column(db.Text, nullable=True)  # JSON das premissas
+    scripts_results = db.Column(db.Text, nullable=True)  # JSON dos roteiros
+    tts_results = db.Column(db.Text, nullable=True)  # JSON dos resultados TTS
+    images_results = db.Column(db.Text, nullable=True)  # JSON das imagens
+    video_results = db.Column(db.Text, nullable=True)  # JSON do vídeo final
+    
+    # Arquivos gerados
     script_content = db.Column(db.Text, nullable=True)
     audio_file_path = db.Column(db.String(500), nullable=True)
     video_file_path = db.Column(db.String(500), nullable=True)
+    
+    # Timestamps
     started_at = db.Column(db.DateTime, default=datetime.utcnow)
     completed_at = db.Column(db.DateTime, nullable=True)
+    estimated_completion = db.Column(db.DateTime, nullable=True)
+    
+    # Controle de erros
     error_message = db.Column(db.Text, nullable=True)
+    warnings = db.Column(db.Text, nullable=True)  # JSON de warnings
     
     def to_dict(self):
+        """Converter para dicionário com todos os dados"""
+        # Parse dos resultados JSON
+        try:
+            config = json.loads(self.config_json) if self.config_json else {}
+            agent_config = json.loads(self.agent_config) if self.agent_config else {}
+            extraction_results = json.loads(self.extraction_results) if self.extraction_results else {}
+            titles_results = json.loads(self.titles_results) if self.titles_results else {}
+            premises_results = json.loads(self.premises_results) if self.premises_results else {}
+            scripts_results = json.loads(self.scripts_results) if self.scripts_results else {}
+            tts_results = json.loads(self.tts_results) if self.tts_results else {}
+            images_results = json.loads(self.images_results) if self.images_results else {}
+            video_results = json.loads(self.video_results) if self.video_results else {}
+            warnings = json.loads(self.warnings) if self.warnings else []
+        except Exception as e:
+            logger.error(f"Erro ao fazer parse dos JSONs da pipeline {self.pipeline_id}: {e}")
+            config = {}
+            agent_config = {}
+            extraction_results = {}
+            titles_results = {}
+            premises_results = {}
+            scripts_results = {}
+            tts_results = {}
+            images_results = {}
+            video_results = {}
+            warnings = []
+        
         return {
             'id': self.id,
+            'pipeline_id': self.pipeline_id,
+            'display_name': self.display_name,
             'title': self.title,
+            'channel_url': self.channel_url,
             'channel_id': self.channel_id,
             'status': self.status,
             'progress': self.progress,
             'current_step': self.current_step,
             'video_style': self.video_style,
             'target_duration': self.target_duration,
+            'config': config,
+            'agent': agent_config,
+            'results': {
+                'extraction': extraction_results,
+                'titles': titles_results,
+                'premises': premises_results,
+                'scripts': scripts_results,
+                'tts': tts_results,
+                'images': images_results,
+                'video': video_results
+            },
+            'steps': self._get_steps_status(),
             'started_at': self.started_at.isoformat(),
             'completed_at': self.completed_at.isoformat() if self.completed_at else None,
-            'error_message': self.error_message
+            'estimated_completion': self.estimated_completion.isoformat() if self.estimated_completion else None,
+            'error_message': self.error_message,
+            'warnings': warnings
+        }
+    
+    def _get_steps_status(self):
+        """Gerar status dos steps baseado nos resultados"""
+        steps = {
+            'extraction': {
+                'status': 'completed' if self.extraction_results else 'pending',
+                'result': json.loads(self.extraction_results) if self.extraction_results else None
+            },
+            'titles': {
+                'status': 'completed' if self.titles_results else 'pending', 
+                'result': json.loads(self.titles_results) if self.titles_results else None
+            },
+            'premises': {
+                'status': 'completed' if self.premises_results else 'pending',
+                'result': json.loads(self.premises_results) if self.premises_results else None
+            },
+            'scripts': {
+                'status': 'completed' if self.scripts_results else 'pending',
+                'result': json.loads(self.scripts_results) if self.scripts_results else None
+            },
+            'tts': {
+                'status': 'completed' if self.tts_results else 'pending',
+                'result': json.loads(self.tts_results) if self.tts_results else None
+            },
+            'images': {
+                'status': 'completed' if self.images_results else 'pending',
+                'result': json.loads(self.images_results) if self.images_results else None
+            },
+            'video': {
+                'status': 'completed' if self.video_results else 'pending',
+                'result': json.loads(self.video_results) if self.video_results else None
+            }
+        }
+        return steps
+    
+    @staticmethod
+    def generate_display_name():
+        """Gerar nome amigável único no formato YYYY-MM-DD-XXX"""
+        from sqlalchemy import func
+        today = datetime.utcnow().strftime('%Y-%m-%d')
+        
+        # Buscar o último número do dia
+        last_pipeline = Pipeline.query.filter(
+            Pipeline.display_name.like(f"{today}-%")
+        ).order_by(Pipeline.display_name.desc()).first()
+        
+        if last_pipeline:
+            try:
+                last_number = int(last_pipeline.display_name.split('-')[-1])
+                next_number = last_number + 1
+            except (ValueError, IndexError):
+                next_number = 1
+        else:
+            next_number = 1
+        
+        return f"{today}-{next_number:03d}"
+
+class PipelineLog(db.Model):
+    """Logs persistentes das pipelines"""
+    __table_args__ = {'extend_existing': True}
+    
+    id = db.Column(db.Integer, primary_key=True)
+    pipeline_id = db.Column(db.String(100), db.ForeignKey('pipeline.pipeline_id'), nullable=False)
+    level = db.Column(db.String(20), nullable=False)  # info, warning, error, success
+    step = db.Column(db.String(50), nullable=True)  # extraction, titles, etc.
+    message = db.Column(db.Text, nullable=False)
+    data = db.Column(db.Text, nullable=True)  # JSON com dados extras
+    timestamp = db.Column(db.DateTime, default=datetime.utcnow)
+    
+    def to_dict(self):
+        return {
+            'id': self.id,
+            'pipeline_id': self.pipeline_id,
+            'level': self.level,
+            'step': self.step,
+            'message': self.message,
+            'data': json.loads(self.data) if self.data else None,
+            'timestamp': self.timestamp.isoformat()
         }
 
 class Video(db.Model):
@@ -290,8 +436,7 @@ def system_status():
 def init_database():
     """Inicializar banco de dados"""
     with app.app_context():
-        # Forçar recriação das tabelas para garantir estrutura atualizada
-        db.drop_all()
+        # Criar tabelas se não existirem
         db.create_all()
         
         # Criar configurações padrão de APIs se não existirem
@@ -301,10 +446,17 @@ def init_database():
         ]
         
         for api_name in default_apis:
-            api_config = APIConfig(api_name=api_name)
-            db.session.add(api_config)
+            existing_api = APIConfig.query.filter_by(api_name=api_name).first()
+            if not existing_api:
+                api_config = APIConfig(api_name=api_name)
+                db.session.add(api_config)
         
-        db.session.commit()
+        try:
+            db.session.commit()
+        except Exception as e:
+            db.session.rollback()
+            logger.warning(f"Erro ao criar configurações padrão: {e}")
+            
         logger.info("✅ Banco de dados inicializado com sucesso!")
 
 # Importar e registrar rotas
@@ -352,23 +504,23 @@ def register_blueprints():
     except Exception as e:
         logger.error(f"❌ Erro ao registrar rotas: {e}")
 
-# Inicializar banco de dados e registrar blueprints sempre
-init_database()
-register_blueprints()
-
-# Adicionar logs iniciais ao sistema em tempo real
-try:
-    from routes.system import add_real_time_log
-    add_real_time_log("🎬 Auto Video Producer Backend iniciado!", "success", "system")
-    add_real_time_log("📡 API disponível em: http://localhost:5000", "info", "system")
-    add_real_time_log("🌐 Frontend disponível em: http://localhost:5173", "info", "system")
-    add_real_time_log("🔧 Sistema de logs em tempo real ativo", "info", "system")
-except ImportError:
-    pass
-
-logger.info("🎬 Auto Video Producer Backend iniciado!")
-logger.info("📡 API disponível em: http://localhost:5000")
-logger.info("🌐 Frontend disponível em: http://localhost:5173")
-
+# Registrar blueprints apenas se executado diretamente
 if __name__ == '__main__':
+    init_database()
+    register_blueprints()
+    
+    # Adicionar logs iniciais ao sistema em tempo real
+    try:
+        from routes.system import add_real_time_log
+        add_real_time_log("🎬 Auto Video Producer Backend iniciado!", "success", "system")
+        add_real_time_log("📡 API disponível em: http://localhost:5000", "info", "system")
+        add_real_time_log("🌐 Frontend disponível em: http://localhost:5173", "info", "system")
+        add_real_time_log("🔧 Sistema de logs em tempo real ativo", "info", "system")
+    except ImportError:
+        pass
+
+    logger.info("🎬 Auto Video Producer Backend iniciado!")
+    logger.info("📡 API disponível em: http://localhost:5000")
+    logger.info("🌐 Frontend disponível em: http://localhost:5173")
+    
     app.run(debug=True, host='0.0.0.0', port=5000)

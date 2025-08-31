@@ -1,0 +1,66 @@
+{
+  "channel_url": "https://www.youtube.com/@historias",
+  "video_count": 1,
+  "agent": {
+    "type": "specialized",
+    "specialized_type": "millionaire_stories"
+  },
+  "specialized_agents": {
+    "millionaire_stories": {
+      "name": "Histórias de Milionários",
+      "description": "Especializado em narrativas com contraste social",
+      "prompts": {
+        "titles": {
+          "viral": "Crie títulos virais para histórias de milionários sobre: {topic}. Os títulos devem destacar o contraste social (rico vs pobre), despertar curiosidade sobre a transformação, incluir elementos emocionais e ser chamativos.",
+          "educational": "Crie títulos educacionais para histórias de milionários sobre: {topic}."
+        },
+        "premises": {
+          "narrative": "Crie uma premissa narrativa para história de milionário sobre: {title}. A premissa deve incluir: personagem milionário/rico com vida aparentemente perfeita, personagem de classe baixa com qualidades humanas especiais, situação que os conecta, descoberta emocional que muda perspectivas, contraste entre riqueza material e riqueza humana. Aproximadamente {word_count} palavras",
+          "educational": "Crie uma premissa educacional para história de milionário sobre: {title}."
+        },
+        "scripts": {
+          "inicio": "Você é um roteirista especializado em HISTÓRIAS DE MILIONÁRIOS. TÍTULO: {titulo}, PREMISSA: {premissa}. ESTILO: Contraste forte entre riqueza material e pobreza emocional. ESTRUTURA: 1. Apresente o protagonista milionário em seu mundo de luxo, 2. Mostre sua vida aparentemente perfeita mas emocionalmente vazia, 3. Introduza o personagem de classe baixa com suas qualidades humanas. IMPORTANTE: Seja detalhado e minucioso.",
+          "meio": "Você é um roteirista especializado em HISTÓRIAS DE MILIONÁRIOS. TÍTULO: {titulo}, PREMISSA: {premissa}. CONTEXTO ANTERIOR: {resumos[i-2]}. DESENVOLVIMENTO: Esta é a continuação do MEIO da história. Deve desenvolver: 1. APROXIMAÇÃO DOS MUNDOS, 2. CONFLITOS E DESCOBERTAS, 3. INTENSIFICAÇÃO EMOCIONAL. IMPORTANTE: Seja detalhado e desenvolva as relações de forma orgânica.",
+          "fim": "Você é um roteirista especializado em HISTÓRIAS DE MILIONÁRIOS. TÍTULO: {titulo}, PREMISSA: {premissa}. CONTEXTO ANTERIOR: {resumos[-1]}. CONCLUSÃO: Este é o FIM da história. Deve proporcionar: 1. REVELAÇÃO PRINCIPAL, 2. TRANSFORMAÇÃO COMPLETA, 3. RESOLUÇÃO EMOCIONAL, 4. MENSAGEM FINAL. IMPORTANTE: Crie um final emocionalmente impactante."
+        }
+      }
+    }
+  },
+  "config": {
+    "extraction": {
+      "enabled": true,
+      "method": "yt-dlp",
+      "max_titles": 1
+    },
+    "titles": {
+      "enabled": true,
+      "provider": "gemini",
+      "count": 3,
+      "style": "viral",
+      "custom_prompt": false
+    },
+    "premises": {
+      "enabled": true,
+      "provider": "gemini",
+      "style": "educational",
+      "word_count": 200,
+      "custom_prompt": false
+    },
+    "scripts": {
+      "enabled": true,
+      "provider": "gemini",
+      "chapters": 3,
+      "contextual_chapters": true,
+      "custom_prompts": false
+    },
+    "tts": {
+      "enabled": false
+    },
+    "images": {
+      "enabled": false
+    },
+    "video": {
+      "enabled": false
+    }
+  }
+}

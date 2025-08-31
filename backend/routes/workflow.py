@@ -311,7 +311,8 @@ def test_workflow():
             raise Exception("Nenhuma premissa disponível para gerar roteiro")
 
         scripts_result = execute_script_generation(
-            title_generator, best_title, best_premise, ai_provider, openrouter_model, number_of_chapters, api_keys
+            title_generator, best_title, best_premise, ai_provider, openrouter_model, number_of_chapters, api_keys,
+            agent_config=data.get('agent'), specialized_agents=data.get('specialized_agents')
         )
 
         if not scripts_result['success']:
@@ -507,7 +508,8 @@ def complete_workflow():
             raise Exception("Nenhuma premissa disponível para gerar roteiro")
         
         scripts_result = execute_script_generation(
-            title_generator, best_title, best_premise, ai_provider, openrouter_model, number_of_chapters, api_keys
+            title_generator, best_title, best_premise, ai_provider, openrouter_model, number_of_chapters, api_keys,
+            agent_config=data.get('agent'), specialized_agents=data.get('specialized_agents')
         )
         
         if not scripts_result['success']:
@@ -1019,41 +1021,88 @@ Para cada título, forneça:
             'error': str(e)
         }
 
-def execute_script_generation(title_generator, selected_title, selected_premise, ai_provider, openrouter_model, number_of_chapters, api_keys):
-    """Executar geração de roteiros"""
+def execute_script_generation(title_generator, selected_title, selected_premise, ai_provider, openrouter_model, number_of_chapters, api_keys, agent_config=None, specialized_agents=None):
+    """Executar geração de roteiros com suporte a agentes especializados"""
     try:
-        # Usar a mesma lógica do endpoint de scripts
-        from routes.scripts import execute_prompt_1, execute_prompt_2, execute_prompt_3
+        # Verificar se há agente especializado configurado
+        use_agent = (agent_config and agent_config.get('type') == 'specialized' and 
+                    agent_config.get('specialized_type') and specialized_agents)
         
-        # Pipeline de 3 prompts
-        print("📝 Executando Prompt 1: Tradução e Contexto")
-        context_result = execute_prompt_1(selected_title, selected_premise['premise'], ai_provider, openrouter_model, api_keys, title_generator)
+        if use_agent:
+            # Usar gerador de roteiros longos com agente especializado
+            from routes.long_script_generator import generate_long_script_with_context
+            
+            agent_type = agent_config['specialized_type']
+            if agent_type in specialized_agents:
+                # Preparar configuração da requisição para agentes especializados
+                request_config = {
+                    'agent_prompts': specialized_agents[agent_type].get('prompts', {}).get('scripts', {})
+                }
+                
+                add_workflow_log(f"🎆 Usando agente especializado: {specialized_agents[agent_type].get('name', agent_type)}")
+                
+                # Gerar roteiro usando o agente especializado
+                result = generate_long_script_with_context(
+                    titulo=selected_title,
+                    premissa=selected_premise['premise'],
+                    numero_capitulos=number_of_chapters,
+                    title_generator=title_generator,
+                    openrouter_api_key=api_keys.get('openrouter'),
+                    openrouter_model=openrouter_model,
+                    request_config=request_config
+                )
+                
+                if result['success']:
+                    script_result = {
+                        'title': selected_title,
+                        'premise': selected_premise['premise'],
+                        'chapters': result['data']['chapters'],
+                        'total_chapters': result['data']['number_of_chapters'],
+                        'total_words': result['data']['word_count'],
+                        'agent_used': {
+                            'type': agent_type,
+                            'name': specialized_agents[agent_type].get('name', agent_type)
+                        }
+                    }
+                else:
+                    raise Exception(f"Falha na geração com agente especializado: {result.get('error', 'Erro desconhecido')}")
+            else:
+                add_workflow_log(f"⚠️ Agente {agent_type} não encontrado, usando método padrão")
+                use_agent = False
         
-        if not context_result:
-            raise Exception("Falha no Prompt 1: Tradução e Contexto")
-        
-        print("📖 Executando Prompt 2: Estrutura Narrativa")
-        narrative_result = execute_prompt_2(selected_title, context_result, ai_provider, openrouter_model, api_keys, title_generator)
-        
-        if not narrative_result:
-            raise Exception("Falha no Prompt 2: Estrutura Narrativa")
-        
-        print(f"✍️ Executando Prompt 3: Geração de {number_of_chapters} Capítulos")
-        chapters = execute_prompt_3(selected_title, context_result, narrative_result, number_of_chapters, ai_provider, openrouter_model, api_keys, title_generator)
-        
-        if not chapters:
-            raise Exception("Falha no Prompt 3: Geração dos Capítulos")
+        if not use_agent:
+            # Usar a lógica de 3 prompts padrão
+            from routes.scripts import execute_prompt_1, execute_prompt_2, execute_prompt_3
+            
+            # Pipeline de 3 prompts
+            add_workflow_log("📝 Executando Prompt 1: Tradução e Contexto")
+            context_result = execute_prompt_1(selected_title, selected_premise['premise'], ai_provider, openrouter_model, api_keys, title_generator)
+            
+            if not context_result:
+                raise Exception("Falha no Prompt 1: Tradução e Contexto")
+            
+            add_workflow_log("📖 Executando Prompt 2: Estrutura Narrativa")
+            narrative_result = execute_prompt_2(selected_title, context_result, ai_provider, openrouter_model, api_keys, title_generator)
+            
+            if not narrative_result:
+                raise Exception("Falha no Prompt 2: Estrutura Narrativa")
+            
+            add_workflow_log(f"✍️ Executando Prompt 3: Geração de {number_of_chapters} Capítulos")
+            chapters = execute_prompt_3(selected_title, context_result, narrative_result, number_of_chapters, ai_provider, openrouter_model, api_keys, title_generator)
+            
+            if not chapters:
+                raise Exception("Falha no Prompt 3: Geração dos Capítulos")
 
-        # Resultado final
-        script_result = {
-            'title': selected_title,
-            'premise': selected_premise['premise'],
-            'context': context_result,
-            'narrative_structure': narrative_result,
-            'chapters': chapters,
-            'total_chapters': len(chapters),
-            'total_words': sum(len(ch['content'].split()) for ch in chapters if ch.get('content'))
-        }
+            # Resultado final
+            script_result = {
+                'title': selected_title,
+                'premise': selected_premise['premise'],
+                'context': context_result,
+                'narrative_structure': narrative_result,
+                'chapters': chapters,
+                'total_chapters': len(chapters),
+                'total_words': sum(len(ch['content'].split()) for ch in chapters if ch.get('content'))
+            }
 
         add_workflow_log("📖 Roteiro gerado:")
         add_workflow_log(f"   TÍTULO: {script_result['title']}", "info")

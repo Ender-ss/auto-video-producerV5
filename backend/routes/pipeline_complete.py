@@ -30,6 +30,16 @@ logger = logging.getLogger(__name__)
 # Criar blueprint
 pipeline_complete_bp = Blueprint('pipeline_complete', __name__)
 
+# Importar modelos do banco de dados
+try:
+    from app import db, Pipeline, PipelineLog
+except ImportError:
+    # Fallback para caso a importação falhe
+    db = None
+    Pipeline = None
+    PipelineLog = None
+    logger.warning("Não foi possível importar modelos do banco de dados")
+
 # ================================
 # 📊 ESTADO GLOBAL DO PIPELINE
 # ================================
@@ -37,6 +47,106 @@ pipeline_complete_bp = Blueprint('pipeline_complete', __name__)
 # Armazenamento em memória para pipelines ativos
 active_pipelines: Dict[str, Dict[str, Any]] = {}
 pipeline_logs: Dict[str, list] = {}
+
+# ================================
+# 🗄️ FUNÇÕES DE PERSISTÊNCIA
+# ================================
+
+def add_pipeline_log(pipeline_id: str, level: str, message: str, step: str = None, data: dict = None):
+    """Adicionar log persistente da pipeline"""
+    try:
+        if PipelineLog and db:
+            log_entry = PipelineLog(
+                pipeline_id=pipeline_id,
+                level=level,
+                step=step,
+                message=message,
+                data=json.dumps(data) if data else None
+            )
+            db.session.add(log_entry)
+            db.session.commit()
+        
+        # Também adicionar ao log em memória se pipeline estiver ativa
+        if pipeline_id not in pipeline_logs:
+            pipeline_logs[pipeline_id] = []
+        pipeline_logs[pipeline_id].append({
+            'timestamp': datetime.utcnow().isoformat(),
+            'level': level,
+            'step': step,
+            'message': message,
+            'data': data
+        })
+        
+        logger.info(f"[{pipeline_id[:8]}] [{level.upper()}] {message}")
+        
+    except Exception as e:
+        logger.error(f"Erro ao salvar log da pipeline {pipeline_id}: {e}")
+
+def save_pipeline_to_db(pipeline_state: dict):
+    """Salvar estado da pipeline no banco de dados"""
+    try:
+        if not Pipeline or not db:
+            return None
+            
+        pipeline_id = pipeline_state['pipeline_id']
+        
+        # Verificar se já existe
+        pipeline = Pipeline.query.filter_by(pipeline_id=pipeline_id).first()
+        if not pipeline:
+            # Gerar display_name amigável
+            display_name = Pipeline.generate_display_name()
+            
+            pipeline = Pipeline(
+                pipeline_id=pipeline_id,
+                display_name=display_name,
+                title=pipeline_state.get('title') or pipeline_state.get('config', {}).get('titles', {}).get('selected_title', 'Pipeline sem título'),
+                channel_url=pipeline_state.get('channel_url'),
+                status=pipeline_state.get('status', PipelineStatus.QUEUED),
+                config_json=json.dumps(pipeline_state.get('config', {})),
+                agent_config=json.dumps(pipeline_state.get('agent', {})),
+                estimated_completion=datetime.fromisoformat(pipeline_state['estimated_completion']) if pipeline_state.get('estimated_completion') else None
+            )
+            db.session.add(pipeline)
+        else:
+            # Atualizar existente
+            pipeline.status = pipeline_state.get('status', pipeline.status)
+            pipeline.progress = pipeline_state.get('progress', pipeline.progress)
+            pipeline.current_step = pipeline_state.get('current_step')
+            
+            # Atualizar resultados dos steps
+            results = pipeline_state.get('results', {})
+            if 'extraction' in results:
+                pipeline.extraction_results = json.dumps(results['extraction'])
+            if 'titles' in results:
+                pipeline.titles_results = json.dumps(results['titles'])
+            if 'premises' in results:
+                pipeline.premises_results = json.dumps(results['premises'])
+            if 'scripts' in results:
+                pipeline.scripts_results = json.dumps(results['scripts'])
+            if 'tts' in results:
+                pipeline.tts_results = json.dumps(results['tts'])
+            if 'images' in results:
+                pipeline.images_results = json.dumps(results['images'])
+            if 'video' in results:
+                pipeline.video_results = json.dumps(results['video'])
+            
+            if pipeline_state.get('status') == PipelineStatus.COMPLETED:
+                pipeline.completed_at = datetime.utcnow()
+            
+            if pipeline_state.get('error_message'):
+                pipeline.error_message = pipeline_state['error_message']
+            
+            if pipeline_state.get('warnings'):
+                pipeline.warnings = json.dumps(pipeline_state['warnings'])
+        
+        db.session.commit()
+        return pipeline
+        
+    except Exception as e:
+        logger.error(f"Erro ao salvar pipeline no banco: {e}")
+        if db:
+            db.session.rollback()
+        return None
 
 class PipelineStatus:
     """Estados possíveis do pipeline"""
@@ -64,32 +174,62 @@ class PipelineSteps:
 
 @pipeline_complete_bp.route('/active', methods=['GET'])
 def get_active_pipelines():
-    """Listar pipelines ativos em memória"""
+    """Listar pipelines ativos (memória + banco de dados)"""
     try:
         # Filtrar pipelines por status se especificado
         status_filter = request.args.get('status', '')
+        include_history = request.args.get('history', 'false').lower() == 'true'
+        limit = request.args.get('limit', 50, type=int)
         
-        if status_filter:
-            # Converter string de status separados por vírgula em lista
-            allowed_statuses = [s.strip() for s in status_filter.split(',')]
-            filtered_pipelines = {
-                pid: pipeline for pid, pipeline in active_pipelines.items()
-                if pipeline.get('status') in allowed_statuses
-            }
-        else:
-            filtered_pipelines = active_pipelines
-        
-        # Converter para lista com informações básicas
         pipelines_list = []
-        for pipeline_id, pipeline_data in filtered_pipelines.items():
-            pipelines_list.append({
-                'pipeline_id': pipeline_id,
-                'status': pipeline_data.get('status'),
-                'started_at': pipeline_data.get('started_at'),
-                'progress': pipeline_data.get('progress', 0),
-                'current_step': pipeline_data.get('current_step', ''),
-                'config': pipeline_data.get('config', {})
-            })
+        
+        if include_history and Pipeline:
+            # Buscar do banco de dados para histórico
+            query = Pipeline.query
+            
+            if status_filter:
+                allowed_statuses = [s.strip() for s in status_filter.split(',')]
+                query = query.filter(Pipeline.status.in_(allowed_statuses))
+            
+            db_pipelines = query.order_by(Pipeline.started_at.desc()).limit(limit).all()
+            
+            for pipeline in db_pipelines:
+                pipeline_dict = pipeline.to_dict()
+                
+                # Adicionar display_name para compatibilidade com frontend
+                pipeline_dict['display_name'] = pipeline.display_name
+                
+                pipelines_list.append(pipeline_dict)
+        else:
+            # Buscar apenas da memória (pipelines ativas)
+            if status_filter:
+                allowed_statuses = [s.strip() for s in status_filter.split(',')]
+                filtered_pipelines = {
+                    pid: pipeline for pid, pipeline in active_pipelines.items()
+                    if pipeline.get('status') in allowed_statuses
+                }
+            else:
+                filtered_pipelines = active_pipelines
+            
+            for pipeline_id, pipeline_data in filtered_pipelines.items():
+                # Buscar display_name do banco se disponível
+                display_name = pipeline_id[:8]
+                if Pipeline:
+                    db_pipeline = Pipeline.query.filter_by(pipeline_id=pipeline_id).first()
+                    if db_pipeline:
+                        display_name = db_pipeline.display_name
+                
+                pipelines_list.append({
+                    'pipeline_id': pipeline_id,
+                    'display_name': display_name,
+                    'status': pipeline_data.get('status'),
+                    'started_at': pipeline_data.get('started_at'),
+                    'progress': pipeline_data.get('progress', 0),
+                    'current_step': pipeline_data.get('current_step', ''),
+                    'config': pipeline_data.get('config', {}),
+                    'results': pipeline_data.get('results', {}),
+                    'logs': pipeline_logs.get(pipeline_id, [])
+                })
         
         return jsonify({
             'success': True,
@@ -99,6 +239,155 @@ def get_active_pipelines():
         
     except Exception as e:
         logger.error(f"Erro ao listar pipelines ativos: {str(e)}")
+        return jsonify({
+            'success': False,
+            'error': str(e)
+        }), 500
+
+@pipeline_complete_bp.route('/history', methods=['GET'])
+def get_pipeline_history():
+    """Obter histórico completo de pipelines"""
+    try:
+        if not Pipeline:
+            return jsonify({
+                'success': False,
+                'error': 'Banco de dados não disponível'
+            }), 500
+        
+        # Parâmetros de filtragem
+        status_filter = request.args.get('status')
+        date_from = request.args.get('date_from')
+        date_to = request.args.get('date_to')
+        limit = request.args.get('limit', 100, type=int)
+        offset = request.args.get('offset', 0, type=int)
+        
+        # Construir query
+        query = Pipeline.query
+        
+        if status_filter:
+            allowed_statuses = [s.strip() for s in status_filter.split(',')]
+            query = query.filter(Pipeline.status.in_(allowed_statuses))
+        
+        if date_from:
+            try:
+                date_from_obj = datetime.fromisoformat(date_from)
+                query = query.filter(Pipeline.started_at >= date_from_obj)
+            except ValueError:
+                pass
+        
+        if date_to:
+            try:
+                date_to_obj = datetime.fromisoformat(date_to)
+                query = query.filter(Pipeline.started_at <= date_to_obj)
+            except ValueError:
+                pass
+        
+        # Executar query com paginação
+        pipelines = query.order_by(Pipeline.started_at.desc()).offset(offset).limit(limit).all()
+        total_count = query.count()
+        
+        # Converter para dicionário
+        pipelines_list = [pipeline.to_dict() for pipeline in pipelines]
+        
+        return jsonify({
+            'success': True,
+            'pipelines': pipelines_list,
+            'total': len(pipelines_list),
+            'total_count': total_count,
+            'offset': offset,
+            'limit': limit
+        })
+        
+    except Exception as e:
+        logger.error(f"Erro ao buscar histórico de pipelines: {str(e)}")
+        return jsonify({
+            'success': False,
+            'error': str(e)
+        }), 500
+
+@pipeline_complete_bp.route('/stats', methods=['GET'])
+def get_pipeline_stats():
+    """Obter estatísticas das pipelines"""
+    try:
+        if not Pipeline:
+            return jsonify({
+                'success': False,
+                'error': 'Banco de dados não disponível'
+            }), 500
+        
+        from sqlalchemy import func
+        
+        # Estatísticas por status
+        status_stats = db.session.query(
+            Pipeline.status,
+            func.count(Pipeline.id).label('count')
+        ).group_by(Pipeline.status).all()
+        
+        # Pipelines por dia (ultimos 30 dias)
+        thirty_days_ago = datetime.utcnow() - timedelta(days=30)
+        daily_stats = db.session.query(
+            func.date(Pipeline.started_at).label('date'),
+            func.count(Pipeline.id).label('count')
+        ).filter(
+            Pipeline.started_at >= thirty_days_ago
+        ).group_by(func.date(Pipeline.started_at)).all()
+        
+        # Taxa de sucesso
+        total_pipelines = Pipeline.query.count()
+        completed_pipelines = Pipeline.query.filter_by(status='completed').count()
+        success_rate = (completed_pipelines / total_pipelines * 100) if total_pipelines > 0 else 0
+        
+        return jsonify({
+            'success': True,
+            'data': {
+                'status_distribution': {status: count for status, count in status_stats},
+                'daily_stats': [{'date': str(date), 'count': count} for date, count in daily_stats],
+                'total_pipelines': total_pipelines,
+                'success_rate': round(success_rate, 2),
+                'active_pipelines': len(active_pipelines)
+            }
+        })
+        
+    except Exception as e:
+        logger.error(f"Erro ao buscar estatísticas: {str(e)}")
+        return jsonify({
+            'success': False,
+            'error': str(e)
+        }), 500
+
+@pipeline_complete_bp.route('/by-name/<display_name>', methods=['GET'])
+def get_pipeline_by_display_name(display_name: str):
+    """Buscar pipeline pelo nome amigável (ex: 2025-01-31-001)"""
+    try:
+        if not Pipeline:
+            return jsonify({
+                'success': False,
+                'error': 'Banco de dados não disponível'
+            }), 500
+        
+        pipeline = Pipeline.query.filter_by(display_name=display_name).first()
+        if not pipeline:
+            return jsonify({
+                'success': False,
+                'error': f'Pipeline {display_name} não encontrado'
+            }), 404
+        
+        pipeline_dict = pipeline.to_dict()
+        
+        # Buscar logs se disponível
+        if PipelineLog:
+            logs = PipelineLog.query.filter_by(pipeline_id=pipeline.pipeline_id).order_by(PipelineLog.timestamp).all()
+            pipeline_dict['logs'] = [log.to_dict() for log in logs]
+        else:
+            pipeline_dict['logs'] = []
+        
+        return jsonify({
+            'success': True,
+            'data': pipeline_dict
+        })
+        
+    except Exception as e:
+        logger.error(f"Erro ao buscar pipeline por nome {display_name}: {str(e)}")
         return jsonify({
             'success': False,
             'error': str(e)
@@ -123,23 +412,27 @@ def start_complete_automation():
         # Configuração padrão
         default_config = {
             'extraction': {
+                'enabled': True,
                 'method': 'auto',
                 'max_titles': 10,
                 'min_views': 1000,
                 'days_back': 30
             },
             'titles': {
+                'enabled': True,
                 'provider': 'gemini',
                 'custom_prompt': False,
                 'count': 5,
                 'style': 'viral'
             },
             'premises': {
+                'enabled': True,
                 'provider': 'gemini',
                 'custom_prompt': False,
                 'word_count': 200
             },
             'scripts': {
+                'enabled': True,
                 'chapters': 5,
                 'style': 'inicio',
                 'duration_target': '5-7 minutes',
@@ -148,18 +441,21 @@ def start_complete_automation():
                 'detailed_prompt': False
             },
             'tts': {
+                'enabled': True,
                 'provider': 'kokoro',
                 'voice': 'default',
                 'speed': 1.0,
                 'emotion': 'neutral'
             },
             'images': {
+                'enabled': True,
                 'provider': 'pollinations',
                 'style': 'cinematic',
                 'resolution': '1920x1080',
                 'per_chapter': 2
             },
             'video': {
+                'enabled': True,
                 'resolution': '1920x1080',
                 'fps': 30,
                 'quality': 'high',
@@ -171,6 +467,44 @@ def start_complete_automation():
         # Mesclar configuração fornecida com padrão
         user_config = data.get('config', {})
         config = {**default_config, **user_config}
+        
+        # CORREÇÃO: Mapear video_count do frontend para max_titles no backend
+        # O frontend envia video_count mas o backend espera max_titles na configuração de extraction
+        if 'video_count' in data:
+            video_count = data['video_count']
+            if 'extraction' not in config:
+                config['extraction'] = {}
+            config['extraction']['max_titles'] = video_count
+            logger.info(f"🔧 Mapeando video_count={video_count} para extraction.max_titles={video_count}")
+        elif user_config.get('extraction', {}).get('max_titles') is None:
+            # Se não há video_count nem max_titles, usar padrão de 10
+            config['extraction']['max_titles'] = 10
+        
+        # Processar configuração de agentes especializados
+        agent_config = data.get('agent', {})
+        specialized_agents = data.get('specialized_agents', {})
+        
+        # Integrar prompts especializados se agente estiver ativo
+        if agent_config.get('type') == 'specialized' and agent_config.get('specialized_type'):
+            agent_type = agent_config['specialized_type']
+            if agent_type in specialized_agents:
+                agent_prompts = specialized_agents[agent_type].get('prompts', {})
+                # Aplicar prompts especializados à configuração
+                if 'titles' in agent_prompts:
+                    config['titles']['agent_prompts'] = agent_prompts['titles']
+                if 'premises' in agent_prompts:
+                    config['premises']['agent_prompts'] = agent_prompts['premises']
+                if 'scripts' in agent_prompts:
+                    config['scripts']['agent_prompts'] = agent_prompts['scripts']
+                if 'images' in agent_prompts:
+                    config['images']['agent_prompts'] = agent_prompts['images']
+                
+                # Marcar que agente especializado está ativo
+                config['agent'] = {
+                    'enabled': True,
+                    'type': agent_type,
+                    'name': specialized_agents[agent_type].get('name', agent_type)
+                }
         
         # Mapear 'provider' para 'method' na configuração de extraction se necessário
         if 'extraction' in user_config and 'provider' in user_config['extraction']:
@@ -187,6 +521,7 @@ def start_complete_automation():
         # Inicializar estado do pipeline
         pipeline_state = {
             'pipeline_id': pipeline_id,
+            'title': data.get('title', 'Pipeline sem título'),  # Adicionar título desde o início
             'status': PipelineStatus.QUEUED,
             'current_step': None,
             'progress': 0,
@@ -213,16 +548,18 @@ def start_complete_automation():
         
         # Armazenar estado
         active_pipelines[pipeline_id] = pipeline_state
-        pipeline_logs[pipeline_id] = []
+        
+        # Salvar no banco de dados
+        save_pipeline_to_db(pipeline_state)
         
         # Adicionar log inicial
-        add_pipeline_log(pipeline_id, 'info', 'Pipeline iniciado', {
+        add_pipeline_log(pipeline_id, 'info', 'Pipeline iniciado', data={
             'channel_url': data['channel_url'],
             'config_summary': {
-                'extraction_method': config['extraction']['method'],
-                'ai_provider': config['titles']['provider'],
-                'tts_provider': config['tts']['provider'],
-                'image_provider': config['images']['provider']
+                'extraction_method': config.get('extraction', {}).get('method', 'auto'),
+                'ai_provider': config.get('titles', {}).get('provider', 'gemini'),
+                'tts_provider': config.get('tts', {}).get('provider', 'kokoro'),
+                'image_provider': config.get('images', {}).get('provider', 'pollinations')
             }
         })
         
@@ -262,26 +599,53 @@ def start_complete_automation():
 
 @pipeline_complete_bp.route('/status/<pipeline_id>', methods=['GET'])
 def get_pipeline_status(pipeline_id: str):
-    """Obter status do pipeline"""
+    """Obter status do pipeline (memória ou banco)"""
     try:
-        if pipeline_id not in active_pipelines:
+        # Primeiro tentar da memória (pipelines ativas)
+        if pipeline_id in active_pipelines:
+            pipeline_state = active_pipelines[pipeline_id].copy()
+            
+            # Enriquecer com dados do banco (display_name, title, etc.)
+            if Pipeline:
+                db_pipeline = Pipeline.query.filter_by(pipeline_id=pipeline_id).first()
+                if db_pipeline:
+                    pipeline_state['display_name'] = db_pipeline.display_name
+                    pipeline_state['title'] = db_pipeline.title
+                    pipeline_state['channel_url'] = db_pipeline.channel_url
+                    pipeline_state['started_at'] = db_pipeline.started_at.isoformat()
+                    if db_pipeline.completed_at:
+                        pipeline_state['completed_at'] = db_pipeline.completed_at.isoformat()
+            
+            # Incluir logs no estado do pipeline para o frontend
+            pipeline_state['logs'] = pipeline_logs.get(pipeline_id, [])
+            
             return jsonify({
-                'success': False,
-                'error': 'Pipeline não encontrado'
-            }), 404
+                'success': True,
+                'data': pipeline_state
+            })
         
-        pipeline_state = active_pipelines[pipeline_id].copy()
-        
-        # Incluir logs no estado do pipeline para o frontend
-        if pipeline_id in pipeline_logs:
-            pipeline_state['logs'] = pipeline_logs[pipeline_id]
-        else:
-            pipeline_state['logs'] = []
+        # Se não encontrar na memória, buscar no banco
+        if Pipeline:
+            db_pipeline = Pipeline.query.filter_by(pipeline_id=pipeline_id).first()
+            if db_pipeline:
+                pipeline_dict = db_pipeline.to_dict()
+                
+                # Buscar logs do banco também
+                if PipelineLog:
+                    logs = PipelineLog.query.filter_by(pipeline_id=pipeline_id).order_by(PipelineLog.timestamp).all()
+                    pipeline_dict['logs'] = [log.to_dict() for log in logs]
+                else:
+                    pipeline_dict['logs'] = []
+                
+                return jsonify({
+                    'success': True,
+                    'data': pipeline_dict
+                })
         
         return jsonify({
-            'success': True,
-            'data': pipeline_state
-        })
+            'success': False,
+            'error': 'Pipeline não encontrado'
+        }), 404
         
     except Exception as e:
         logger.error(f"Erro ao obter status do pipeline {pipeline_id}: {str(e)}")
@@ -405,6 +769,86 @@ def resume_pipeline(pipeline_id: str):
             'error': str(e)
         }), 500
 
+@pipeline_complete_bp.route('/clear-test-pipelines', methods=['POST'])
+def clear_test_pipelines():
+    """Limpar pipelines de teste em aguardo"""
+    try:
+        if not Pipeline:
+            return jsonify({
+                'success': False,
+                'error': 'Banco de dados não disponível'
+            }), 500
+        
+        # Buscar pipelines em estado de teste (aguardando, processando, pausadas)
+        test_statuses = ['queued', 'processing', 'paused']
+        pipelines = Pipeline.query.filter(Pipeline.status.in_(test_statuses)).all()
+        
+        cancelled_count = 0
+        test_pipelines = []
+        
+        for p in pipelines:
+            # Verificar se é pipeline de teste baseado no título ou nome
+            is_test = (
+                'teste' in (p.title or '').lower() or
+                'test' in (p.title or '').lower() or
+                'exemplo' in (p.title or '').lower() or
+                'demo' in (p.title or '').lower() or
+                p.title == 'Pipeline sem título' or  # Pipelines sem título específico
+                not p.title or  # Pipelines sem título
+                p.title.strip() == ''  # Pipelines com título vazio
+            )
+            
+            if is_test:
+                test_pipelines.append(p)
+        
+        logger.info(f"🔍 Encontradas {len(test_pipelines)} pipelines de teste para cancelar")
+        
+        # Cancelar pipelines de teste
+        for p in test_pipelines:
+            # Cancelar no banco de dados
+            p.status = 'cancelled'
+            p.current_step = 'Pipeline de teste cancelado pelo usuário'
+            p.completed_at = datetime.utcnow()
+            cancelled_count += 1
+            
+            # Cancelar na memória se existir
+            if p.pipeline_id in active_pipelines:
+                pipeline_state = active_pipelines[p.pipeline_id]
+                pipeline_state['status'] = PipelineStatus.CANCELLED
+                pipeline_state['completed_at'] = datetime.utcnow().isoformat()
+                add_pipeline_log(p.pipeline_id, 'warning', 'Pipeline de teste cancelado pelo usuário via limpeza')
+        
+        if cancelled_count > 0:
+            db.session.commit()
+            logger.info(f"✅ {cancelled_count} pipelines de teste foram canceladas com sucesso!")
+        
+        # Verificar quantas pipelines restam aguardando
+        remaining = Pipeline.query.filter(Pipeline.status.in_(['queued', 'processing', 'paused'])).count()
+        
+        return jsonify({
+            'success': True,
+            'message': f'{cancelled_count} pipelines de teste canceladas com sucesso',
+            'data': {
+                'cancelled_count': cancelled_count,
+                'remaining_pending': remaining,
+                'cancelled_pipelines': [{
+                    'pipeline_id': p.pipeline_id,
+                    'display_name': p.display_name,
+                    'title': p.title,
+                    'status': 'cancelled'
+                } for p in test_pipelines]
+            }
+        })
+        
+    except Exception as e:
+        logger.error(f"Erro ao limpar pipelines de teste: {str(e)}")
+        if db:
+            db.session.rollback()
+        return jsonify({
+            'success': False,
+            'error': str(e)
+        }), 500
+
 @pipeline_complete_bp.route('/cancel/<pipeline_id>', methods=['POST'])
 def cancel_pipeline(pipeline_id: str):
     """Cancelar pipeline"""
@@ -466,9 +910,10 @@ def calculate_estimated_time(config: Dict[str, Any]) -> int:
         base_time += 120
     
     images_config = config.get('images', {})
-    per_chapter = images_config.get('per_chapter', 2)
-    if per_chapter > 2:
-        base_time += per_chapter * 30
+    per_chapter = images_config.get('per_chapter', 2)  # Manter para compatibilidade
+    total_images = images_config.get('total_images', per_chapter * 3)  # Padrão baseado em total
+    if total_images > 20:
+        base_time += total_images * 15  # 15 segundos por imagem acima de 20
     
     video_config = config.get('video', {})
     if video_config.get('quality', 'medium') == 'high':
@@ -541,16 +986,26 @@ def process_complete_pipeline(pipeline_id: str):
             
             # Atualizar estado do pipeline com os resultados
             pipeline_state['results'] = result
+            
+            # Atualizar status dos steps individuais baseado nos resultados
+            for step_name, step_result in result.items():
+                if step_name in pipeline_state['steps']:
+                    pipeline_state['steps'][step_name]['result'] = step_result
+                    pipeline_state['steps'][step_name]['status'] = 'completed'
+                    pipeline_state['steps'][step_name]['progress'] = 100
+            
             pipeline_state['status'] = PipelineStatus.COMPLETED
             pipeline_state['completed_at'] = datetime.utcnow().isoformat()
             pipeline_state['progress'] = 100
             
             add_pipeline_log(pipeline_id, 'info', 'Pipeline concluído com sucesso!')
+            add_pipeline_log(pipeline_id, 'info', f'Resultados salvos: {list(result.keys())}')
             return
             
         except Exception as e:
             # Se houver erro, tentar execução manual das etapas
-            add_pipeline_log(pipeline_id, 'warning', f'Erro na execução automática, tentando execução manual: {str(e)}')
+            add_pipeline_log(pipeline_id, 'error', f'Erro na execução automática: {str(e)}')
+            add_pipeline_log(pipeline_id, 'warning', 'Tentando execução manual das etapas...')
         
         # Executar etapas do pipeline manualmente (fallback)
         # Verificar quais etapas estão habilitadas na configuração

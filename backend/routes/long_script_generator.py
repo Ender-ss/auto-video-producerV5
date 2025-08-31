@@ -258,7 +258,7 @@ def clear_chapter_summary_cache(max_age_hours: int = 24) -> int:
     
     return removed_count
 
-def generate_long_script_with_context(titulo, premissa, numero_capitulos, title_generator=None, openrouter_api_key=None, openrouter_model='auto', update_callback=None, long_script_prompt=None, custom_prompts=None):
+def generate_long_script_with_context(titulo, premissa, numero_capitulos, title_generator=None, openrouter_api_key=None, openrouter_model='auto', update_callback=None, long_script_prompt=None, custom_prompts=None, request_config=None):
     """
     Gera um roteiro longo com capítulos sequenciais e resumos contextuais entre capítulos.
     
@@ -272,12 +272,17 @@ def generate_long_script_with_context(titulo, premissa, numero_capitulos, title_
         update_callback (function): Função de callback para atualizações de progresso
         long_script_prompt (str): Prompt personalizado adicional (antigo método)
         custom_prompts (dict): Prompts personalizados por fase {'intro': str, 'middle': str, 'conclusion': str, 'default_prompts': dict}
+        request_config (dict): Configuração da requisição incluindo agent_prompts para agentes especializados
         
     Returns:
         dict: Dicionário com o roteiro gerado e informações adicionais
     """
     # Iniciar medição de performance
     start_time = time.time()
+    
+    # Inicializar request_config se não fornecido
+    if request_config is None:
+        request_config = {}
     
     try:
         print(f"🚀 Iniciando geração de roteiro longo: {titulo}")
@@ -342,8 +347,17 @@ def generate_long_script_with_context(titulo, premissa, numero_capitulos, title_
                 premissa=premissa
             )
             print("🔧 Usando prompt padrão editado para introdução")
-        else:  # Prompt padrão do sistema
-            prompt_capitulo_1 = f"""
+        else:  # Prompt padrão do sistema ou agente especializado
+            # Verificar se há agente especializado ativo
+            agent_prompts = request_config.get('agent_prompts', {})
+            if agent_prompts and 'inicio' in agent_prompts:
+                prompt_capitulo_1 = agent_prompts['inicio'].format(
+                    titulo=titulo,
+                    premissa=premissa
+                )
+                print("🎆 Usando prompt de agente especializado para introdução")
+            else:
+                prompt_capitulo_1 = f"""
         Você é um roteirista profissional especializado em conteúdo para YouTube.
         
         TÍTULO: {titulo}
@@ -357,7 +371,7 @@ def generate_long_script_with_context(titulo, premissa, numero_capitulos, title_
         - Escreva apenas o conteúdo do capítulo, sem títulos ou marcações
         {f'\n        {long_script_prompt}' if long_script_prompt else ''}
         """
-            print("📄 Usando prompt padrão do sistema para introdução")
+                print("📄 Usando prompt padrão do sistema para introdução")
         
         # Gerar Capítulo 1 com validação e retentativas
         max_tentativas = get_gemini_keys_count() if get_gemini_keys_count() > 0 else 3
@@ -460,8 +474,20 @@ def generate_long_script_with_context(titulo, premissa, numero_capitulos, title_
                     resumo_anterior=resumos[i-2]
                 )
                 print(f"🔧 Usando prompt padrão editado para Capítulo {i}")
-            else:  # Prompt padrão do sistema
-                prompt_capitulo = f"""
+            else:  # Prompt padrão do sistema ou agente especializado
+                # Verificar se há agente especializado ativo
+                agent_prompts = request_config.get('agent_prompts', {})
+                if agent_prompts and 'meio' in agent_prompts:
+                    # Substituir variáveis contextuais no prompt do agente
+                    prompt_capitulo = agent_prompts['meio'].format(
+                        titulo=titulo,
+                        premissa=premissa
+                    )
+                    # Substituir manualmente a variável de resumo contextual
+                    prompt_capitulo = prompt_capitulo.replace('{resumos[i-2]}', resumos[i-2])
+                    print(f"🎆 Usando prompt de agente especializado para Capítulo {i}")
+                else:
+                    prompt_capitulo = f"""
             Você é um roteirista profissional especializado em conteúdo para YouTube.
             
             TÍTULO: {titulo}
@@ -479,7 +505,7 @@ def generate_long_script_with_context(titulo, premissa, numero_capitulos, title_
             - Escreva apenas o conteúdo do capítulo, sem títulos ou marcações
             {f'\n            {long_script_prompt}' if long_script_prompt else ''}
             """
-                print(f"📄 Usando prompt padrão do sistema para Capítulo {i}")
+                    print(f"📄 Usando prompt padrão do sistema para Capítulo {i}")
             
             # Gerar capítulo atual com validação e retentativas
             capitulo_valido = False
@@ -585,8 +611,20 @@ def generate_long_script_with_context(titulo, premissa, numero_capitulos, title_
                     resumo_anterior=resumos[-1]
                 )
                 print("🔧 Usando prompt padrão editado para conclusão")
-            else:  # Prompt padrão do sistema
-                prompt_conclusao = f"""
+            else:  # Prompt padrão do sistema ou agente especializado
+                # Verificar se há agente especializado ativo
+                agent_prompts = request_config.get('agent_prompts', {})
+                if agent_prompts and 'fim' in agent_prompts:
+                    # Substituir variáveis contextuais no prompt do agente
+                    prompt_conclusao = agent_prompts['fim'].format(
+                        titulo=titulo,
+                        premissa=premissa
+                    )
+                    # Substituir manualmente a variável de resumo contextual
+                    prompt_conclusao = prompt_conclusao.replace('{resumos[-1]}', resumos[-1])
+                    print("🎆 Usando prompt de agente especializado para conclusão")
+                else:
+                    prompt_conclusao = f"""
             Você é um roteirista profissional especializado em conteúdo para YouTube.
             
             TÍTULO: {titulo}
@@ -604,7 +642,7 @@ def generate_long_script_with_context(titulo, premissa, numero_capitulos, title_
             - Escreva apenas o conteúdo do capítulo, sem títulos ou marcações
             {f'\n            {long_script_prompt}' if long_script_prompt else ''}
             """
-                print("📄 Usando prompt padrão do sistema para conclusão")
+                    print("📄 Usando prompt padrão do sistema para conclusão")
             
             # Gerar Capítulo Final com validação e retentativas
             capitulo_final_valido = False
@@ -737,6 +775,20 @@ def _clean_narrative_content(content: str) -> str:
     content = re.sub(r'NARRADOR:\s*', '', content)        # NARRADOR:
     content = re.sub(r'\(Narrador[^)]*\)', '', content, flags=re.IGNORECASE)  # (Narrador...)
     content = re.sub(r'\*\*Narrador[^*]*\*\*', '', content, flags=re.IGNORECASE)  # **Narrador**
+    
+    # Remover direções de câmera e stage directions
+    content = re.sub(r'A câmera[^.]*\.', '', content, flags=re.IGNORECASE)  # A câmera faz um paneo.
+    content = re.sub(r'\([^)]*câmera[^)]*\)', '', content, flags=re.IGNORECASE)  # (câmera...)
+    content = re.sub(r'\([^)]*[Pp]aneo[^)]*\)', '', content)  # (paneo...)
+    content = re.sub(r'\([^)]*[Ss]ussurrando[^)]*\)', '', content)  # (Sussurrando)
+    content = re.sub(r'\([^)]*[Cc]lose[^)]*\)', '', content)  # (Close...)
+    content = re.sub(r'\([^)]*[Zz]oom[^)]*\)', '', content)  # (Zoom...)
+    
+    # Remover marcações de personagem (Nome:)
+    content = re.sub(r'\n[A-Z][a-zA-Z\s]*:\s*\([^)]*\)', '', content)  # Arthur: (Sussurrando)
+    content = re.sub(r'\n[A-Z][a-zA-Z\s]*:\s*', '\n', content)  # Arthur: 
+    content = re.sub(r'^[A-Z][a-zA-Z\s]*:\s*\([^)]*\)', '', content)  # No início
+    content = re.sub(r'^[A-Z][a-zA-Z\s]*:\s*', '', content)  # No início
     
     # Remover notas técnicas e direções de produção
     content = re.sub(r'\([^)]*[Mm]úsica[^)]*\)', '', content)  # (Música...)

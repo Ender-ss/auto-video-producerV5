@@ -167,6 +167,28 @@ class ImageGenerationService:
         except Exception:
             return None
     
+    def generate_images_for_script_total(self, script_text: str, provider: str, style: str, 
+                                        resolution: str, total_images: int, custom_image_prompt: str = "") -> Dict[str, Any]:
+        """Gerar imagens distribuindo total de imagens ao longo de todo o roteiro"""
+        try:
+            self._log('info', f'Iniciando geração de {total_images} imagens distribuídas ao longo do roteiro')
+            
+            # Usar a lógica de distribuição uniforme que já existe nas automações
+            generated_images = self._generate_images_with_automation_logic(
+                script_text, provider, style, resolution, total_images
+            )
+            
+            return {
+                'images': generated_images,
+                'total_requested': total_images,
+                'total_generated': len(generated_images),
+                'distribution_method': 'total_uniform'
+            }
+            
+        except Exception as e:
+            self._log('error', f'Erro na geração de imagens por total: {str(e)}')
+            raise
+
     def generate_images_for_script(self, script_text: str, provider: str, style: str, 
                                  resolution: str, per_chapter: int, custom_image_prompt: str = "") -> Dict[str, Any]:
         """Gerar imagens para o roteiro usando a mesma lógica da aba de automações"""
