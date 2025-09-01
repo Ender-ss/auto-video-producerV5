@@ -1099,29 +1099,6 @@ const AgentSection = ({ formData, onChange, specialized_agents, onUpdateAgent })
                   <textarea
                     value={promptText}
                     onChange={(e) => setPromptText(e.target.value)}
-                    className="w-full h-40 px-4 py-3 bg-gray-800 border border-gray-600 rounded-lg text-white placeholder-gray-400 focus:border-purple-500 focus:ring-1 focus:ring-purple-500 outline-none transition-colors"
-                  />
-                </div>
-                <div className="flex items-center justify-end space-x-3">
-                  <button
-                    type="button"
-                    onClick={cancelEdit}
-                    className="px-6 py-2 text-gray-400 hover:text-white transition-colors"
-                  >
-                    Cancelar
-                  </button>
-                  <button
-                    type="button"
-                    onClick={savePrompt}
-                    className="px-6 py-2 bg-gradient-to-r from-purple-600 to-blue-600 text-white rounded-lg hover:from-purple-700 hover:to-blue-700 transition-colors"
-                  >
-                    Salvar
-                  </button>
-                </div>
-              </div>
-                  <textarea
-                    value={promptText}
-                    onChange={(e) => setPromptText(e.target.value)}
                     rows={20}
                     className="w-full px-4 py-3 bg-gray-800 border border-gray-600 rounded-lg text-white placeholder-gray-400 focus:border-purple-500 focus:ring-1 focus:ring-purple-500 outline-none transition-colors resize-none font-mono text-sm"
                     placeholder="Digite o conteúdo do prompt personalizado..."
