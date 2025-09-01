@@ -7,7 +7,7 @@
 import React from 'react'
 import { Bot, User, Settings } from 'lucide-react'
 
-const PromptSourceIndicator = ({ promptSource, agentInfo, style, className = "" }) => {
+const PromptSourceIndicator = ({ promptSource, agentInfo, style, className = "", title = "", promptName = "" }) => {
   const getIndicatorConfig = () => {
     switch (promptSource) {
       case 'custom_user':
@@ -21,9 +21,19 @@ const PromptSourceIndicator = ({ promptSource, agentInfo, style, className = "" 
         }
       
       case 'agent_specialized':
+        // Show more specific information about the agent and prompt used
+        let agentText = `Agente: ${agentInfo?.name || 'Especializado'}`
+        if (style) {
+          agentText += ` - ${style}`
+        }
+        if (promptName) {
+          agentText += ` (${promptName})`
+        } else if (title) {
+          agentText += ` - Título: ${title}`
+        }
         return {
           icon: <Bot size={14} />,
-          text: `Agente: ${agentInfo?.name || 'Especializado'}${style ? ` - ${style}` : ''}`,
+          text: agentText,
           bgColor: 'bg-purple-500/20',
           borderColor: 'border-purple-400',
           textColor: 'text-purple-300',
@@ -32,9 +42,16 @@ const PromptSourceIndicator = ({ promptSource, agentInfo, style, className = "" 
       
       case 'system_default':
       default:
+        let systemText = `Sistema Padrão`
+        if (style) {
+          systemText += ` - ${style}`
+        }
+        if (promptName) {
+          systemText += ` (${promptName})`
+        }
         return {
           icon: <Settings size={14} />,
-          text: `Sistema Padrão${style ? ` - ${style}` : ''}`,
+          text: systemText,
           bgColor: 'bg-gray-500/20',
           borderColor: 'border-gray-400',
           textColor: 'text-gray-300',

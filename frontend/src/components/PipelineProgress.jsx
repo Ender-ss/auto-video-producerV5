@@ -761,6 +761,8 @@ const PipelineProgress = ({ pipeline, onPause, onCancel, onViewDetails, index })
                           promptSource={pipeline.results.titles.prompt_source}
                           agentInfo={pipeline.results.titles.agent_info}
                           style={pipeline.results.titles.style}
+                          title={pipeline.results.titles.generated_titles?.[0] || ""}
+                          promptName={pipeline.results.titles.style}
                         />
                       </div>
                       
@@ -798,7 +800,9 @@ const PipelineProgress = ({ pipeline, onPause, onCancel, onViewDetails, index })
                         <PromptSourceIndicator 
                           promptSource={pipeline.results.premises.prompt_source}
                           agentInfo={pipeline.results.premises.agent_info}
-                          style={"premises"}
+                          style={pipeline.results.premises.style || "premises"}
+                          title={pipeline.results.premises.selected_title || ""}
+                          promptName={pipeline.results.premises.style}
                         />
                       </div>
                       
@@ -825,8 +829,22 @@ const PipelineProgress = ({ pipeline, onPause, onCancel, onViewDetails, index })
                   title="Roteiro"
                   icon={<FileText size={16} className="text-green-400" />}
                   content={
-                    <div className="bg-gray-800 rounded p-3 text-sm text-gray-300 whitespace-pre-wrap max-h-60 overflow-y-auto">
-                      {pipeline.results.scripts.script}
+                    <div className="space-y-3">
+                      {/* Indicador da origem do prompt */}
+                      <div className="mb-3">
+                        <div className="text-xs text-gray-400 mb-2">Prompt utilizado:</div>
+                        <PromptSourceIndicator 
+                          promptSource={pipeline.results.scripts?.prompt_source || "system_default"}
+                          agentInfo={pipeline.results.scripts?.agent_info}
+                          style={pipeline.results.scripts?.style || "scripts"}
+                          title={pipeline.results.premises?.selected_title || ""}
+                          promptName={pipeline.results.scripts?.style}
+                        />
+                      </div>
+                      
+                      <div className="bg-gray-800 rounded p-3 text-sm text-gray-300 whitespace-pre-wrap max-h-60 overflow-y-auto">
+                        {pipeline.results.scripts.script}
+                      </div>
                     </div>
                   }
                   downloadData={pipeline.results.scripts.script}

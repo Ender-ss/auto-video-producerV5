@@ -531,7 +531,7 @@ class PipelineService:
                 agent_prompts = premises_config['agent_prompts']
                 
                 # Tentar encontrar um estilo compatível (narrative, educational)
-                # Se não tiver "narrative" no form, usar "educational" do agente
+                # Now we properly use the selected style from the form
                 premise_style = premises_config.get('style', 'educational')
                 if premise_style in agent_prompts:
                     selected_style = premise_style
@@ -731,6 +731,7 @@ class PipelineService:
                 'premise': premise_text,  # Manter compatibilidade
                 'word_count': len(premise_text.split()),
                 'provider_used': provider,
+                'style': premises_config.get('style', 'educational'),  # Add style information
                 'prompt_source': prompt_source,  # Indicar origem do prompt
                 'agent_info': self.config.get('agent', {}) if prompt_source == 'agent_specialized' else None,
                 'generation_time': datetime.utcnow().isoformat()
@@ -869,9 +870,17 @@ class PipelineService:
                 'chapters_generated': len(result['data'].get('chapters', [])),
                 'estimated_duration': result['data'].get('estimated_duration', duration_target),
                 'style': style,
+                'prompt_source': 'system_default',  # Default value, will be updated if using agent prompts
+                'agent_info': None,  # Will be updated if using agent prompts
                 'generation_time': datetime.utcnow().isoformat(),
                 'partial': False
             }
+            
+            # Add prompt source information if using agent prompts
+            scripts_config = self.config.get('scripts', {})
+            if 'agent_prompts' in scripts_config:
+                scripts_result['prompt_source'] = 'agent_specialized'
+                scripts_result['agent_info'] = self.config.get('agent', {})
             
             self.results['scripts'] = scripts_result
             

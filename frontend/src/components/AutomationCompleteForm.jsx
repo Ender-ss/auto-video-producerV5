@@ -204,29 +204,33 @@ Este é o FIM da história. Deve:
   const [showChannelsManager, setShowChannelsManager] = useState(false)
   const [showPromptManager, setShowPromptManager] = useState(false)
 
-  // Specialized agents configuration
-  const [customAgents, setCustomAgents] = useState({
-    millionaire_stories: {
-      name: 'Histórias de Milionários',
-      description: 'Especializado em narrativas com contraste social, transformação de vida e descobertas emocionais',
-      prompts: {
-        titles: {
-          viral: `Crie títulos virais para histórias de milionários e contraste social sobre: {topic}. 
+  // Specialized agents configuration with localStorage persistence
+  const [customAgents, setCustomAgents] = useState(() => {
+    try {
+      const savedAgents = JSON.parse(localStorage.getItem('customAgents') || '{}')
+      // Merge saved agents with default agents to ensure all properties exist
+      const defaultAgents = {
+        millionaire_stories: {
+          name: 'Histórias de Milionários',
+          description: 'Especializado em narrativas com contraste social, transformação de vida e descobertas emocionais',
+          prompts: {
+            titles: {
+              viral: `Crie títulos virais para histórias de milionários e contraste social sobre: {topic}. 
 Os títulos devem:
 - Destacar o contraste social (rico vs pobre)
 - Despertar curiosidade sobre a transformação
 - Incluir elementos emocionais
 - Ser chamativos e clickbait
 Exemplos: "Milionário Descobre Segredo Chocante...", "Rica Empresária Não Sabia Que Sua Faxineira..."`,
-          educational: `Crie títulos educacionais para histórias de milionários sobre: {topic}. 
+              educational: `Crie títulos educacionais para histórias de milionários sobre: {topic}. 
 Foque em:
 - Lições de vida e valores
 - Contrastes sociais educativos
 - Mensagens inspiracionais
 - Reflexões sobre riqueza e humanidade`
-        },
-        premises: {
-          narrative: `Crie uma premissa narrativa para história de milionário sobre: {title}.
+            },
+            premises: {
+              narrative: `Crie uma premissa narrativa para história de milionário sobre: {title}.
 A premissa deve incluir:
 - Personagem milionário/rico com vida aparentemente perfeita
 - Personagem de classe baixa com qualidades humanas especiais
@@ -234,16 +238,16 @@ A premissa deve incluir:
 - Descoberta emocional que muda perspectivas
 - Contraste entre riqueza material e riqueza humana
 - Aproximadamente {word_count} palavras`,
-          educational: `Crie uma premissa educacional para história de milionário sobre: {title}.
+              educational: `Crie uma premissa educacional para história de milionário sobre: {title}.
 Deve abordar:
 - Lições sobre valores versus dinheiro
 - Importância das relações humanas
 - Crítica social construtiva
 - Mensagens inspiracionais
 - Aproximadamente {word_count} palavras`
-        },
-        scripts: {
-          inicio: `Você é um roteirista especializado em HISTÓRIAS DE MILIONÁRIOS com contraste social.
+            },
+            scripts: {
+              inicio: `Você é um roteirista especializado em HISTÓRIAS DE MILIONÁRIOS com contraste social.
 
 TÍTULO: {titulo}
 PREMISSA: {premissa}
@@ -269,7 +273,7 @@ ELEMENTOS OBRIGATÓRIOS:
 - Situação inicial que permitirá a descoberta
 
 IMPORTANTE: Seja detalhado, extenso e minucioso. Crie uma introdução rica que estabeleça claramente os contrastes e prepare o terreno para a transformação emocional.`,
-          meio: `Você é um roteirista especializado em HISTÓRIAS DE MILIONÁRIOS com contraste social.
+              meio: `Você é um roteirista especializado em HISTÓRIAS DE MILIONÁRIOS com contraste social.
 
 TÍTULO: {titulo}
 PREMISSA: {premissa}
@@ -302,7 +306,7 @@ ELEMENTOS ESSENCIAIS:
 - Preparação para o clímax da descoberta
 
 IMPORTANTE: Seja detalhado, extenso e minucioso. Desenvolva as relações de forma orgânica, mostrando a transformação gradual através de situações concretas.`,
-          fim: `Você é um roteirista especializado em HISTÓRIAS DE MILIONÁRIOS com contraste social.
+              fim: `Você é um roteirista especializado em HISTÓRIAS DE MILIONÁRIOS com contraste social.
 
 TÍTULO: {titulo}
 PREMISSA: {premissa}
@@ -340,21 +344,197 @@ ELEMENTOS FINAIS OBRIGATÓRIOS:
 - Mensagem inspiracional sobre valores humanos
 
 IMPORTANTE: Seja detalhado, extenso e minucioso na conclusão. Crie um final emocionalmente impactante que entregue a transformação completa e deixe uma mensagem poderosa sobre valores humanos versus materiais.`
-        },
-        images: {
-          cinematic: `Crie uma descrição cinematográfica para uma imagem de história de milionários que represente: {scene_description}. 
+            },
+            images: {
+              cinematic: `Crie uma descrição cinematográfica para uma imagem de história de milionários que represente: {scene_description}. 
 A imagem deve:
 - Destacar contrastes sociais (luxo vs simplicidade)
 - Mostrar elementos emocionais da cena
 - Ter qualidade cinematográfica e iluminação dramática
 - Refletir a transformação ou descoberta emocional
 - Incluir simbolismo sobre valores humanos vs materiais`,
-          contrast: `Crie uma descrição para imagem que contraste classes sociais representando: {scene_description}.
+              contrast: `Crie uma descrição para imagem que contraste classes sociais representando: {scene_description}.
 Foque em:
 - Diferenças visuais claras entre riqueza e simplicidade
 - Elementos que humanizem ambos os personagens
 - Composição que destaque a conexão emocional
 - Simbolismo sobre verdadeira riqueza`
+            }
+          }
+        }
+      }
+      
+      // Merge saved agents with defaults
+      const mergedAgents = { ...defaultAgents }
+      Object.keys(savedAgents).forEach(key => {
+        if (mergedAgents[key]) {
+          // Merge prompts
+          mergedAgents[key].prompts = { 
+            ...mergedAgents[key].prompts, 
+            ...savedAgents[key].prompts 
+          }
+        } else {
+          // Add new agent
+          mergedAgents[key] = savedAgents[key]
+        }
+      })
+      
+      return mergedAgents
+    } catch (e) {
+      console.error('Failed to load saved agents from localStorage:', e)
+      // Return default agents if there's an error
+      return {
+        millionaire_stories: {
+          name: 'Histórias de Milionários',
+          description: 'Especializado em narrativas com contraste social, transformação de vida e descobertas emocionais',
+          prompts: {
+            titles: {
+              viral: `Crie títulos virais para histórias de milionários e contraste social sobre: {topic}. 
+Os títulos devem:
+- Destacar o contraste social (rico vs pobre)
+- Despertar curiosidade sobre a transformação
+- Incluir elementos emocionais
+- Ser chamativos e clickbait
+Exemplos: "Milionário Descobre Segredo Chocante...", "Rica Empresária Não Sabia Que Sua Faxineira..."`,
+              educational: `Crie títulos educacionais para histórias de milionários sobre: {topic}. 
+Foque em:
+- Lições de vida e valores
+- Contrastes sociais educativos
+- Mensagens inspiracionais
+- Reflexões sobre riqueza e humanidade`
+            },
+            premises: {
+              narrative: `Crie uma premissa narrativa para história de milionário sobre: {title}.
+A premissa deve incluir:
+- Personagem milionário/rico com vida aparentemente perfeita
+- Personagem de classe baixa com qualidades humanas especiais
+- Situação que os conecta (trabalho, acaso, família)
+- Descoberta emocional que muda perspectivas
+- Contraste entre riqueza material e riqueza humana
+- Aproximadamente {word_count} palavras`,
+              educational: `Crie uma premissa educacional para história de milionário sobre: {title}.
+Deve abordar:
+- Lições sobre valores versus dinheiro
+- Importância das relações humanas
+- Crítica social construtiva
+- Mensagens inspiracionais
+- Aproximadamente {word_count} palavras`
+            },
+            scripts: {
+              inicio: `Você é um roteirista especializado em HISTÓRIAS DE MILIONÁRIOS com contraste social.
+
+TÍTULO: {titulo}
+PREMISSA: {premissa}
+
+ESTILO NARRATIVO - Histórias de Milionários:
+- Contraste forte entre riqueza material e pobreza emocional
+- Personagens ricos aparentemente bem-sucedidos mas vazios
+- Personagens pobres com riqueza humana e valores sólidos
+- Descobertas familiares/pessoais que abalam estruturas
+- Transformação através do reconhecimento de valores verdadeiros
+
+ESTRUTURA DO INÍCIO:
+1. Apresente o protagonista milionário em seu mundo de luxo
+2. Mostre sua vida aparentemente perfeita mas emocionalmente vazia
+3. Introduza o personagem de classe baixa com suas qualidades humanas
+4. Estabeleça a situação que os conectará
+5. Plante as sementes da descoberta que mudará tudo
+
+ELEMENTOS OBRIGATÓRIOS:
+- Contraste visual entre os dois mundos (luxo vs simplicidade)
+- Características que humanizam o personagem pobre
+- Sinais de vazio emocional no personagem rico
+- Situação inicial que permitirá a descoberta
+
+IMPORTANTE: Seja detalhado, extenso e minucioso. Crie uma introdução rica que estabeleça claramente os contrastes e prepare o terreno para a transformação emocional.`,
+              meio: `Você é um roteirista especializado em HISTÓRIAS DE MILIONÁRIOS com contraste social.
+
+TÍTULO: {titulo}
+PREMISSA: {premissa}
+
+CONTEXTO ANTERIOR:
+{resumos[i-2]}
+
+DESENVOLVIMENTO - Histórias de Milionários:
+Esta é a continuação do MEIO da história. Deve desenvolver:
+
+1. APROXIMAÇÃO DOS MUNDOS:
+- Situações que forçam a convivência entre os personagens
+- Quebra gradual de preconceitos do personagem rico
+- Demonstração das qualidades humanas do personagem pobre
+
+2. CONFLITOS E DESCOBERTAS:
+- Resistência inicial do milionário em aceitar a realidade
+- Pequenas revelações que abalam suas certezas
+- Contraste entre valores materiais e humanos
+
+3. INTENSIFICAÇÃO EMOCIONAL:
+- Momentos de vulnerabilidade do personagem rico
+- Demonstrações de generosidade/sabedoria do personagem pobre
+- Pistas sobre a descoberta principal que está por vir
+
+ELEMENTOS ESSENCIAIS:
+- Diálogos que revelem diferenças de perspectiva
+- Situações que testem os valores de cada personagem
+- Crescimento emocional gradual do protagonista
+- Preparação para o clímax da descoberta
+
+IMPORTANTE: Seja detalhado, extenso e minucioso. Desenvolva as relações de forma orgânica, mostrando a transformação gradual através de situações concretas.`,
+              fim: `Você é um roteirista especializado em HISTÓRIAS DE MILIONÁRIOS com contraste social.
+
+TÍTULO: {titulo}
+PREMISSA: {premissa}
+
+CONTEXTO ANTERIOR:
+{resumos[-1]}
+
+CONCLUSÃO - Histórias de Milionários:
+Este é o FIM da história. Deve proporcionar:
+
+1. REVELAÇÃO PRINCIPAL:
+- A descoberta emocional que muda tudo (parentesco, passado, sacrifício)
+- Momento de reconhecimento da verdade
+- Impacto emocional profundo no protagonista rico
+
+2. TRANSFORMAÇÃO COMPLETA:
+- Mudança radical de perspectiva do milionário
+- Reconhecimento do valor das pessoas sobre o dinheiro
+- Ações concretas que demonstram a mudança
+
+3. RESOLUÇÃO EMOCIONAL:
+- Reconexão com valores humanos verdadeiros
+- Reparação de danos causados pela arrogância
+- Novo equilíbrio entre riqueza material e emocional
+
+4. MENSAGEM FINAL:
+- Reflexão sobre o que realmente importa na vida
+- Valorização das relações humanas
+- Crítica construtiva aos valores puramente materialistas
+
+ELEMENTOS FINAIS OBRIGATÓRIOS:
+- Momento catártico de reconhecimento
+- Ação redentora do protagonista
+- Desfecho que honra ambos os personagens
+- Mensagem inspiracional sobre valores humanos
+
+IMPORTANTE: Seja detalhado, extenso e minucioso na conclusão. Crie um final emocionalmente impactante que entregue a transformação completa e deixe uma mensagem poderosa sobre valores humanos versus materiais.`
+            },
+            images: {
+              cinematic: `Crie uma descrição cinematográfica para uma imagem de história de milionários que represente: {scene_description}. 
+A imagem deve:
+- Destacar contrastes sociais (luxo vs simplicidade)
+- Mostrar elementos emocionais da cena
+- Ter qualidade cinematográfica e iluminação dramática
+- Refletir a transformação ou descoberta emocional
+- Incluir simbolismo sobre valores humanos vs materiais`,
+              contrast: `Crie uma descrição para imagem que contraste classes sociais representando: {scene_description}.
+Foque em:
+- Diferenças visuais claras entre riqueza e simplicidade
+- Elementos que humanizem ambos os personagens
+- Composição que destaque a conexão emocional
+- Simbolismo sobre verdadeira riqueza`
+            }
+          }
         }
       }
     }
@@ -722,6 +902,16 @@ const AgentSection = ({ formData, onChange, specialized_agents, onUpdateAgent })
     }
     
     onUpdateAgent(updatedAgents)
+    
+    // Persist changes to localStorage
+    try {
+      const savedAgents = JSON.parse(localStorage.getItem('customAgents') || '{}')
+      savedAgents[editingAgent] = updatedAgents[editingAgent]
+      localStorage.setItem('customAgents', JSON.stringify(savedAgents))
+    } catch (e) {
+      console.error('Failed to save agent prompts to localStorage:', e)
+    }
+    
     setEditingAgent(null)
     setEditingPromptType(null)
     setEditingPromptSubtype(null)
@@ -790,221 +980,93 @@ const AgentSection = ({ formData, onChange, specialized_agents, onUpdateAgent })
         {formData.agent?.type === 'specialized' && (
           <div className="bg-gray-800 rounded-lg p-4 border border-gray-700">
             <h4 className="text-lg font-medium text-white mb-3">Escolha o Agente Especializado</h4>
-            <div className="space-y-3">
+            <div className="space-y-4">
               {Object.entries(specialized_agents).map(([key, agent]) => (
-                <label key={key} className="flex items-start space-x-3 p-4 border border-gray-600 rounded-lg cursor-pointer hover:bg-gray-700/50 transition-colors">
-                  <input
-                    type="radio"
-                    name="specialized_agent"
-                    value={key}
-                    checked={formData.agent?.specialized_type === key}
-                    onChange={(e) => onChange('agent.specialized_type', e.target.value)}
-                    className="mt-1 text-purple-600 focus:ring-purple-500"
-                  />
-                  <div className="flex-1">
-                    <div className="text-white font-medium mb-1">{agent.name}</div>
-                    <div className="text-gray-400 text-sm mb-2">{agent.description}</div>
-                    <div className="flex items-center space-x-4 text-xs">
-                      <span className="text-green-400">✅ Prompts especializados</span>
-                      <span className="text-green-400">✅ Consistência de estilo</span>
-                      <span className="text-green-400">✅ Otimizado para o nicho</span>
+                <div key={key} className="border border-gray-600 rounded-lg hover:bg-gray-700/50 transition-colors">
+                  <div className="flex items-start space-x-3 p-4">
+                    <input
+                      type="radio"
+                      name="specialized_agent"
+                      value={key}
+                      checked={formData.agent?.specialized_type === key}
+                      onChange={(e) => onChange('agent.specialized_type', e.target.value)}
+                      className="mt-1 text-purple-600 focus:ring-purple-500"
+                    />
+                    <div className="flex-1">
+                      <div className="text-white font-medium">{agent.name}</div>
+                      <div className="text-gray-400 text-sm">{agent.description}</div>
                     </div>
                   </div>
-                </label>
+                  <div className="px-4 pb-4">
+                    <div className="text-xs text-gray-500 mb-2">Personalizar prompts:</div>
+                    <div className="flex flex-wrap gap-2">
+                      <button
+                        type="button"
+                        onClick={() => openPromptEditor(key, 'titles', 'viral')}
+                        className="px-2 py-1 bg-gray-700 hover:bg-gray-600 text-white rounded text-xs transition-colors"
+                      >
+                        Títulos Virais
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => openPromptEditor(key, 'titles', 'educational')}
+                        className="px-2 py-1 bg-gray-700 hover:bg-gray-600 text-white rounded text-xs transition-colors"
+                      >
+                        Títulos Educacionais
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => openPromptEditor(key, 'premises', 'narrative')}
+                        className="px-2 py-1 bg-gray-700 hover:bg-gray-600 text-white rounded text-xs transition-colors"
+                      >
+                        Premissas Narrativas
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => openPromptEditor(key, 'premises', 'educational')}
+                        className="px-2 py-1 bg-gray-700 hover:bg-gray-600 text-white rounded text-xs transition-colors"
+                      >
+                        Premissas Educacionais
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => openPromptEditor(key, 'scripts', 'inicio')}
+                        className="px-2 py-1 bg-gray-700 hover:bg-gray-600 text-white rounded text-xs transition-colors"
+                      >
+                        Roteiro Início
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => openPromptEditor(key, 'scripts', 'meio')}
+                        className="px-2 py-1 bg-gray-700 hover:bg-gray-600 text-white rounded text-xs transition-colors"
+                      >
+                        Roteiro Meio
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => openPromptEditor(key, 'scripts', 'fim')}
+                        className="px-2 py-1 bg-gray-700 hover:bg-gray-600 text-white rounded text-xs transition-colors"
+                      >
+                        Roteiro Fim
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => openPromptEditor(key, 'images', 'cinematic')}
+                        className="px-2 py-1 bg-gray-700 hover:bg-gray-600 text-white rounded text-xs transition-colors"
+                      >
+                        Imagens Cinematográficas
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => openPromptEditor(key, 'images', 'contrast')}
+                        className="px-2 py-1 bg-gray-700 hover:bg-gray-600 text-white rounded text-xs transition-colors"
+                      >
+                        Imagens Contraste
+                      </button>
+                    </div>
+                  </div>
+                </div>
               ))}
-            </div>
-          </div>
-        )}
-
-        {/* Editor de Prompts */}
-        {formData.agent?.type === 'specialized' && formData.agent?.specialized_type && (
-          <div className="bg-gray-800 rounded-lg p-4 border border-gray-700">
-            <h4 className="text-lg font-medium text-white mb-3 flex items-center space-x-2">
-              <Settings size={18} className="text-blue-400" />
-              <span>Personalizar Prompts do Agente</span>
-            </h4>
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-              {/* Títulos */}
-              <div className="space-y-2">
-                <h5 className="text-white font-medium">Títulos</h5>
-                <button
-                  type="button"
-                  onClick={() => openPromptEditor(formData.agent.specialized_type, 'titles', 'viral')}
-                  className="w-full text-left px-3 py-2 bg-gray-700 hover:bg-gray-600 rounded text-sm text-gray-300 transition-colors"
-                >
-                  📈 Viral
-                </button>
-                <button
-                  type="button"
-                  onClick={() => openPromptEditor(formData.agent.specialized_type, 'titles', 'educational')}
-                  className="w-full text-left px-3 py-2 bg-gray-700 hover:bg-gray-600 rounded text-sm text-gray-300 transition-colors"
-                >
-                  🎓 Educacional
-                </button>
-              </div>
-
-              {/* Premissas */}
-              <div className="space-y-2">
-                <h5 className="text-white font-medium">Premissas</h5>
-                <button
-                  type="button"
-                  onClick={() => openPromptEditor(formData.agent.specialized_type, 'premises', 'narrative')}
-                  className="w-full text-left px-3 py-2 bg-gray-700 hover:bg-gray-600 rounded text-sm text-gray-300 transition-colors"
-                >
-                  📜 Narrativa
-                </button>
-                <button
-                  type="button"
-                  onClick={() => openPromptEditor(formData.agent.specialized_type, 'premises', 'educational')}
-                  className="w-full text-left px-3 py-2 bg-gray-700 hover:bg-gray-600 rounded text-sm text-gray-300 transition-colors"
-                >
-                  🎓 Educacional
-                </button>
-              </div>
-
-              {/* Roteiros */}
-              <div className="space-y-2">
-                <h5 className="text-white font-medium">Roteiros</h5>
-                <button
-                  type="button"
-                  onClick={() => openPromptEditor(formData.agent.specialized_type, 'scripts', 'inicio')}
-                  className="w-full text-left px-3 py-2 bg-gray-700 hover:bg-gray-600 rounded text-sm text-gray-300 transition-colors"
-                >
-                  🎦 Início
-                </button>
-                <button
-                  type="button"
-                  onClick={() => openPromptEditor(formData.agent.specialized_type, 'scripts', 'meio')}
-                  className="w-full text-left px-3 py-2 bg-gray-700 hover:bg-gray-600 rounded text-sm text-gray-300 transition-colors"
-                >
-                  🎦 Meio
-                </button>
-                <button
-                  type="button"
-                  onClick={() => openPromptEditor(formData.agent.specialized_type, 'scripts', 'fim')}
-                  className="w-full text-left px-3 py-2 bg-gray-700 hover:bg-gray-600 rounded text-sm text-gray-300 transition-colors"
-                >
-                  🎦 Fim
-                </button>
-              </div>
-
-              {/* Imagens */}
-              <div className="space-y-2">
-                <h5 className="text-white font-medium">Imagens</h5>
-                <button
-                  type="button"
-                  onClick={() => openPromptEditor(formData.agent.specialized_type, 'images', 'cinematic')}
-                  className="w-full text-left px-3 py-2 bg-gray-700 hover:bg-gray-600 rounded text-sm text-gray-300 transition-colors"
-                >
-                  🎥 Cinematográfico
-                </button>
-                <button
-                  type="button"
-                  onClick={() => openPromptEditor(formData.agent.specialized_type, 'images', 'contrast')}
-                  className="w-full text-left px-3 py-2 bg-gray-700 hover:bg-gray-600 rounded text-sm text-gray-300 transition-colors"
-                >
-                  ⚖️ Contraste
-                </button>
-              </div>
-            </div>
-          </div>
-        )}
-
-        {/* Visualização de Prompts Ativos */}
-        {formData.agent?.type === 'specialized' && formData.agent?.specialized_type && (
-          <div className="bg-gradient-to-r from-green-900/30 to-teal-900/30 border border-green-500/30 rounded-lg p-4">
-            <div className="flex items-start space-x-3">
-              <Eye size={20} className="text-green-400 mt-0.5" />
-              <div className="flex-1">
-                <h4 className="text-green-300 font-medium mb-3">Prompts que serão utilizados nesta pipeline</h4>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  {/* Títulos */}
-                  <div className="bg-gray-800/50 rounded-lg p-3">
-                    <div className="flex items-center space-x-2 mb-2">
-                      <FileText size={16} className="text-blue-400" />
-                      <span className="text-white font-medium">Títulos</span>
-                    </div>
-                    {formData.config?.titles?.custom_prompt ? (
-                      <div className="flex items-center space-x-2 text-sm">
-                        <User size={14} className="text-blue-400" />
-                        <span className="text-blue-300">Prompt personalizado do usuário</span>
-                      </div>
-                    ) : (
-                      <div className="flex items-center space-x-2 text-sm">
-                        <Bot size={14} className="text-purple-400" />
-                        <span className="text-purple-300">
-                          Agente: {specialized_agents[formData.agent.specialized_type]?.name} - {formData.config?.titles?.style || 'viral'}
-                        </span>
-                      </div>
-                    )}
-                  </div>
-                  
-                  {/* Premissas */}
-                  <div className="bg-gray-800/50 rounded-lg p-3">
-                    <div className="flex items-center space-x-2 mb-2">
-                      <FileText size={16} className="text-purple-400" />
-                      <span className="text-white font-medium">Premissas</span>
-                    </div>
-                    {formData.config?.premises?.custom_prompt ? (
-                      <div className="flex items-center space-x-2 text-sm">
-                        <User size={14} className="text-blue-400" />
-                        <span className="text-blue-300">Prompt personalizado do usuário</span>
-                      </div>
-                    ) : (
-                      <div className="space-y-1">
-                        <div className="flex items-center space-x-2 text-sm">
-                          <Bot size={14} className="text-purple-400" />
-                          <span className="text-purple-300">
-                            Agente: {specialized_agents[formData.agent.specialized_type]?.name}
-                          </span>
-                        </div>
-                        <div className="text-xs text-gray-400">
-                          ⚠️ Note: Forms não tem "narrativa", usará "educational" do agente
-                        </div>
-                      </div>
-                    )}
-                  </div>
-                </div>
-                
-                <div className="mt-3 text-xs text-green-400">
-                  ℹ️ Prioridade: Prompt Personalizado &gt; Agente Especializado &gt; Sistema Padrão
-                </div>
-              </div>
-            </div>
-          </div>
-        )}
-        
-        {/* Se não tiver agente especializado, mostrar o que será usado */}
-        {formData.agent?.type !== 'specialized' && (
-          <div className="bg-gray-800/30 border border-gray-600/30 rounded-lg p-4">
-            <div className="flex items-start space-x-3">
-              <Eye size={20} className="text-gray-400 mt-0.5" />
-              <div className="flex-1">
-                <h4 className="text-gray-300 font-medium mb-3">Prompts que serão utilizados (Sistema Padrão)</h4>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <div className="bg-gray-800/50 rounded-lg p-3">
-                    <div className="flex items-center space-x-2 mb-2">
-                      <FileText size={16} className="text-blue-400" />
-                      <span className="text-white font-medium">Títulos</span>
-                    </div>
-                    <div className="flex items-center space-x-2 text-sm">
-                      <Settings size={14} className="text-gray-400" />
-                      <span className="text-gray-300">Sistema Padrão - {formData.config?.titles?.style || 'viral'}</span>
-                    </div>
-                  </div>
-                  
-                  <div className="bg-gray-800/50 rounded-lg p-3">
-                    <div className="flex items-center space-x-2 mb-2">
-                      <FileText size={16} className="text-purple-400" />
-                      <span className="text-white font-medium">Premissas</span>
-                    </div>
-                    <div className="flex items-center space-x-2 text-sm">
-                      <Settings size={14} className="text-gray-400" />
-                      <span className="text-gray-300">Sistema Padrão</span>
-                    </div>
-                  </div>
-                </div>
-              </div>
             </div>
           </div>
         )}
@@ -1017,7 +1079,7 @@ const AgentSection = ({ formData, onChange, specialized_agents, onUpdateAgent })
             <div className="bg-gradient-to-r from-purple-900/50 to-blue-900/50 p-4 border-b border-gray-700">
               <div className="flex items-center justify-between">
                 <h3 className="text-lg font-semibold text-white">
-                  Editar Prompt: {editingPromptType} - {editingPromptSubtype || 'Geral'}
+                  Editar Prompt: {specialized_agents[editingAgent]?.name} - {editingPromptType === 'titles' ? 'Títulos' : editingPromptType === 'premises' ? 'Premissas' : editingPromptType === 'scripts' ? 'Roteiros' : 'Imagens'} - {editingPromptSubtype || 'Geral'}
                 </h3>
                 <button
                   type="button"
@@ -1034,6 +1096,29 @@ const AgentSection = ({ formData, onChange, specialized_agents, onUpdateAgent })
                   <label className="block text-sm font-medium text-gray-300 mb-2">
                     Conteúdo do Prompt
                   </label>
+                  <textarea
+                    value={promptText}
+                    onChange={(e) => setPromptText(e.target.value)}
+                    className="w-full h-40 px-4 py-3 bg-gray-800 border border-gray-600 rounded-lg text-white placeholder-gray-400 focus:border-purple-500 focus:ring-1 focus:ring-purple-500 outline-none transition-colors"
+                  />
+                </div>
+                <div className="flex items-center justify-end space-x-3">
+                  <button
+                    type="button"
+                    onClick={cancelEdit}
+                    className="px-6 py-2 text-gray-400 hover:text-white transition-colors"
+                  >
+                    Cancelar
+                  </button>
+                  <button
+                    type="button"
+                    onClick={savePrompt}
+                    className="px-6 py-2 bg-gradient-to-r from-purple-600 to-blue-600 text-white rounded-lg hover:from-purple-700 hover:to-blue-700 transition-colors"
+                  >
+                    Salvar
+                  </button>
+                </div>
+              </div>
                   <textarea
                     value={promptText}
                     onChange={(e) => setPromptText(e.target.value)}
@@ -1186,6 +1271,426 @@ const AISection = ({ formData, onChange, onOpenPromptManager }) => {
                   className="rounded border-gray-600 bg-gray-700 text-purple-600 focus:ring-purple-500"
                 />
                 <label htmlFor="titles-custom-prompt" className="text-sm font-medium text-gray-300">
+                  Usar prompt personalizado
+                </label>
+              </div>
+              <div className="h-20 bg-gray-900 rounded-lg border border-gray-600 relative">
+                {formData.config.titles.custom_instructions ? (
+                  <p className="p-3 text-sm text-gray-400 line-clamp-3">
+                    {formData.config.titles.custom_instructions}
+                  </p>
+                ) : (
+                  <span className="absolute inset-0 flex items-center justify-center text-gray-400 text-sm">
+                    Nenhum prompt personalizado definido
+                  </span>
+                )}
+              </div>
+            </div>
+          </div>
+        </div>
+        
+        {/* Premissas */}
+        <div className="bg-gray-800 rounded-lg p-4 border border-gray-700">
+          <h4 className="text-lg font-medium text-white mb-3 flex items-center space-x-2">
+            <BookOpen size={18} className="text-green-400" />
+            <span>Geração de Premissas</span>
+          </h4>
+          <div className="space-y-3">
+            <div>
+              <label className="block text-sm font-medium text-gray-300 mb-1">
+                Provedor de IA
+              </label>
+              <select
+                value={formData.config.premises.provider}
+                onChange={(e) => onChange('config.premises.provider', e.target.value)}
+                className="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded text-white text-sm"
+              >
+                <option value="gemini">Google Gemini</option>
+                <option value="openai">OpenAI GPT</option>
+                <option value="claude">Anthropic Claude</option>
+              </select>
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-300 mb-1">
+                Estilo
+              </label>
+              <select
+                value={formData.config.premises.style}
+                onChange={(e) => onChange('config.premises.style', e.target.value)}
+                className="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded text-white text-sm"
+              >
+                <option value="narrative">Narrativa</option>
+                <option value="educational">Educacional</option>
+                <option value="informative">Informativo</option>
+              </select>
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-300 mb-1">
+                Público Alvo
+              </label>
+              <select
+                value={formData.config.premises.target_audience}
+                onChange={(e) => onChange('config.premises.target_audience', e.target.value)}
+                className="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded text-white text-sm"
+              >
+                <option value="general">Geral</option>
+                <option value="technical">Técnico</option>
+                <option value="children">Crianças</option>
+              </select>
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-300 mb-1">
+                Palavras
+              </label>
+              <input
+                type="number"
+                min="50"
+                max="200"
+                value={formData.config.premises.word_count}
+                onChange={(e) => onChange('config.premises.word_count', parseInt(e.target.value))}
+                className="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded text-white text-sm"
+              />
+            </div>
+            <div className="col-span-2">
+              <div className="flex items-center space-x-2 mb-2">
+                <input
+                  type="checkbox"
+                  id="premises-custom-prompt"
+                  checked={formData.config.premises.custom_prompt}
+                  onChange={(e) => onChange('config.premises.custom_prompt', e.target.checked)}
+                  className="rounded border-gray-600 bg-gray-700 text-purple-600 focus:ring-purple-500"
+                />
+                <label htmlFor="premises-custom-prompt" className="text-sm font-medium text-gray-300">
+                  Usar prompt personalizado
+                </label>
+              </div>
+              <div className="h-20 bg-gray-900 rounded-lg border border-gray-600 relative">
+                {formData.config.premises.custom_instructions ? (
+                  <p className="p-3 text-sm text-gray-400 line-clamp-3">
+                    {formData.config.premises.custom_instructions}
+                  </p>
+                ) : (
+                  <span className="absolute inset-0 flex items-center justify-center text-gray-400 text-sm">
+                    Nenhum prompt personalizado definido
+                  </span>
+                )}
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* Roteiros */}
+        <div className="col-span-2 bg-gray-800 rounded-lg p-4 border border-gray-700">
+          <h4 className="text-lg font-medium text-white mb-3 flex items-center space-x-2">
+            <FileText size={18} className="text-pink-400" />
+            <span>Geração de Roteiros</span>
+          </h4>
+          <div className="space-y-3">
+            <div>
+              <label className="block text-sm font-medium text-gray-300 mb-1">
+                Provedor de IA
+              </label>
+              <select
+                value={formData.config.scripts.provider}
+                onChange={(e) => onChange('config.scripts.provider', e.target.value)}
+                className="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded text-white text-sm"
+              >
+                <option value="gemini">Google Gemini</option>
+                <option value="openai">OpenAI GPT</option>
+                <option value="openrouter">OpenRouter</option>
+              </select>
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-300 mb-1">
+                Número de Capítulos
+              </label>
+              <input
+                type="number"
+                min="1"
+                max="10"
+                value={formData.config.scripts.chapters}
+                onChange={(e) => onChange('config.scripts.chapters', parseInt(e.target.value))}
+                className="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded text-white text-sm"
+              />
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-300 mb-1">
+                Duração Alvo
+              </label>
+              <input
+                type="text"
+                value={formData.config.scripts.duration_target}
+                onChange={(e) => onChange('config.scripts.duration_target', e.target.value)}
+                className="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded text-white text-sm"
+              />
+            </div>
+            <div className="flex items-center space-x-2 mb-2">
+              <input
+                type="checkbox"
+                id="scripts-custom-prompts"
+                checked={formData.config.scripts.custom_prompts}
+                onChange={(e) => onChange('config.scripts.custom_prompts', e.target.checked)}
+                className="rounded border-gray-600 bg-gray-700 text-purple-600 focus:ring-purple-500"
+              />
+              <label htmlFor="scripts-custom-prompts" className="text-sm font-medium text-gray-300">
+                Usar prompts personalizados
+              </label>
+            </div>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+              <div className="bg-gray-900 rounded-lg border border-gray-600 relative">
+                {formData.config.scripts.custom_inicio ? (
+                  <p className="p-3 text-sm text-gray-400 line-clamp-3">
+                    {formData.config.scripts.custom_inicio}
+                  </p>
+                ) : (
+                  <span className="absolute inset-0 flex items-center justify-center text-gray-400 text-sm">
+                    Nenhum prompt personalizado definido
+                  </span>
+                )}
+              </div>
+              <div className="bg-gray-900 rounded-lg border border-gray-600 relative">
+                {formData.config.scripts.custom_meio ? (
+                  <p className="p-3 text-sm text-gray-400 line-clamp-3">
+                    {formData.config.scripts.custom_meio}
+                  </p>
+                ) : (
+                  <span className="absolute inset-0 flex items-center justify-center text-gray-400 text-sm">
+                    Nenhum prompt personalizado definido
+                  </span>
+                )}
+              </div>
+              <div className="bg-gray-900 rounded-lg border border-gray-600 relative">
+                {formData.config.scripts.custom_fim ? (
+                  <p className="p-3 text-sm text-gray-400 line-clamp-3">
+                    {formData.config.scripts.custom_fim}
+                  </p>
+                ) : (
+                  <span className="absolute inset-0 flex items-center justify-center text-gray-400 text-sm">
+                    Nenhum prompt personalizado definido
+                  </span>
+                )}
+              </div>
+            </div>
+            <div className="flex items-center space-x-2 mb-2">
+              <input
+                type="checkbox"
+                id="scripts-detailed-prompt"
+                checked={formData.config.scripts.detailed_prompt}
+                onChange={(e) => onChange('config.scripts.detailed_prompt', e.target.checked)}
+                className="rounded border-gray-600 bg-gray-700 text-purple-600 focus:ring-purple-500"
+              />
+              <label htmlFor="scripts-detailed-prompt" className="text-sm font-medium text-gray-300">
+                Usar prompt detalhado
+              </label>
+            </div>
+            <div className="h-20 bg-gray-900 rounded-lg border border-gray-600 relative">
+              {formData.config.scripts.detailed_prompt_text ? (
+                <p className="p-3 text-sm text-gray-400 line-clamp-3">
+                  {formData.config.scripts.detailed_prompt_text}
+                </p>
+              ) : (
+                <span className="absolute inset-0 flex items-center justify-center text-gray-400 text-sm">
+                  Nenhum prompt detalhado definido
+                </span>
+              )}
+            </div>
+            <div className="flex items-center space-x-2 mb-2">
+              <input
+                type="checkbox"
+                id="scripts-contextual-chapters"
+                checked={formData.config.scripts.contextual_chapters}
+                onChange={(e) => onChange('config.scripts.contextual_chapters', e.target.checked)}
+                className="rounded border-gray-600 bg-gray-700 text-purple-600 focus:ring-purple-500"
+              />
+              <label htmlFor="scripts-contextual-chapters" className="text-sm font-medium text-gray-300">
+                Usar capítulos contextuais
+              </label>
+            </div>
+            <div className="flex items-center space-x-2 mb-2">
+              <input
+                type="checkbox"
+                id="scripts-show-default-prompts"
+                checked={formData.config.scripts.show_default_prompts}
+                onChange={(e) => onChange('config.scripts.show_default_prompts', e.target.checked)}
+                className="rounded border-gray-600 bg-gray-700 text-purple-600 focus:ring-purple-500"
+              />
+              <label htmlFor="scripts-show-default-prompts" className="text-sm font-medium text-gray-300">
+                Mostrar prompts padrões
+              </label>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  )
+}
+
+// Seção de Mídia & Vídeo
+const MediaSection = ({ formData, onChange }) => {
+  return (
+    <div className="space-y-6">
+      <div>
+        <h3 className="text-xl font-semibold text-white mb-4 flex items-center space-x-2">
+          <Video size={20} className="text-green-400" />
+          <span>Configuração de Mídia e Vídeo</span>
+        </h3>
+      </div>
+
+      <div className="space-y-4">
+        {/* TTS */}
+        <div className="bg-gray-800 rounded-lg p-4 border border-gray-700">
+          <h4 className="text-lg font-medium text-white mb-3 flex items-center space-x-2">
+            <Mic size={18} className="text-purple-400" />
+            <span>Geração de Áudio</span>
+          </h4>
+          <div className="space-y-3">
+            <div>
+              <label className="block text-sm font-medium text-gray-300 mb-1">
+                Provedor de TTS
+              </label>
+              <select
+                value={formData.config.tts.provider}
+                onChange={(e) => onChange('config.tts.provider', e.target.value)}
+                className="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded text-white text-sm"
+              >
+                <option value="kokoro">Kokoro</option>
+                <option value="elevenlabs">ElevenLabs</option>
+                <option value="google">Google</option>
+              </select>
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-300 mb-1">
+                Voz
+              </label>
+              <select
+                value={formData.config.tts.voice}
+                onChange={(e) => onChange('config.tts.voice', e.target.value)}
+                className="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded text-white text-sm"
+              >
+                <option value="af_bella">Bella (AF)</option>
+                <option value="af_charlotte">Charlotte (AF)</option>
+                <option value="af_daniel">Daniel (AF)</option>
+                <option value="af_james">James (AF)</option>
+                <option value="af_jill">Jill (AF)</option>
+                <option value="af_olivia">Olivia (AF)</option>
+                <option value="af_robert">Robert (AF)</option>
+                <option value="af_tom">Tom (AF)</option>
+              </select>
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-300 mb-1">
+                Idioma
+              </label>
+              <input
+                type="text"
+                value={formData.config.tts.language}
+                onChange={(e) => onChange('config.tts.language', e.target.value)}
+                className="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded text-white text-sm"
+              />
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-300 mb-1">
+                Velocidade
+              </label>
+              <input
+                type="number"
+                step="0.1"
+                min="0.5"
+                max="2.0"
+                value={formData.config.tts.speed}
+                onChange={(e) => onChange('config.tts.speed', parseFloat(e.target.value))}
+                className="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded text-white text-sm"
+              />
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-300 mb-1">
+                Tom
+              </label>
+              <input
+                type="number"
+                step="0.1"
+                min="0.5"
+                max="2.0"
+                value={formData.config.tts.pitch}
+                onChange={(e) => onChange('config.tts.pitch', parseFloat(e.target.value))}
+                className="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded text-white text-sm"
+              />
+            </div>
+          </div>
+        </div>
+
+        {/* Imagens */}
+        <div className="bg-gray-800 rounded-lg p-4 border border-gray-700">
+          <h4 className="text-lg font-medium text-white mb-3 flex items-center space-x-2">
+            <Image size={18} className="text-yellow-400" />
+            <span>Geração de Imagens</span>
+          </h4>
+          <div className="space-y-3">
+            <div>
+              <label className="block text-sm font-medium text-gray-300 mb-1">
+                Provedor de IA
+              </label>
+              <select
+                value={formData.config.images.provider}
+                onChange={(e) => onChange('config.images.provider', e.target.value)}
+                className="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded text-white text-sm"
+              >
+                <option value="pollinations">Pollinations</option>
+                <option value="deepai">DeepAI</option>
+                <option value="dall-e">DALL-E</option>
+              </select>
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-300 mb-1">
+                Estilo
+              </label>
+              <select
+                value={formData.config.images.style}
+                onChange={(e) => onChange('config.images.style', e.target.value)}
+                className="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded text-white text-sm"
+              >
+                <option value="realistic">Realista</option>
+                <option value="cartoon">Cartunizado</option>
+                <option value="artistic">Artístico</option>
+              </select>
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-300 mb-1">
+                Qualidade
+              </label>
+              <select
+                value={formData.config.images.quality}
+                onChange={(e) => onChange('config.images.quality', e.target.value)}
+                className="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded text-white text-sm"
+              >
+                <option value="high">Alta</option>
+                <option value="medium">Média</option>
+                <option value="low">Baixa</option>
+              </select>
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-300 mb-1">
+                Imagens Totais
+              </label>
+              <input
+                type="number"
+                min="1"
+                max="20"
+                value={formData.config.images.total_images}
+                onChange={(e) => onChange('config.images.total_images', parseInt(e.target.value))}
+                className="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded text-white text-sm"
+              />
+            </div>
+            <div className="col-span-2">
+              <div className="flex items-center space-x-2 mb-2">
+                <input
+                  type="checkbox"
+                  id="images-custom-prompt"
+                  checked={formData.config.images.custom_prompt}
+                  onChange={(e) => onChange('config.images.custom_prompt', e.target.checked)}
+                  className="rounded border-gray-600 bg-gray-700 text-purple-600 focus:ring-purple-500"
+                />
+                <label htmlFor="images-custom-prompt" className="text-sm font-medium text-gray-300">
                   Usar prompt personalizado
                 </label>
               </div>
@@ -1386,41 +1891,41 @@ const AISection = ({ formData, onChange, onOpenPromptManager }) => {
                 </label>
               </div>
               <div className="flex items-center space-x-2 mb-2">
-              <input
-                type="checkbox"
-                id="scripts-detailed-prompt"
-                checked={formData.config.scripts.detailed_prompt}
-                onChange={(e) => onChange('config.scripts.detailed_prompt', e.target.checked)}
-                className="rounded border-gray-600 bg-gray-700 text-purple-600 focus:ring-purple-500"
-              />
-              <label htmlFor="scripts-detailed-prompt" className="text-sm font-medium text-gray-300">
-                Usar prompt detalhado para roteiros longos
-              </label>
-            </div>
-            <div className="flex items-center space-x-2 mb-2">
-              <input
-                type="checkbox"
-                id="scripts-contextual-chapters"
-                checked={formData.config.scripts.contextual_chapters}
-                onChange={(e) => onChange('config.scripts.contextual_chapters', e.target.checked)}
-                className="rounded border-gray-600 bg-gray-700 text-purple-600 focus:ring-purple-500"
-              />
-              <label htmlFor="scripts-contextual-chapters" className="text-sm font-medium text-gray-300">
-                Gerar roteiro longo com resumos contextuais entre capítulos
-              </label>
-            </div>
-            <div className="flex items-center space-x-2 mb-2">
-              <input
-                type="checkbox"
-                id="scripts-show-default-prompts"
-                checked={formData.config.scripts.show_default_prompts}
-                onChange={(e) => onChange('config.scripts.show_default_prompts', e.target.checked)}
-                className="rounded border-gray-600 bg-gray-700 text-purple-600 focus:ring-purple-500"
-              />
-              <label htmlFor="scripts-show-default-prompts" className="text-sm font-medium text-gray-300">
-                Mostrar e editar prompts padrão do sistema
-              </label>
-            </div>
+                <input
+                  type="checkbox"
+                  id="scripts-detailed-prompt"
+                  checked={formData.config.scripts.detailed_prompt}
+                  onChange={(e) => onChange('config.scripts.detailed_prompt', e.target.checked)}
+                  className="rounded border-gray-600 bg-gray-700 text-purple-600 focus:ring-purple-500"
+                />
+                <label htmlFor="scripts-detailed-prompt" className="text-sm font-medium text-gray-300">
+                  Usar prompt detalhado para roteiros longos
+                </label>
+              </div>
+              <div className="flex items-center space-x-2 mb-2">
+                <input
+                  type="checkbox"
+                  id="scripts-contextual-chapters"
+                  checked={formData.config.scripts.contextual_chapters}
+                  onChange={(e) => onChange('config.scripts.contextual_chapters', e.target.checked)}
+                  className="rounded border-gray-600 bg-gray-700 text-purple-600 focus:ring-purple-500"
+                />
+                <label htmlFor="scripts-contextual-chapters" className="text-sm font-medium text-gray-300">
+                  Gerar roteiro longo com resumos contextuais entre capítulos
+                </label>
+              </div>
+              <div className="flex items-center space-x-2 mb-2">
+                <input
+                  type="checkbox"
+                  id="scripts-show-default-prompts"
+                  checked={formData.config.scripts.show_default_prompts}
+                  onChange={(e) => onChange('config.scripts.show_default_prompts', e.target.checked)}
+                  className="rounded border-gray-600 bg-gray-700 text-purple-600 focus:ring-purple-500"
+                />
+                <label htmlFor="scripts-show-default-prompts" className="text-sm font-medium text-gray-300">
+                  Mostrar e editar prompts padrão do sistema
+                </label>
+              </div>
               {formData.config.scripts.detailed_prompt && (
                 <div className="space-y-3">
                   <div>
@@ -1634,178 +2139,7 @@ const AISection = ({ formData, onChange, onOpenPromptManager }) => {
     </div>
   )
 }
-
 // Seção de Mídia
-const MediaSection = ({ formData, onChange }) => {
-  return (
-    <div className="space-y-6">
-      <div>
-        <h3 className="text-xl font-semibold text-white mb-4 flex items-center space-x-2">
-          <Video size={20} className="text-green-400" />
-          <span>Configuração de Mídia & Vídeo</span>
-        </h3>
-      </div>
-
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-        {/* Imagens */}
-        <div className="bg-gray-800 rounded-lg p-4 border border-gray-700">
-          <h4 className="text-lg font-medium text-white mb-3 flex items-center space-x-2">
-            <Image size={18} className="text-pink-400" />
-            <span>Geração de Imagens</span>
-          </h4>
-          <div className="space-y-3">
-            <div>
-              <label className="block text-sm font-medium text-gray-300 mb-1">
-                Estilo
-              </label>
-              <select
-                value={formData.config.images.style}
-                onChange={(e) => onChange('config.images.style', e.target.value)}
-                className="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded text-white text-sm"
-              >
-                <option value="realistic">Realista</option>
-                <option value="cartoon">Cartoon</option>
-                <option value="anime">Anime</option>
-                <option value="abstract">Abstrato</option>
-                <option value="photographic">Fotográfico</option>
-              </select>
-            </div>
-            <div>
-              <label className="block text-sm font-medium text-gray-300 mb-1">
-                Qualidade
-              </label>
-              <select
-                value={formData.config.images.quality}
-                onChange={(e) => onChange('config.images.quality', e.target.value)}
-                className="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded text-white text-sm"
-              >
-                <option value="standard">Padrão</option>
-                <option value="high">Alta</option>
-                <option value="ultra">Ultra</option>
-              </select>
-            </div>
-            <div>
-              <label className="block text-sm font-medium text-gray-300 mb-1">
-                Formato
-              </label>
-              <select
-                value={formData.config.images.format || 'jpg'}
-                onChange={(e) => onChange('config.images.format', e.target.value)}
-                className="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded text-white text-sm"
-              >
-                <option value="jpg">JPG (Padrão)</option>
-                <option value="png">PNG (Transparência)</option>
-                <option value="webp">WebP (Otimizado)</option>
-              </select>
-            </div>
-            <div>
-              <label className="block text-sm font-medium text-gray-300 mb-1">
-                Total de Imagens
-              </label>
-              <input
-                type="number"
-                min="5"
-                max="100"
-                value={formData.config.images.total_images}
-                onChange={(e) => onChange('config.images.total_images', parseInt(e.target.value))}
-                className="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded text-white text-sm"
-                placeholder="Ex: 50 imagens para todo o roteiro"
-              />
-              <p className="text-xs text-gray-400 mt-1">Será distribuído uniformemente ao longo do roteiro completo</p>
-            </div>
-            <div className="col-span-2">
-              <div className="flex items-center space-x-2 mb-2">
-                <input
-                  type="checkbox"
-                  id="images-custom-prompt"
-                  checked={formData.config.images.custom_prompt || false}
-                  onChange={(e) => onChange('config.images.custom_prompt', e.target.checked)}
-                  className="rounded border-gray-600 bg-gray-700 text-purple-600 focus:ring-purple-500"
-                />
-                <label htmlFor="images-custom-prompt" className="text-sm font-medium text-gray-300">
-                  Usar prompt personalizado
-                </label>
-              </div>
-              {formData.config.images.custom_prompt && (
-                <textarea
-                  value={formData.config.images.custom_instructions || ''}
-                  onChange={(e) => onChange('config.images.custom_instructions', e.target.value)}
-                  placeholder="Digite suas instruções personalizadas para geração de imagens..."
-                  rows={3}
-                  className="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded text-white text-sm resize-none"
-                />
-              )}
-            </div>
-          </div>
-        </div>
-
-        {/* Vídeo */}
-        <div className="bg-gray-800 rounded-lg p-4 border border-gray-700">
-          <h4 className="text-lg font-medium text-white mb-3 flex items-center space-x-2">
-            <Video size={18} className="text-blue-400" />
-            <span>Configuração de Vídeo</span>
-          </h4>
-          <div className="space-y-3">
-            <div>
-              <label className="block text-sm font-medium text-gray-300 mb-1">
-                Resolução
-              </label>
-              <select
-                value={formData.config.video.resolution}
-                onChange={(e) => onChange('config.video.resolution', e.target.value)}
-                className="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded text-white text-sm"
-              >
-                <option value="1280x720">720p (HD) - 1280x720</option>
-                <option value="1920x1080">1080p (Full HD) - 1920x1080</option>
-                <option value="2560x1440">1440p (2K) - 2560x1440</option>
-                <option value="3840x2160">2160p (4K) - 3840x2160</option>
-              </select>
-            </div>
-            <div>
-              <label className="block text-sm font-medium text-gray-300 mb-1">
-                FPS
-              </label>
-              <select
-                value={formData.config.video.fps}
-                onChange={(e) => onChange('config.video.fps', parseInt(e.target.value))}
-                className="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded text-white text-sm"
-              >
-                <option value={24}>24 FPS</option>
-                <option value={30}>30 FPS</option>
-                <option value={60}>60 FPS</option>
-              </select>
-            </div>
-            <div>
-              <label className="block text-sm font-medium text-gray-300 mb-1">
-                Duração da Transição (segundos)
-              </label>
-              <input
-                type="number"
-                min="0"
-                max="2"
-                step="0.1"
-                value={formData.config.video.transition_duration}
-                onChange={(e) => onChange('config.video.transition_duration', parseFloat(e.target.value))}
-                className="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded text-white text-sm"
-              />
-            </div>
-            <div>
-              <label className="flex items-center space-x-2">
-                <input
-                  type="checkbox"
-                  checked={formData.config.video.include_subtitles}
-                  onChange={(e) => onChange('config.video.include_subtitles', e.target.checked)}
-                  className="rounded border-gray-600 bg-gray-700 text-purple-600"
-                />
-                <span className="text-sm text-gray-300">Incluir Legendas</span>
-              </label>
-            </div>
-          </div>
-        </div>
-      </div>
-    </div>
-  )
-}
 
 // Seção de Prompts
 const PromptsSection = ({ formData, onChange }) => {
