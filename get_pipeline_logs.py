@@ -15,7 +15,7 @@ def get_pipeline_logs():
     print("=" * 50)
     
     try:
-        pipeline_id = "61469e86-ad58-45ab-9302-73d830944ffc"
+        pipeline_id = "7688c518-1ef8-4bdb-928b-35921b55d5b9"
         
         # 1. Buscar logs da pipeline específica
         print(f"📋 Buscando logs da pipeline: {pipeline_id}")

@@ -409,20 +409,20 @@ const AutomationSection = ({ automationPipelines, setAutomationPipelines, isPoll
                     const statusResult = await statusResponse.json()
                     console.log('INIT_LOAD: Resposta do status:', statusResult)
                     console.log('INIT_LOAD: Dados do pipeline:', statusResult.data)
-                    console.log('INIT_LOAD: Pipeline ID:', statusResult.data?.pipeline_id)
+                    console.log(`INIT_LOAD: Pipeline ID: ${statusResult.data?.display_name || statusResult.data?.pipeline_id}`)
                     console.log('INIT_LOAD: Pipeline Status:', statusResult.data?.status)
                     console.log('INIT_LOAD: Validação do pipeline:', isValidPipeline(statusResult.data))
                     if (statusResult.success && statusResult.data && isValidPipeline(statusResult.data)) {
-                      validPipelines.push(statusResult.data)
-                      console.log('INIT_LOAD: Pipeline válido carregado:', statusResult.data.pipeline_id)
-                    } else {
-                      console.log('INIT_LOAD: Pipeline inválido ou dados ausentes')
-                    }
+        validPipelines.push(statusResult.data)
+        console.log(`INIT_LOAD: Pipeline válido carregado: ${statusResult.data.display_name || statusResult.data.pipeline_id}`)
+      } else {
+        console.log('INIT_LOAD: Pipeline inválido ou dados ausentes')
+      }
                   } else {
                     console.log('INIT_LOAD: Erro na resposta do status:', statusResponse.status)
                   }
                 } catch (error) {
-                  console.error('INIT_LOAD: Erro ao buscar detalhes do pipeline:', pipeline.pipeline_id, error)
+                  console.error(`INIT_LOAD: Erro ao buscar detalhes do pipeline: ${pipeline.display_name || pipeline.pipeline_id}`, error)
                 }
               }
             }
@@ -505,7 +505,7 @@ const AutomationSection = ({ automationPipelines, setAutomationPipelines, isPoll
           
           for (const pipeline of activePipelines) {
             try {
-              console.log('POLLING: Atualizando status do pipeline:', pipeline.pipeline_id)
+              console.log(`POLLING: Atualizando status do pipeline: ${pipeline.display_name || pipeline.pipeline_id}`)
               const response = await fetch(`/api/pipeline/status/${pipeline.pipeline_id}`)
               
               if (response.ok) {
@@ -517,13 +517,13 @@ const AutomationSection = ({ automationPipelines, setAutomationPipelines, isPoll
                     )
                   )
                 } else {
-                  console.warn('POLLING: Resposta inválida para pipeline:', pipeline.pipeline_id, result)
+                  console.warn(`POLLING: Resposta inválida para pipeline: ${pipeline.display_name || pipeline.pipeline_id}`, result)
                 }
               } else {
-                console.error('POLLING: Erro HTTP ao buscar status do pipeline:', pipeline.pipeline_id, response.status)
+                console.error(`POLLING: Erro HTTP ao buscar status do pipeline: ${pipeline.display_name || pipeline.pipeline_id}`, response.status)
               }
             } catch (pipelineError) {
-              console.error('POLLING: Erro ao processar pipeline:', pipeline.pipeline_id, pipelineError)
+              console.error(`POLLING: Erro ao processar pipeline: ${pipeline.display_name || pipeline.pipeline_id}`, pipelineError)
             }
           }
         } catch (error) {
@@ -555,12 +555,12 @@ const AutomationSection = ({ automationPipelines, setAutomationPipelines, isPoll
         
         // Validar se a resposta contém pipeline_id válido
         if (!result.pipeline_id || typeof result.pipeline_id !== 'string' || result.pipeline_id.trim() === '') {
-          console.error('START_AUTOMATION: pipeline_id inválido na resposta:', result)
+          console.error(`START_AUTOMATION: pipeline_id inválido na resposta: ${result.display_name || result.pipeline_id}`, result)
           alert('Erro: Pipeline criado sem ID válido')
           return
         }
         
-        console.log('START_AUTOMATION: Buscando status completo do pipeline:', result.pipeline_id)
+        console.log(`START_AUTOMATION: Buscando status completo do pipeline: ${result.display_name || result.pipeline_id})`)
         
         // Buscar o pipeline completo
         const statusResponse = await fetch(`/api/pipeline/status/${result.pipeline_id}`)
@@ -570,18 +570,18 @@ const AutomationSection = ({ automationPipelines, setAutomationPipelines, isPoll
           
           // Validar pipeline completo antes de adicionar ao estado
           if (statusResult.success && statusResult.data && isValidPipeline(statusResult.data)) {
-            console.log('START_AUTOMATION: Pipeline válido, adicionando ao estado:', statusResult.data.pipeline_id)
+            console.log(`START_AUTOMATION: Pipeline válido, adicionando ao estado: ${statusResult.data.display_name || statusResult.data.pipeline_id}`)
             
             // Verificar se o pipeline já existe no estado (evitar duplicatas)
             setAutomationPipelines(prev => {
               const exists = prev.some(p => p.pipeline_id === statusResult.data.pipeline_id)
               if (exists) {
-                console.warn('START_AUTOMATION: Pipeline já existe no estado, atualizando:', statusResult.data.pipeline_id)
+                console.warn(`START_AUTOMATION: Pipeline já existe no estado, atualizando: ${statusResult.data.display_name || statusResult.data.pipeline_id}`)
                 return prev.map(p => 
                   p.pipeline_id === statusResult.data.pipeline_id ? statusResult.data : p
                 )
               } else {
-                console.log('START_AUTOMATION: Adicionando novo pipeline ao estado:', statusResult.data.pipeline_id)
+                console.log(`START_AUTOMATION: Adicionando novo pipeline ao estado: ${statusResult.data.display_name || statusResult.data.pipeline_id}`)
                 return [...prev, statusResult.data]
               }
             })
@@ -611,17 +611,20 @@ const AutomationSection = ({ automationPipelines, setAutomationPipelines, isPoll
 
   const handlePausePipeline = async (pipelineId) => {
     try {
+      // Encontrar o pipeline atual no estado para obter o display_name
+      const currentPipeline = automationPipelines.find(p => p.pipeline_id === pipelineId)
+      const displayName = currentPipeline?.display_name || pipelineId
+      
       // Validar pipeline_id antes da requisição
       if (!pipelineId || typeof pipelineId !== 'string' || pipelineId.trim() === '') {
-        console.error('PAUSE_PIPELINE: pipeline_id inválido:', pipelineId)
+        console.error('PAUSE_PIPELINE: pipeline_id inválido:', displayName)
         alert('Erro: ID do pipeline inválido')
         return
       }
       
-      // Encontrar o pipeline atual para determinar a ação
-      const currentPipeline = automationPipelines.find(p => p.pipeline_id === pipelineId)
       if (!currentPipeline) {
-        console.error('PAUSE_PIPELINE: Pipeline não encontrado:', pipelineId)
+        console.error('PAUSE_PIPELINE: Pipeline não encontrado:', displayName)
+        alert('Erro: Pipeline não encontrado')
         return
       }
       
@@ -629,7 +632,7 @@ const AutomationSection = ({ automationPipelines, setAutomationPipelines, isPoll
       const action = isPaused ? 'resume' : 'pause'
       const actionText = isPaused ? 'Retomando' : 'Pausando'
       
-      console.log(`${action.toUpperCase()}_PIPELINE: ${actionText} pipeline:`, pipelineId)
+      console.log(`${action.toUpperCase()}_PIPELINE: ${actionText} pipeline: ${displayName}`)
       
       const response = await fetch(`/api/pipeline/${action}/${pipelineId}`, {
         method: 'POST'
@@ -648,7 +651,7 @@ const AutomationSection = ({ automationPipelines, setAutomationPipelines, isPoll
                 : p
             )
           )
-          console.log(`${action.toUpperCase()}_PIPELINE: Pipeline ${isPaused ? 'retomado' : 'pausado'} com sucesso:`, pipelineId)
+          console.log(`${action.toUpperCase()}_PIPELINE: Pipeline ${isPaused ? 'retomado' : 'pausado'} com sucesso: ${displayName}`)
         } else {
           console.error(`${action.toUpperCase()}_PIPELINE: Erro na resposta:`, result.error)
           alert(`Erro ao ${isPaused ? 'retomar' : 'pausar'} pipeline: ${result.error}`)
@@ -665,14 +668,18 @@ const AutomationSection = ({ automationPipelines, setAutomationPipelines, isPoll
 
   const handleCancelPipeline = async (pipelineId) => {
     try {
+      // Encontrar o pipeline atual no estado para obter o display_name
+      const currentPipeline = automationPipelines.find(p => p.pipeline_id === pipelineId)
+      const displayName = currentPipeline?.display_name || pipelineId
+      
       // Validar pipeline_id antes da requisição
       if (!pipelineId || typeof pipelineId !== 'string' || pipelineId.trim() === '') {
-        console.error('CANCEL_PIPELINE: pipeline_id inválido:', pipelineId)
+        console.error('CANCEL_PIPELINE: pipeline_id inválido:', displayName)
         alert('Erro: ID do pipeline inválido')
         return
       }
       
-      console.log('CANCEL_PIPELINE: Cancelando pipeline:', pipelineId)
+      console.log('CANCEL_PIPELINE: Cancelando pipeline:', displayName)
       
       const response = await fetch(`/api/pipeline/cancel/${pipelineId}`, {
         method: 'POST'
@@ -688,7 +695,7 @@ const AutomationSection = ({ automationPipelines, setAutomationPipelines, isPoll
               p.pipeline_id === pipelineId ? result.data : p
             )
           )
-          console.log('CANCEL_PIPELINE: Pipeline cancelado com sucesso:', pipelineId)
+          console.log('CANCEL_PIPELINE: Pipeline cancelado com sucesso:', displayName)
         } else {
           console.error('CANCEL_PIPELINE: Dados inválidos na resposta:', result)
         }

@@ -470,8 +470,8 @@ def start_complete_automation():
         
         # CORREÇÃO: Mapear video_count do frontend para max_titles no backend
         # O frontend envia video_count mas o backend espera max_titles na configuração de extraction
-        if 'video_count' in data:
-            video_count = data['video_count']
+        if 'video_count' in user_config:
+            video_count = user_config['video_count']
             if 'extraction' not in config:
                 config['extraction'] = {}
             config['extraction']['max_titles'] = video_count

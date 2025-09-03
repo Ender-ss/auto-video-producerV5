@@ -3123,9 +3123,18 @@ def get_channel_videos_ytdlp(channel_url, max_results=50):
                     print(f"  ❌ Erro na entrada {i+1}: {str(e)[:100]}...")
                     continue
             
+            # Extrair informações do canal
+            channel_info = {
+                'name': channel_info.get('uploader', channel_info.get('channel', '')),
+                'description': channel_info.get('description', ''),
+                'subscriber_count': channel_info.get('subscriber_count') or channel_info.get('channel_follower_count', 0),
+                'video_count': channel_info.get('playlist_count') or channel_info.get('n_entries', len(videos))
+            }
+            
             result = {
                 'success': True,
                 'data': {
+                    'channel_info': channel_info,
                     'videos': videos,
                     'total_videos': len(videos),
                     'total_count': len(videos),

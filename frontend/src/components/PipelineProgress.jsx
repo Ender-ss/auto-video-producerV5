@@ -511,7 +511,7 @@ const PipelineProgress = ({ pipeline, onPause, onCancel, onViewDetails, index })
                 <div>
                   <span className="text-gray-400">Canal:</span>
                   <p className="text-white truncate">
-                    {pipeline.channel_url?.split('/').pop() || 'N/A'}
+                    {pipeline.results?.extraction?.channel_info?.name || pipeline.channel_url?.split('/').pop() || 'N/A'}
                   </p>
                 </div>
                 <div>
@@ -632,6 +632,137 @@ const PipelineProgress = ({ pipeline, onPause, onCancel, onViewDetails, index })
                   </div>
                 </div>
                 
+                {/* Informações de Extração */}
+                <div className="bg-gray-900 rounded p-3 mb-3">
+                  <h6 className="text-gray-400 font-medium mb-2">Informações de Extração</h6>
+                  {pipeline.results?.extraction ? (
+                    <div className="space-y-3">
+                      {/* Informações do Canal e Pipeline Original */}
+                      <div className="border-b border-gray-700 pb-2">
+                        <div className="flex items-center space-x-2 mb-1">
+                          <span className="text-blue-400 font-medium">📺 Canal:</span>
+                          <span className="text-gray-300 font-semibold">
+                            {pipeline.channel_url ? (
+                              <a href={pipeline.channel_url} target="_blank" rel="noopener noreferrer" className="text-blue-400 hover:text-blue-300">
+                                {pipeline.title || 'Canal'}
+                              </a>
+                            ) : (
+                              pipeline.title || pipeline.display_name || 'Canal não identificado'
+                            )}
+                          </span>
+                        </div>
+                        {pipeline.results.extraction.channel_info?.name && (
+                          <div className="text-xs text-gray-400 ml-6">
+                            Nome: {pipeline.results.extraction.channel_info.name}
+                            {pipeline.results.extraction.channel_info.subscriber_count && (
+                              <span> • {pipeline.results.extraction.channel_info.subscriber_count.toLocaleString()} inscritos</span>
+                            )}
+                          </div>
+                        )}
+                      </div>
+                      
+                      {/* Estatísticas */}
+                      <div className="grid grid-cols-2 gap-2 text-sm">
+                        <div>
+                          <span className="text-gray-400">Total:</span>
+                          <span className="text-gray-300 ml-1">
+                            {pipeline.results.extraction.total_extracted || 0} vídeos
+                          </span>
+                        </div>
+                        <div>
+                          <span className="text-gray-400">Método:</span>
+                          <span className="text-gray-300 ml-1">
+                            {pipeline.results.extraction.method_used || 'Não disponível'}
+                          </span>
+                        </div>
+                      </div>
+                      
+                      {/* Lista de Títulos Extraídos */}
+                      {pipeline.results.extraction.titles && pipeline.results.extraction.titles.length > 0 && (
+                        <div>
+                          <div className="text-gray-400 text-sm mb-1">Títulos extraídos:</div>
+                          <div className="max-h-32 overflow-y-auto space-y-1">
+                            {pipeline.results.extraction.titles.slice(0, 5).map((title, index) => (
+                              <div key={index} className="bg-gray-800 rounded p-2 text-xs">
+                                <div className="text-gray-200 font-medium truncate">
+                                  {index + 1}. {title.title}
+                                </div>
+                                <div className="flex justify-between text-gray-400 mt-1">
+                                  <span>{title.views?.toLocaleString()} views</span>
+                                  <span>{title.duration || 'N/A'}</span>
+                                </div>
+                              </div>
+                            ))}
+                            {pipeline.results.extraction.titles.length > 5 && (
+                              <div className="text-gray-500 text-xs text-center py-1">
+                                ... e mais {pipeline.results.extraction.titles.length - 5} vídeos
+                              </div>
+                            )}
+                          </div>
+                        </div>
+                      )}
+                      
+                      {/* Título Selecionado para Remodelagem */}
+                      {pipeline.results?.titles?.selected_title && (
+                        <div className="border-t border-gray-700 pt-3">
+                          <h4 className="text-sm font-medium text-green-400 mb-2">🎯 Título Selecionado para Remodelagem:</h4>
+                          <div className="bg-gradient-to-r from-green-900/30 to-purple-900/30 border border-green-700/30 rounded p-3">
+                            <div className="text-green-300 font-bold text-base mb-3 bg-black/20 p-3 rounded border-l-4 border-green-500">
+                              "{pipeline.results.titles.selected_title}"
+                            </div>
+                            {pipeline.results.titles.original_title && (
+                              <div className="mb-3">
+                                <div className="text-xs text-yellow-400 font-medium mb-1">📋 Título Original Usado como Base:</div>
+                                <div className="text-sm text-gray-300 italic bg-gray-800/50 p-2 rounded">
+                                  "{pipeline.results.titles.original_title}"
+                                </div>
+                              </div>
+                            )}
+                            {pipeline.results.titles.original_video_url && (
+                              <div className="mb-3">
+                                <a 
+                                  href={pipeline.results.titles.original_video_url} 
+                                  target="_blank" 
+                                  rel="noopener noreferrer" 
+                                  className="inline-flex items-center text-blue-400 hover:text-blue-300 text-sm bg-blue-900/30 px-3 py-2 rounded hover:bg-blue-900/50 transition-colors"
+                                >
+                                  <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M14.828 14.828a4 4 0 01-5.656 0M9 10h1m4 0h1m-6 4h8m-7 4V8a2 2 0 012-2h2a2 2 0 012 2v12a2 2 0 01-2 2H6a2 2 0 01-2-2z" />
+                                  </svg>
+                                  Ver vídeo original completo →
+                                </a>
+                              </div>
+                            )}
+                            <div className="text-xs text-gray-400 pt-2 border-t border-gray-700">
+                              <div className="flex items-center justify-between">
+                                <span>
+                                  {pipeline.results.extraction?.method_used === 'manual' ? (
+                                    <span className="text-orange-400">📁 Títulos fornecidos manualmente</span>
+                                  ) : pipeline.results.extraction?.method_used === 'cache' ? (
+                                    <span className="text-yellow-400">💾 Títulos carregados de cache local</span>
+                                  ) : (
+                                    <span className="text-green-400">🔄 Títulos extraídos diretamente do canal via API</span>
+                                  )}
+                                </span>
+                                <span className="text-blue-400">
+                                  Provider: {pipeline.results.titles.provider_used}
+                                </span>
+                              </div>
+                            </div>
+                          </div>
+                        </div>
+                      )}
+
+                      <div className="text-xs text-gray-500 pt-1 border-t border-gray-700">
+                        Extraído em: {pipeline.results.extraction.extraction_time ? 
+                          new Date(pipeline.results.extraction.extraction_time).toLocaleString('pt-BR') : 'Não disponível'}
+                      </div>
+                    </div>
+                  ) : (
+                    <p className="text-gray-500 text-sm">Aguardando informações de extração...</p>
+                  )}
+                </div>
+
                 {/* Original Logs */}
                 <div className="bg-gray-900 rounded p-3 max-h-40 overflow-y-auto">
                   <h6 className="text-gray-400 font-medium mb-2">Logs Detalhados</h6>
