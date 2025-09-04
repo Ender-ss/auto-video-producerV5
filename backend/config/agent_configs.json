@@ -1,0 +1,109 @@
+{
+  "agents": {
+    "millionaire_stories": {
+      "name": "Histórias de Superação Financeira",
+      "min_chars": 2000,
+      "max_chars": 3500,
+      "target_chars": 2800,
+      "cliffhanger_styles": [
+        "Revelação inesperada sobre finanças",
+        "Decisão crucial de investimento",
+        "Superação aparentemente impossível",
+        "Virada dramática na situação financeira"
+      ],
+      "break_patterns": [
+        "superação", "virada", "decisão crucial", "investimento", "risco"
+      ],
+      "story_types": {
+        "curta": {"max_chars": 8000, "chapters": 3},
+        "media": {"max_chars": 15000, "chapters": 6},
+        "longa": {"max_chars": 30000, "chapters": 12},
+        "epica": {"max_chars": 50000, "chapters": 20}
+      }
+    },
+    "romance_agent": {
+      "name": "Romance e Relacionamentos",
+      "min_chars": 1800,
+      "max_chars": 3200,
+      "target_chars": 2500,
+      "cliffhanger_styles": [
+        "Revelação emocional impactante",
+        "Encontro inesperado ou despedida",
+        "Dilema amoroso impossível",
+        "Momento de tensão romântica máxima"
+      ],
+      "break_patterns": [
+        "revelação", "encontro", "dilema", "amor", "tensão"
+      ],
+      "story_types": {
+        "curta": {"max_chars": 6000, "chapters": 3},
+        "media": {"max_chars": 12000, "chapters": 5},
+        "longa": {"max_chars": 25000, "chapters": 10},
+        "epica": {"max_chars": 40000, "chapters": 16}
+      }
+    },
+    "horror_agent": {
+      "name": "Terror e Suspense",
+      "min_chars": 1500,
+      "max_chars": 2800,
+      "target_chars": 2200,
+      "cliffhanger_styles": [
+        "Revelação aterradora",
+        "Momento de terror máximo",
+        "Mistério que se aprofunda",
+        "Medo que se intensifica"
+      ],
+      "break_patterns": [
+        "suspenso", "terror", "mistério", "medo", "sombrio"
+      ],
+      "story_types": {
+        "curta": {"max_chars": 5000, "chapters": 3},
+        "media": {"max_chars": 10000, "chapters": 4},
+        "longa": {"max_chars": 20000, "chapters": 8},
+        "epica": {"max_chars": 35000, "chapters": 14}
+      }
+    },
+    "motivational_agent": {
+      "name": "Histórias Motivacionais",
+      "min_chars": 2200,
+      "max_chars": 3800,
+      "target_chars": 3000,
+      "cliffhanger_styles": [
+        "Momento de transformação pessoal",
+        "Superação de limites internos",
+        "Descoberta de propósito",
+        "Vitória contra todas as expectativas"
+      ],
+      "break_patterns": [
+        "transformação", "superação", "propósito", "vitória", "mudança"
+      ],
+      "story_types": {
+        "curta": {"max_chars": 9000, "chapters": 3},
+        "media": {"max_chars": 18000, "chapters": 6},
+        "longa": {"max_chars": 35000, "chapters": 12},
+        "epica": {"max_chars": 60000, "chapters": 20}
+      }
+    },
+    "business_agent": {
+      "name": "Histórias Empresariais",
+      "min_chars": 2500,
+      "max_chars": 4000,
+      "target_chars": 3200,
+      "cliffhanger_styles": [
+        "Decisão estratégica crítica",
+        "Virada no mercado inesperada",
+        "Inovação disruptiva",
+        "Superação de crise empresarial"
+      ],
+      "break_patterns": [
+        "estratégia", "inovação", "crise", "mercado", "decisão"
+      ],
+      "story_types": {
+        "curta": {"max_chars": 10000, "chapters": 3},
+        "media": {"max_chars": 20000, "chapters": 6},
+        "longa": {"max_chars": 40000, "chapters": 12},
+        "epica": {"max_chars": 70000, "chapters": 20}
+      }
+    }
+  }
+}

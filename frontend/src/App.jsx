@@ -37,6 +37,7 @@ import LongScriptGenerator from './pages/LongScriptGenerator';
 import LongScriptTest from './pages/LongScriptTest';
 import PromptsConfig from './pages/PromptsConfig';
 import ConteudosGerados from './pages/ConteudosGerados';
+import StorytellerDemo from './pages/StorytellerDemo';
 
 // Mock system status for demo
 const mockSystemStatus = {
@@ -459,6 +460,22 @@ function App() {
                       transition={{ duration: 0.3 }}
                     >
                       <LongScriptTest />
+                    </motion.div>
+                  }
+                />
+
+                {/* Storyteller Unlimited Demo */}
+                <Route
+                  path="/storyteller-demo"
+                  element={
+                    <motion.div
+                      key="storyteller-demo"
+                      initial={{ opacity: 0, y: 20 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      exit={{ opacity: 0, y: -20 }}
+                      transition={{ duration: 0.3 }}
+                    >
+                      <StorytellerDemo />
                     </motion.div>
                   }
                 />

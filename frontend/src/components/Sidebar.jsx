@@ -138,6 +138,12 @@ const Sidebar = ({ onClose }) => {
       description: 'Testar geração de roteiros longos isoladamente'
     },
     {
+      path: '/storyteller-demo',
+      icon: TestTube,
+      label: '📖 STORYTELLER: Demo',
+      description: 'Demonstração do Storyteller Unlimited'
+    },
+    {
       path: '/youtube-comparison',
       icon: TestTube,
       label: '🧪 DEV: YouTube Comparação',
