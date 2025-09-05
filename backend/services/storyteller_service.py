@@ -703,7 +703,7 @@ class StorytellerService:
         return script_metadata
 
     def generate_storyteller_script(self, title: str, premise: str, agent_type: str, 
-                                  num_chapters: int, api_key: str = None, provider: str = "gemini", progress_callback: Optional[Callable[[List[Dict]], None]] = None) -> Dict:
+                                  num_chapters: int, api_key: str = None, provider: str = "gemini", progress_callback: Optional[Callable[[List[Dict]], None]] = None, remove_chapter_headers: bool = False) -> Dict:
         """
         Método principal para gerar roteiro completo com Storyteller Unlimited - AGORA COM CHUNKING POR CAPÍTULO
         
@@ -715,6 +715,7 @@ class StorytellerService:
             api_key: Chave da API (opcional - usará rotação automática se não fornecida)
             provider: Provedor de IA (gemini, openrouter)
             progress_callback: Callback opcional para reportar progresso parcial por capítulo. Recebe a lista parcial de capítulos.
+            remove_chapter_headers: Se True, remove os cabeçalhos de capítulos do roteiro final
         
         Returns:
             Dict com roteiro completo e metadados
@@ -839,7 +840,7 @@ class StorytellerService:
             # Monta roteiro final
             final_script = self.assemble_final_script(
                 title, premise, validation_result['valid_chapters'], 
-                agent_type, remove_chapter_headers=True
+                agent_type, remove_chapter_headers=remove_chapter_headers
             )
             
             # Calcula estatísticas totais

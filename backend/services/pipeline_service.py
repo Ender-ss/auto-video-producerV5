@@ -888,7 +888,8 @@ class PipelineService:
                 agent_type=agent_type,
                 num_chapters=num_chapters,
                 provider='gemini',
-                progress_callback=update_scripts_partial
+                progress_callback=update_scripts_partial,
+                remove_chapter_headers=True  # Remove cabeçalhos de capítulos do roteiro final
                 # api_key não é mais necessário - usa rotação automática
             )
             
