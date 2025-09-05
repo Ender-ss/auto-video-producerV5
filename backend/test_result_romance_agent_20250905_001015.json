@@ -1,0 +1,21 @@
+{
+  "title": "Amor em Tempos de IA",
+  "premise": "Em um mundo onde IA controla todos os aspectos da vida, dois estranhos se conectam através de uma falha no sistema e descobrem o que significa amar verdadeiramente.",
+  "agent_type": "romance_agent",
+  "num_chapters": 2,
+  "total_characters": 5128,
+  "estimated_duration": 341,
+  "success": true,
+  "chapter_lengths": [
+    2734,
+    2394
+  ],
+  "debug_info": {
+    "target_chars_per_chapter": 2500,
+    "total_actual_chars": 5128,
+    "avg_chars_per_chapter": 2564,
+    "story_id": "f90afa06-456a-42ca-b085-0d17dacb8dc8",
+    "validation_rate": 1.0
+  },
+  "generated_at": "2025-09-05T00:10:15.334312"
+}

@@ -853,8 +853,44 @@ class PipelineService:
                 progress = int((len(chapters) / scripts_config.get('chapters', 5)) * 100) if len(chapters) > 0 else 0
                 self._update_progress('scripts', progress)
 
-            # Verificar se deve usar o novo método de geração com resumos contextuais
-            if scripts_config.get('contextual_chapters', False):
+            # Verificar qual sistema de roteiro deve ser usado
+            script_system = scripts_config.get('system', 'traditional')
+            
+            if script_system == 'storyteller':
+                # Usar Storyteller Unlimited para geração de roteiros
+                from services.storyteller_service import StorytellerService
+                
+                # Obter configurações do Storyteller
+                storyteller_agent = scripts_config.get('storyteller_agent', 'millionaire_stories')
+                storyteller_chapters = scripts_config.get('storyteller_chapters', 10)
+                
+                # Criar instância do serviço
+                storyteller_service = StorytellerService()
+                
+                # Preparar dados para o Storyteller Unlimited
+                api_key = self.api_keys.get('gemini') or self.api_keys.get('gemini_1')
+                
+                # Gerar roteiro com Storyteller Unlimited usando rotação automática de chaves
+                result = storyteller_service.generate_storyteller_script(
+                    title=title,
+                    premise=premise,
+                    agent_type=storyteller_agent,
+                    num_chapters=storyteller_chapters
+                    # api_key não é mais necessário - usa rotação automática
+                )
+                
+                # Converter formato para compatibilidade
+                if result.get('success'):
+                    result = {
+                        'success': True,
+                        'data': {
+                            'script': result.get('full_script', ''),
+                            'chapters': result.get('chapters', []),
+                            'estimated_duration': result.get('estimated_duration', '5-7 minutes')
+                        }
+                    }
+                
+            elif scripts_config.get('contextual_chapters', False):
                 # Usar o novo endpoint de geração de roteiros longos com resumos contextuais
                 from routes.long_script_generator import generate_long_script_with_context
                 

@@ -198,6 +198,66 @@ def get_agents():
             'message': 'Erro ao listar agentes'
         }), 500
 
+@storyteller_bp.route('/generate-script', methods=['POST'])
+def generate_storyteller_script():
+    """Gera roteiro completo usando Storyteller Unlimited para integração com pipeline"""
+    try:
+        data = request.json
+        
+        # Validar dados obrigatórios
+        title = data.get('title', '').strip()
+        premise = data.get('premise', '').strip()
+        agent_type = data.get('agent_type', 'millionaire_stories')
+        num_chapters = data.get('num_chapters', 10)
+        
+        if not title:
+            return jsonify({
+                'success': False,
+                'error': 'Título é obrigatório',
+                'message': 'Por favor, forneça um título para a história'
+            }), 400
+            
+        if not premise:
+            return jsonify({
+                'success': False,
+                'error': 'Premissa é obrigatória',
+                'message': 'Por favor, forneça uma premissa para a história'
+            }), 400
+            
+        # Validar número de capítulos
+        if not isinstance(num_chapters, int) or num_chapters < 1 or num_chapters > 50:
+            return jsonify({
+                'success': False,
+                'error': 'Número de capítulos inválido',
+                'message': 'O número de capítulos deve ser entre 1 e 50'
+            }), 400
+            
+        # Validar agent_type
+        if agent_type not in storyteller_service.agent_configs:
+            return jsonify({
+                'success': False,
+                'error': 'Tipo de agente inválido',
+                'message': f'Agente "{agent_type}" não é válido. Use um dos agentes disponíveis.'
+            }), 400
+        
+        # Usar o serviço para gerar o roteiro completo
+        result = storyteller_service.generate_storyteller_script(
+            title=title,
+            premise=premise,
+            agent_type=agent_type,
+            num_chapters=num_chapters
+        )
+        
+        return jsonify(result)
+        
+    except Exception as e:
+        logger.error(f"Erro ao gerar roteiro com Storyteller: {str(e)}")
+        return jsonify({
+            'success': False,
+            'error': str(e),
+            'message': 'Erro ao gerar roteiro com Storyteller Unlimited'
+        }), 500
+
 @storyteller_bp.route('/health', methods=['GET'])
 def health_check():
     """Verifica saúde do serviço Storyteller"""

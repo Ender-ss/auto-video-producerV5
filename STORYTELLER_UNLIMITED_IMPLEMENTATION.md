@@ -476,6 +476,182 @@ class StorytellerService:
         
         return chapters
 
+    def generate_storyteller_script(self, title: str, premise: str, agent_type: str, 
+                                  num_chapters: int, api_key: str, provider: str = "gemini") -> Dict:
+        """
+        Método principal para gerar roteiro completo com Storyteller Unlimited
+        
+        Args:
+            title: Título da história
+            premise: Premissa/ideia principal
+            agent_type: Tipo de agente (millionaire_stories, romance_agent, etc)
+            num_chapters: Número de capítulos desejados
+            api_key: Chave da API
+            provider: Provedor de IA (gemini, openrouter)
+        
+        Returns:
+            Dict com roteiro completo e metadados
+        """
+        try:
+            # Define tamanho total baseado no agente e número de capítulos
+            config = self.agent_configs.get(agent_type, self.agent_configs['millionaire_stories'])
+            target_chars_per_chapter = config['target_chars']
+            total_target_chars = target_chars_per_chapter * num_chapters
+            
+            # Gera conteúdo usando LLM real com tamanho alvo específico
+            content = self._generate_story_content(
+                title, premise, agent_type, api_key, provider, 
+                target_chars=total_target_chars
+            )
+            
+            # Calcula tamanho real gerado
+            actual_total_chars = len(content)
+            
+            # Gera plano de divisão baseado no tamanho real
+            plan = self.generate_story_plan(actual_total_chars, agent_type, num_chapters)
+            
+            # Log para debug
+            logger.info(f"Conteúdo gerado: {actual_total_chars} chars")
+            logger.info(f"Plano: {plan['total_chapters']} capítulos, "
+                       f"{plan['target_per_chapter']} chars por capítulo")
+            
+            # Divide em capítulos usando o plano ajustado
+            chapters = self.smart_split_content(content, plan)
+            
+            # Valida capítulos
+            validation_result = self.validate_chapters_batch(chapters)
+            
+            if validation_result['success_rate'] < 0.8:
+                logger.warning(f"Taxa de validação baixa: {validation_result['success_rate']}")
+            
+            # Monta roteiro final
+            final_script = self.assemble_final_script(
+                title, premise, validation_result['valid_chapters'], 
+                agent_type
+            )
+            
+            # Retorna estrutura simplificada compatível com pipeline
+            return {
+                'title': title,
+                'premise': premise,
+                'full_script': final_script.get('full_script', content),
+                'chapters': final_script.get('chapters', chapters),
+                'estimated_duration': final_script.get('total_duration', 600),
+                'total_characters': final_script.get('total_characters', len(content)),
+                'agent_type': agent_type,
+                'num_chapters': len(final_script.get('chapters', chapters)),
+                'success': True,
+                'debug_info': {
+                    'planned_chars': total_target_chars,
+                    'actual_chars': actual_total_chars,
+                    'chars_per_chapter': actual_total_chars // num_chapters if num_chapters > 0 else 0
+                }
+            }
+            
+        except Exception as e:
+            logger.error(f"Erro ao gerar roteiro: {str(e)}")
+            return {
+                'success': False,
+                'error': str(e),
+                'title': title,
+                'premise': premise
+            }
+
+    def _generate_story_content(self, title: str, premise: str, agent_type: str, 
+                              api_key: str, provider: str, target_chars: int) -> str:
+        """
+        Gera conteúdo de história usando LLM
+        
+        Args:
+            title: Título da história
+            premise: Premissa/ideia principal
+            agent_type: Tipo de agente
+            api_key: Chave da API
+            provider: Provedor de IA
+            target_chars: Tamanho alvo em caracteres
+        
+        Returns:
+            Texto completo da história
+        """
+        # Mock - seria integrado com LLM real
+        # Por enquanto, gera conteúdo placeholder para testes
+        base_content = f"# {title}\n\n{premise}\n\n"
+        
+        # Adiciona conteúdo baseado no agente
+        if agent_type == "millionaire_stories":
+            base_content += "Era uma vez um jovem empresário que enfrentava desafios financeiros...\n"
+        elif agent_type == "romance_agent":
+            base_content += "Era uma vez um amor proibido que desafiava todas as expectativas...\n"
+        elif agent_type == "horror_agent":
+            base_content += "Era uma vez uma casa sombria que escondia segredos terríveis...\n"
+        
+        # Completa até atingir tamanho alvo
+        while len(base_content) < target_chars:
+            base_content += "Mais desenvolvimento da história... " * 50 + "\n"
+            
+        return base_content[:target_chars]
+
+    def validate_chapters_batch(self, chapters: List[Dict]) -> Dict:
+        """
+        Valida um lote de capítulos
+        
+        Args:
+            chapters: Lista de capítulos
+        
+        Returns:
+            Dict com resultados de validação
+        """
+        valid_chapters = []
+        invalid_chapters = []
+        
+        for chapter in chapters:
+            if chapter['validation']['valid']:
+                valid_chapters.append(chapter)
+            else:
+                invalid_chapters.append(chapter)
+        
+        success_rate = len(valid_chapters) / len(chapters) if chapters else 0
+        
+        return {
+            'valid_chapters': valid_chapters,
+            'invalid_chapters': invalid_chapters,
+            'success_rate': success_rate,
+            'total_chapters': len(chapters)
+        }
+
+    def assemble_final_script(self, title: str, premise: str, chapters: List[Dict], 
+                            agent_type: str) -> Dict:
+        """
+        Monta o roteiro final a partir dos capítulos validados
+        
+        Args:
+            title: Título da história
+            premise: Premissa da história
+            chapters: Capítulos validados
+            agent_type: Tipo de agente
+        
+        Returns:
+            Dict com roteiro final estruturado
+        """
+        full_script = f"# {title}\n\n{premise}\n\n"
+        
+        for chapter in chapters:
+            full_script += f"## Capítulo {chapter['number']}\n\n"
+            full_script += chapter['content']
+            full_script += "\n\n"
+        
+        # Estima duração (aproximada: 150 chars/min)
+        total_chars = len(full_script)
+        estimated_duration = total_chars // 150
+        
+        return {
+            'full_script': full_script,
+            'chapters': chapters,
+            'total_duration': estimated_duration,
+            'total_characters': total_chars,
+            'agent_type': agent_type
+        }
+
 # Instância global
 storyteller_service = StorytellerService()
 ```

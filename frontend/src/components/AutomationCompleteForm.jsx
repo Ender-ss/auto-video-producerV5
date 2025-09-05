@@ -56,9 +56,12 @@ const AutomationCompleteForm = ({ onSubmit, onClose }) => {
       },
       scripts: {
         enabled: true,
+        system: 'traditional', // 'traditional' ou 'storyteller'
         provider: 'gemini', // 'gemini', 'openai', 'openrouter'
         chapters: 5,
         duration_target: '5-7 minutes',
+        storyteller_agent: 'millionaire_stories',
+        storyteller_chapters: 10,
         include_intro: true,
         include_outro: true,
         custom_prompts: false,
@@ -1361,140 +1364,209 @@ const AISection = ({ formData, onChange, onOpenPromptManager }) => {
           <h4 className="text-lg font-medium text-white mb-3 flex items-center space-x-2">
             <FileText size={18} className="text-pink-400" />
             <span>Geração de Roteiros</span>
+            {formData.config.scripts.system === 'storyteller' && (
+              <span className="ml-2 px-2 py-1 bg-purple-600 text-white text-xs rounded-full">
+                Storyteller Unlimited Ativo
+              </span>
+            )}
           </h4>
+          {formData.config.scripts.system === 'storyteller' && (
+            <div className="mb-4 p-3 bg-purple-900/20 border border-purple-700 rounded-lg">
+              <p className="text-sm text-purple-300">
+                <strong>Storyteller Unlimited:</strong> Sistema avançado com divisão automática de capítulos, 
+                validação de qualidade e 5 agentes especializados. Suporte para até 50 capítulos com 
+                contexto inteligente e cache otimizado.
+              </p>
+            </div>
+          )}
           <div className="space-y-3">
             <div>
               <label className="block text-sm font-medium text-gray-300 mb-1">
-                Provedor de IA
+                Sistema de Roteiro
               </label>
               <select
-                value={formData.config.scripts.provider}
-                onChange={(e) => onChange('config.scripts.provider', e.target.value)}
+                value={formData.config.scripts.system || 'traditional'}
+                onChange={(e) => onChange('config.scripts.system', e.target.value)}
                 className="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded text-white text-sm"
               >
-                <option value="gemini">Google Gemini</option>
-                <option value="openai">OpenAI GPT</option>
-                <option value="openrouter">OpenRouter</option>
+                <option value="traditional">Roteiro Tradicional</option>
+                <option value="storyteller">Storyteller Unlimited</option>
               </select>
             </div>
-            <div>
-              <label className="block text-sm font-medium text-gray-300 mb-1">
-                Número de Capítulos
-              </label>
-              <input
-                type="number"
-                min="1"
-                max="10"
-                value={formData.config.scripts.chapters}
-                onChange={(e) => onChange('config.scripts.chapters', parseInt(e.target.value))}
-                className="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded text-white text-sm"
-              />
-            </div>
-            <div>
-              <label className="block text-sm font-medium text-gray-300 mb-1">
-                Duração Alvo
-              </label>
-              <input
-                type="text"
-                value={formData.config.scripts.duration_target}
-                onChange={(e) => onChange('config.scripts.duration_target', e.target.value)}
-                className="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded text-white text-sm"
-              />
-            </div>
-            <div className="flex items-center space-x-2 mb-2">
-              <input
-                type="checkbox"
-                id="scripts-custom-prompts"
-                checked={formData.config.scripts.custom_prompts}
-                onChange={(e) => onChange('config.scripts.custom_prompts', e.target.checked)}
-                className="rounded border-gray-600 bg-gray-700 text-purple-600 focus:ring-purple-500"
-              />
-              <label htmlFor="scripts-custom-prompts" className="text-sm font-medium text-gray-300">
-                Usar prompts personalizados
-              </label>
-            </div>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-              <div className="bg-gray-900 rounded-lg border border-gray-600 relative">
-                {formData.config.scripts.custom_inicio ? (
-                  <p className="p-3 text-sm text-gray-400 line-clamp-3">
-                    {formData.config.scripts.custom_inicio}
-                  </p>
-                ) : (
-                  <span className="absolute inset-0 flex items-center justify-center text-gray-400 text-sm">
-                    Nenhum prompt personalizado definido
-                  </span>
-                )}
+            {(!formData.config.scripts.system || formData.config.scripts.system === 'traditional') && (
+              <div>
+                <label className="block text-sm font-medium text-gray-300 mb-1">
+                  Provedor de IA
+                </label>
+                <select
+                  value={formData.config.scripts.provider}
+                  onChange={(e) => onChange('config.scripts.provider', e.target.value)}
+                  className="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded text-white text-sm"
+                >
+                  <option value="gemini">Google Gemini</option>
+                  <option value="openai">OpenAI GPT</option>
+                  <option value="openrouter">OpenRouter</option>
+                </select>
               </div>
-              <div className="bg-gray-900 rounded-lg border border-gray-600 relative">
-                {formData.config.scripts.custom_meio ? (
-                  <p className="p-3 text-sm text-gray-400 line-clamp-3">
-                    {formData.config.scripts.custom_meio}
-                  </p>
-                ) : (
-                  <span className="absolute inset-0 flex items-center justify-center text-gray-400 text-sm">
-                    Nenhum prompt personalizado definido
-                  </span>
-                )}
-              </div>
-              <div className="bg-gray-900 rounded-lg border border-gray-600 relative">
-                {formData.config.scripts.custom_fim ? (
-                  <p className="p-3 text-sm text-gray-400 line-clamp-3">
-                    {formData.config.scripts.custom_fim}
-                  </p>
-                ) : (
-                  <span className="absolute inset-0 flex items-center justify-center text-gray-400 text-sm">
-                    Nenhum prompt personalizado definido
-                  </span>
-                )}
-              </div>
-            </div>
-            <div className="flex items-center space-x-2 mb-2">
-              <input
-                type="checkbox"
-                id="scripts-detailed-prompt"
-                checked={formData.config.scripts.detailed_prompt}
-                onChange={(e) => onChange('config.scripts.detailed_prompt', e.target.checked)}
-                className="rounded border-gray-600 bg-gray-700 text-purple-600 focus:ring-purple-500"
-              />
-              <label htmlFor="scripts-detailed-prompt" className="text-sm font-medium text-gray-300">
-                Usar prompt detalhado
-              </label>
-            </div>
-            <div className="h-20 bg-gray-900 rounded-lg border border-gray-600 relative">
-              {formData.config.scripts.detailed_prompt_text ? (
-                <p className="p-3 text-sm text-gray-400 line-clamp-3">
-                  {formData.config.scripts.detailed_prompt_text}
-                </p>
-              ) : (
-                <span className="absolute inset-0 flex items-center justify-center text-gray-400 text-sm">
-                  Nenhum prompt detalhado definido
-                </span>
-              )}
-            </div>
-            <div className="flex items-center space-x-2 mb-2">
-              <input
-                type="checkbox"
-                id="scripts-contextual-chapters"
-                checked={formData.config.scripts.contextual_chapters}
-                onChange={(e) => onChange('config.scripts.contextual_chapters', e.target.checked)}
-                className="rounded border-gray-600 bg-gray-700 text-purple-600 focus:ring-purple-500"
-              />
-              <label htmlFor="scripts-contextual-chapters" className="text-sm font-medium text-gray-300">
-                Usar capítulos contextuais
-              </label>
-            </div>
-            <div className="flex items-center space-x-2 mb-2">
-              <input
-                type="checkbox"
-                id="scripts-show-default-prompts"
-                checked={formData.config.scripts.show_default_prompts}
-                onChange={(e) => onChange('config.scripts.show_default_prompts', e.target.checked)}
-                className="rounded border-gray-600 bg-gray-700 text-purple-600 focus:ring-purple-500"
-              />
-              <label htmlFor="scripts-show-default-prompts" className="text-sm font-medium text-gray-300">
-                Mostrar prompts padrões
-              </label>
-            </div>
+            )}
+            {formData.config.scripts.system === 'storyteller' ? (
+              <>
+                <div>
+                  <label className="block text-sm font-medium text-gray-300 mb-1">
+                    Agente de História
+                  </label>
+                  <select
+                    value={formData.config.scripts.storyteller_agent || 'millionaire_stories'}
+                    onChange={(e) => onChange('config.scripts.storyteller_agent', e.target.value)}
+                    className="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded text-white text-sm"
+                  >
+                    <option value="millionaire_stories">Histórias de Milionários</option>
+                    <option value="romance_agent">Romance</option>
+                    <option value="horror_agent">Terror</option>
+                    <option value="motivational_agent">Motivacional</option>
+                    <option value="business_agent">Negócios</option>
+                  </select>
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-300 mb-1">
+                    Capítulos (Storyteller)
+                  </label>
+                  <input
+                    type="number"
+                    min="1"
+                    max="50"
+                    value={formData.config.scripts.storyteller_chapters || 10}
+                    onChange={(e) => onChange('config.scripts.storyteller_chapters', parseInt(e.target.value))}
+                    className="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded text-white text-sm"
+                  />
+                </div>
+              </>
+            ) : (
+              <>
+                <div>
+                  <label className="block text-sm font-medium text-gray-300 mb-1">
+                    Número de Capítulos
+                  </label>
+                  <input
+                    type="number"
+                    min="1"
+                    max="10"
+                    value={formData.config.scripts.chapters}
+                    onChange={(e) => onChange('config.scripts.chapters', parseInt(e.target.value))}
+                    className="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded text-white text-sm"
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-300 mb-1">
+                    Duração Alvo
+                  </label>
+                  <input
+                    type="text"
+                    value={formData.config.scripts.duration_target}
+                    onChange={(e) => onChange('config.scripts.duration_target', e.target.value)}
+                    className="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded text-white text-sm"
+                  />
+                </div>
+              </>
+            )}
+            {formData.config.scripts.system !== 'storyteller' && (
+              <>
+                <div className="flex items-center space-x-2 mb-2">
+                  <input
+                    type="checkbox"
+                    id="scripts-custom-prompts"
+                    checked={formData.config.scripts.custom_prompts}
+                    onChange={(e) => onChange('config.scripts.custom_prompts', e.target.checked)}
+                    className="rounded border-gray-600 bg-gray-700 text-purple-600 focus:ring-purple-500"
+                  />
+                  <label htmlFor="scripts-custom-prompts" className="text-sm font-medium text-gray-300">
+                    Usar prompts personalizados
+                  </label>
+                </div>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                  <div className="bg-gray-900 rounded-lg border border-gray-600 relative">
+                    {formData.config.scripts.custom_inicio ? (
+                      <p className="p-3 text-sm text-gray-400 line-clamp-3">
+                        {formData.config.scripts.custom_inicio}
+                      </p>
+                    ) : (
+                      <span className="absolute inset-0 flex items-center justify-center text-gray-400 text-sm">
+                        Nenhum prompt personalizado definido
+                      </span>
+                    )}
+                  </div>
+                  <div className="bg-gray-900 rounded-lg border border-gray-600 relative">
+                    {formData.config.scripts.custom_meio ? (
+                      <p className="p-3 text-sm text-gray-400 line-clamp-3">
+                        {formData.config.scripts.custom_meio}
+                      </p>
+                    ) : (
+                      <span className="absolute inset-0 flex items-center justify-center text-gray-400 text-sm">
+                        Nenhum prompt personalizado definido
+                      </span>
+                    )}
+                  </div>
+                  <div className="bg-gray-900 rounded-lg border border-gray-600 relative">
+                    {formData.config.scripts.custom_fim ? (
+                      <p className="p-3 text-sm text-gray-400 line-clamp-3">
+                        {formData.config.scripts.custom_fim}
+                      </p>
+                    ) : (
+                      <span className="absolute inset-0 flex items-center justify-center text-gray-400 text-sm">
+                        Nenhum prompt personalizado definido
+                      </span>
+                    )}
+                  </div>
+                </div>
+                <div className="flex items-center space-x-2 mb-2">
+                  <input
+                    type="checkbox"
+                    id="scripts-detailed-prompt"
+                    checked={formData.config.scripts.detailed_prompt}
+                    onChange={(e) => onChange('config.scripts.detailed_prompt', e.target.checked)}
+                    className="rounded border-gray-600 bg-gray-700 text-purple-600 focus:ring-purple-500"
+                  />
+                  <label htmlFor="scripts-detailed-prompt" className="text-sm font-medium text-gray-300">
+                    Usar prompt detalhado
+                  </label>
+                </div>
+                <div className="h-20 bg-gray-900 rounded-lg border border-gray-600 relative">
+                  {formData.config.scripts.detailed_prompt_text ? (
+                    <p className="p-3 text-sm text-gray-400 line-clamp-3">
+                      {formData.config.scripts.detailed_prompt_text}
+                    </p>
+                  ) : (
+                    <span className="absolute inset-0 flex items-center justify-center text-gray-400 text-sm">
+                      Nenhum prompt detalhado definido
+                    </span>
+                  )}
+                </div>
+                <div className="flex items-center space-x-2 mb-2">
+                  <input
+                    type="checkbox"
+                    id="scripts-contextual-chapters"
+                    checked={formData.config.scripts.contextual_chapters}
+                    onChange={(e) => onChange('config.scripts.contextual_chapters', e.target.checked)}
+                    className="rounded border-gray-600 bg-gray-700 text-purple-600 focus:ring-purple-500"
+                  />
+                  <label htmlFor="scripts-contextual-chapters" className="text-sm font-medium text-gray-300">
+                    Usar capítulos contextuais
+                  </label>
+                </div>
+                <div className="flex items-center space-x-2 mb-2">
+                  <input
+                    type="checkbox"
+                    id="scripts-show-default-prompts"
+                    checked={formData.config.scripts.show_default_prompts}
+                    onChange={(e) => onChange('config.scripts.show_default_prompts', e.target.checked)}
+                    className="rounded border-gray-600 bg-gray-700 text-purple-600 focus:ring-purple-500"
+                  />
+                  <label htmlFor="scripts-show-default-prompts" className="text-sm font-medium text-gray-300">
+                    Mostrar prompts padrões
+                  </label>
+                </div>
+              </>
+            )}
           </div>
         </div>
       </div>

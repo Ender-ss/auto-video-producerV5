@@ -1,0 +1,23 @@
+{
+  "title": "O Véu das Sombras",
+  "premise": "Uma bibliotecária descobre um livro antigo que liberta entidades sombrias que alimentam dos medos humanos, e deve enfrentar seus próprios pesadelos para salvá-la.",
+  "agent_type": "horror_agent",
+  "num_chapters": 4,
+  "total_characters": 9767,
+  "estimated_duration": 650,
+  "success": true,
+  "chapter_lengths": [
+    2472,
+    2564,
+    2326,
+    2405
+  ],
+  "debug_info": {
+    "target_chars_per_chapter": 2200,
+    "total_actual_chars": 9767,
+    "avg_chars_per_chapter": 2441,
+    "story_id": "d5d39ed4-025d-4fc0-9985-2480eef12929",
+    "validation_rate": 1.0
+  },
+  "generated_at": "2025-09-05T00:10:37.471440"
+}
