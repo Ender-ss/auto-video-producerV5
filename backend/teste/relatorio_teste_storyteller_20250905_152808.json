@@ -1,0 +1,42 @@
+{
+  "timestamp": "2025-09-05T15:28:08.033048",
+  "test_config": {
+    "title": "A Faxineira e o Segredo do Milionário",
+    "premise": "Uma faxineira humilde precisa levar seu filho doente ao trabalho na mansão de um milionário. \n            Quando o patrão descobre a criança, fica em choque ao reconhecer uma marca de nascença idêntica à de sua ex-namorada. \n            Ele percebe que pode ser o pai da criança e decide ajudar, mas descobre segredos familiares que mudarão suas vidas para sempre. \n            Uma história de superação, amor perdido, responsabilidade paterna e a descoberta de que o dinheiro não compra a felicidade, \n            mas pode ser usado para fazer o bem.",
+    "agent_type": "millionaire_stories",
+    "num_chapters": 10,
+    "provider": "gemini",
+    "target_narrative_style": "fluido_emocional_detalhado"
+  },
+  "execution_results": {
+    "success": false,
+    "execution_time": 0.0004825592041015625,
+    "error": "Erro na geração do roteiro: Nenhuma chave API disponível"
+  },
+  "narrative_analysis": {
+    "success": false,
+    "error": "Nenhum roteiro para analisar"
+  },
+  "performance_metrics": {},
+  "errors": [
+    "Erro ao carregar chaves da API: Nenhuma chave Gemini encontrada",
+    "Erro na geração do roteiro: Nenhuma chave API disponível"
+  ],
+  "success": false,
+  "executive_summary": {
+    "test_passed": false,
+    "execution_successful": false,
+    "narrative_quality_score": 0,
+    "total_errors": 2,
+    "recommendations": [
+      "Verificar configuração das chaves API do Gemini",
+      "Validar conectividade com serviços de IA",
+      "Revisar logs de erro para problemas específicos",
+      "Melhorar prompts para maior profundidade narrativa",
+      "Ajustar configurações de capítulos por agente",
+      "Aumentar tamanho mínimo de capítulos",
+      "Incluir mais diálogos nos prompts de geração",
+      "Implementar tratamento de erro mais robusto"
+    ]
+  }
+}

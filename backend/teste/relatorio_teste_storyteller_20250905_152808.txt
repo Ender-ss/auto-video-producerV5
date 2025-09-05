@@ -1,0 +1,45 @@
+================================================================================
+RELATÓRIO DE TESTE - STORYTELLER UNLIMITED
+================================================================================
+Data/Hora: 2025-09-05T15:28:08.033048
+Status Geral: ❌ FALHA
+
+📋 CONFIGURAÇÃO DO TESTE
+----------------------------------------
+Título: A Faxineira e o Segredo do Milionário
+Agente: millionaire_stories
+Capítulos: 10
+Provedor: gemini
+
+🚀 RESULTADOS DA EXECUÇÃO
+----------------------------------------
+Sucesso: Não
+Tempo de execução: 0.00s
+Capítulos gerados: 0
+Caracteres totais: 0
+
+📝 ANÁLISE NARRATIVA
+----------------------------------------
+Score de qualidade: 0/100
+Avaliação: N/A
+Palavras totais: 0
+Tamanho médio por capítulo: 0 chars
+Presença de diálogos: Não
+
+❌ ERROS ENCONTRADOS
+----------------------------------------
+1. Erro ao carregar chaves da API: Nenhuma chave Gemini encontrada
+2. Erro na geração do roteiro: Nenhuma chave API disponível
+
+💡 RECOMENDAÇÕES
+----------------------------------------
+1. Verificar configuração das chaves API do Gemini
+2. Validar conectividade com serviços de IA
+3. Revisar logs de erro para problemas específicos
+4. Melhorar prompts para maior profundidade narrativa
+5. Ajustar configurações de capítulos por agente
+6. Aumentar tamanho mínimo de capítulos
+7. Incluir mais diálogos nos prompts de geração
+8. Implementar tratamento de erro mais robusto
+
+================================================================================

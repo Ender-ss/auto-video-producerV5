@@ -1,0 +1,23 @@
+{
+  "timestamp": 1757095054.6917353,
+  "redis_cache": {
+    "error": "'RedisCacheService' object has no attribute 'store_breakpoint'",
+    "cache_connection": false
+  },
+  "token_chunker": {
+    "error": "closing parenthesis ']' does not match opening parenthesis '(' (token_chunker.py, line 43)"
+  },
+  "smart_chapter_breaker": {
+    "error": "unterminated triple-quoted string literal (detected at line 397) (smart_chapter_breaker.py, line 69)"
+  },
+  "integration": {
+    "error": "No module named 'storyteller_service_advanced'"
+  },
+  "summary": {
+    "total_tests": 4,
+    "successful_tests": 0,
+    "failed_tests": 4,
+    "success_rate": 0.0,
+    "overall_status": "FAILED"
+  }
+}

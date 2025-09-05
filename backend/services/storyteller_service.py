@@ -8,6 +8,8 @@ from typing import Dict, List, Optional, Tuple, Callable
 from dataclasses import dataclass
 import logging
 from datetime import datetime, timedelta
+from difflib import SequenceMatcher
+import random
 
 logger = logging.getLogger(__name__)
 
@@ -18,6 +20,71 @@ class ChapterConfig:
     target_chars: int
     cliffhanger_prompt: str
     break_patterns: List[str]
+
+class RepetitionDetector:
+    """Detector de repetições e padrões duplicados"""
+    
+    def __init__(self):
+        self.similarity_threshold = 0.7  # 70% de similaridade
+        self.phrase_min_length = 10  # Frases mínimas para comparar
+    
+    def detect_repetitions(self, chapters: List[str]) -> Dict:
+        """Detecta repetições entre capítulos"""
+        repetitions = []
+        
+        for i, chapter1 in enumerate(chapters):
+            for j, chapter2 in enumerate(chapters[i+1:], i+1):
+                similarity = self._calculate_similarity(chapter1, chapter2)
+                if similarity > self.similarity_threshold:
+                    repetitions.append({
+                        'chapter1': i+1,
+                        'chapter2': j+1,
+                        'similarity': similarity
+                    })
+        
+        # Detecta frases repetidas
+        repeated_phrases = self._find_repeated_phrases(chapters)
+        
+        return {
+            'similar_chapters': repetitions,
+            'repeated_phrases': repeated_phrases,
+            'repetition_score': len(repetitions) + len(repeated_phrases)
+        }
+    
+    def _calculate_similarity(self, text1: str, text2: str) -> float:
+        """Calcula similaridade entre dois textos"""
+        return SequenceMatcher(None, text1.lower(), text2.lower()).ratio()
+    
+    def _find_repeated_phrases(self, chapters: List[str]) -> List[Dict]:
+        """Encontra frases repetidas entre capítulos"""
+        phrases = []
+        all_sentences = []
+        
+        # Extrai sentenças de todos os capítulos
+        for i, chapter in enumerate(chapters):
+            sentences = re.split(r'[.!?]+', chapter)
+            for sentence in sentences:
+                sentence = sentence.strip()
+                if len(sentence) >= self.phrase_min_length:
+                    all_sentences.append({
+                        'text': sentence.lower(),
+                        'chapter': i+1,
+                        'original': sentence
+                    })
+        
+        # Encontra duplicatas
+        seen = {}
+        for sentence in all_sentences:
+            text = sentence['text']
+            if text in seen:
+                phrases.append({
+                    'phrase': sentence['original'],
+                    'chapters': [seen[text]['chapter'], sentence['chapter']]
+                })
+            else:
+                seen[text] = sentence
+        
+        return phrases
 
 class SmartChapterBreaker:
     """Analisador inteligente de pontos naturais de quebra"""
@@ -52,6 +119,7 @@ class StoryValidator:
         self.config = config
         self.min_chars = config.get('min_chars', 500)  # Reduzido para testes
         self.max_chars = config.get('max_chars', 4000)
+        self.repetition_detector = RepetitionDetector()
     
     def validate_chapter(self, chapter: str, chapter_num: int) -> Dict:
         """Valida um capítulo individual"""
@@ -74,6 +142,10 @@ class StoryValidator:
             'issues': issues,
             'length': length
         }
+    
+    def validate_story_repetitions(self, chapters: List[str]) -> Dict:
+        """Valida repetições em toda a história"""
+        return self.repetition_detector.detect_repetitions(chapters)
 
 class MemoryBridge:
     """Bridge para gerenciamento de contexto e cache inteligente"""
@@ -247,6 +319,119 @@ class TokenChunker:
         
         return chunks
 
+class PromptVariator:
+    """Gerador de prompts variados para evitar repetições"""
+    
+    def __init__(self):
+        self.opening_variations = [
+            "Crie o CAPÍTULO {chapter_num}",
+            "Desenvolva o CAPÍTULO {chapter_num}",
+            "Escreva o CAPÍTULO {chapter_num}",
+            "Construa o CAPÍTULO {chapter_num}",
+            "Elabore o CAPÍTULO {chapter_num}"
+        ]
+        
+        self.narrative_styles = [
+            "Use linguagem envolvente e narrativa cativante",
+            "Empregue uma narrativa fluida e envolvente",
+            "Utilize uma escrita rica e imersiva",
+            "Desenvolva com estilo narrativo envolvente",
+            "Construa com linguagem rica e cativante"
+        ]
+        
+        self.character_instructions = [
+            "Crie personagens profundos com diálogos significativos",
+            "Desenvolva personagens ricos com conversas autênticas",
+            "Construa personagens complexos com diálogos naturais",
+            "Elabore personagens detalhados com falas expressivas",
+            "Forme personagens bem desenvolvidos com diálogos realistas"
+        ]
+        
+        self.description_styles = [
+            "Inclua descrições ambientais ricas quando apropriado",
+            "Adicione detalhes ambientais vívidos conforme necessário",
+            "Incorpore descrições de cenário detalhadas quando relevante",
+            "Integre elementos descritivos do ambiente quando adequado",
+            "Insira descrições atmosféricas quando pertinente"
+        ]
+    
+    def generate_varied_prompt(self, title: str, premise: str, agent_type: str, 
+                             target_chars: int, chapter_num: int, total_chapters: int,
+                             previous_context: Optional[Dict] = None, 
+                             previous_chapters: List[str] = None) -> str:
+        """Gera prompt variado para evitar repetições"""
+        
+        # Seleciona variações aleatórias
+        opening = random.choice(self.opening_variations).format(chapter_num=chapter_num)
+        narrative_style = random.choice(self.narrative_styles)
+        character_instruction = random.choice(self.character_instructions)
+        description_style = random.choice(self.description_styles)
+        
+        # Contexto do agente
+        agent_contexts = {
+            'millionaire_stories': {
+                'context': 'história de superação financeira e empreendedorismo',
+                'tone': 'inspirador e motivacional',
+                'elements': 'jornada do zero ao sucesso, desafios financeiros, estratégias de negócio'
+            },
+            'romance_agent': {
+                'context': 'história romântica com desenvolvimento emocional',
+                'tone': 'emocional e envolvente',
+                'elements': 'encontros românticos, conflitos emocionais, desenvolvimento de relacionamento'
+            },
+            'horror_agent': {
+                'context': 'história de terror psicológico com suspense',
+                'tone': 'sombrio e aterrorizante',
+                'elements': 'suspense crescente, elementos sobrenaturais, medo psicológico'
+            }
+        }
+        
+        context = agent_contexts.get(agent_type, agent_contexts['millionaire_stories'])
+        
+        # Adiciona instruções anti-repetição se há capítulos anteriores
+        anti_repetition = ""
+        if previous_chapters and len(previous_chapters) > 0:
+            anti_repetition = f"""
+        
+        IMPORTANTE - EVITE REPETIÇÕES:
+        - NÃO repita frases ou estruturas dos capítulos anteriores
+        - Use vocabulário e construções diferentes
+        - Varie o estilo de abertura e desenvolvimento
+        - Crie diálogos únicos e situações originais
+        """
+        
+        # Monta prompt variado
+        prompt = f"""
+        {opening} de uma história {context['context']} com aproximadamente {target_chars} caracteres.
+        
+        TÍTULO DA HISTÓRIA: {title}
+        PREMISSA GERAL: {premise}
+        
+        ESTE É O CAPÍTULO {chapter_num} DE {total_chapters} CAPÍTULOS TOTAIS.
+        
+        CONTEXTO: {context['context']}
+        TOM: {context['tone']}
+        ELEMENTOS-CHAVE: {context['elements']}
+        
+        TAMANHO ALVO: Aproximadamente {target_chars} caracteres (flexível)
+        {anti_repetition}
+        
+        REQUISITOS PARA ESTE CAPÍTULO:
+        - Desenvolva uma parte coerente da história
+        - {narrative_style}
+        - {character_instruction}
+        - {description_style}
+        - Avance a trama de forma natural
+        
+        {"INCLUA UM CLIMAX OU GANCHO NO FINAL" if chapter_num < total_chapters else "CONCLUA A HISTÓRIA DE FORMA SATISFATÓRIA"}
+        
+        {"CONSIDERE O CONTEXTO DO CAPÍTULO ANTERIOR: " + previous_context.get('content_preview', '') if previous_context else "COMECE A HISTÓRIA"}
+        
+        CAPÍTULO {chapter_num}:
+        """
+        
+        return prompt
+
 class StorytellerService:
     """Serviço principal para geração inteligente de roteiros"""
     
@@ -255,6 +440,7 @@ class StorytellerService:
         self.memory_bridge = MemoryBridge()
         self.token_chunker = TokenChunker()
         self.agent_configs = self._load_agent_configs()
+        self.prompt_variator = PromptVariator()
     
     def _load_agent_configs(self) -> Dict:
         """Carrega configurações por agente"""
@@ -528,9 +714,10 @@ class StorytellerService:
             config = self.agent_configs.get(agent_type, self.agent_configs['millionaire_stories'])
             target_chars_per_chapter = config['target_chars']  # 2200-2800 chars realistas
             
-            # Gera cada capítulo individualmente com rotação de chaves
+            # Gera cada capítulo individualmente com rotação de chaves e verificação de repetições
             chapters = []
             story_id = str(uuid.uuid4())
+            previous_chapters_content = []  # Para verificação de repetições
             
             logger.info(f"Iniciando geração de {num_chapters} capítulos para '{title}'")
             logger.info(f"Tamanho alvo por capítulo: {target_chars_per_chapter} chars")
@@ -544,18 +731,42 @@ class StorytellerService:
                 if chapter_num > 1:
                     previous_context = self.memory_bridge.get_context(story_id, chapter_num - 1)
                 
-                # Gera conteúdo para este capítulo específico
-                chapter_content = self._generate_story_content(
-                    title=title,
-                    premise=premise,
-                    agent_type=agent_type,
-                    api_key=current_api_key,
-                    provider=provider,
-                    target_chars=target_chars_per_chapter,
-                    chapter_num=chapter_num,
-                    total_chapters=num_chapters,
-                    previous_context=previous_context
-                )
+                # Gera conteúdo para este capítulo específico com verificação de repetições
+                max_attempts = 3
+                chapter_content = None
+                
+                for attempt in range(max_attempts):
+                    chapter_content = self._generate_story_content(
+                        title=title,
+                        premise=premise,
+                        agent_type=agent_type,
+                        api_key=current_api_key,
+                        provider=provider,
+                        target_chars=target_chars_per_chapter,
+                        chapter_num=chapter_num,
+                        total_chapters=num_chapters,
+                        previous_context=previous_context,
+                        previous_chapters=previous_chapters_content
+                    )
+                    
+                    # Verifica repetições se há capítulos anteriores
+                    if previous_chapters_content:
+                        validator = StoryValidator(config)
+                        repetition_check = validator.repetition_detector.detect_repetitions(
+                            previous_chapters_content + [chapter_content]
+                        )
+                        
+                        # Se há muitas repetições, tenta novamente
+                        if repetition_check['repetition_score'] > 2 and attempt < max_attempts - 1:
+                            logger.warning(f"Capítulo {chapter_num} com repetições (tentativa {attempt + 1}), regenerando...")
+                            continue
+                        elif repetition_check['repetition_score'] > 0:
+                            logger.info(f"Capítulo {chapter_num} com {repetition_check['repetition_score']} repetições detectadas")
+                    
+                    break  # Aceita o capítulo
+                
+                # Adiciona à lista de capítulos anteriores
+                previous_chapters_content.append(chapter_content)
                 
                 # Valida e armazena capítulo
                 validator = StoryValidator(config)
@@ -580,6 +791,9 @@ class StorytellerService:
                     'cached_context': context
                 })
                 
+                # Mantém compatibilidade com código existente
+                previous_chapters = previous_chapters_content.copy()
+                
                 logger.info(f"Capítulo {chapter_num}/{num_chapters} gerado: {len(chapter_content)} chars")
                 
                 # Reportar progresso parcial, se solicitado
@@ -599,8 +813,18 @@ class StorytellerService:
                     except Exception as cb_err:
                         logger.warning(f"Falha ao notificar progresso parcial do Storyteller: {cb_err}")
             
-            # Valida todos os capítulos em lote
+            # Valida todos os capítulos em lote com análise de repetições
             validation_result = self.validate_chapters_batch(chapters)
+            
+            # Análise final de repetições
+            all_chapter_contents = [ch['content'] for ch in chapters]
+            validator = StoryValidator(config)
+            final_repetition_analysis = validator.validate_story_repetitions(all_chapter_contents)
+            
+            # Adiciona análise de repetições ao resultado
+            validation_result['repetition_analysis'] = final_repetition_analysis
+            
+            logger.info(f"Análise final de repetições: {final_repetition_analysis['repetition_score']} problemas detectados")
             
             # Monta roteiro final
             final_script = self.assemble_final_script(
@@ -647,9 +871,10 @@ class StorytellerService:
     def _generate_story_content(self, title: str, premise: str, agent_type: str, 
                               api_key: str, provider: str, target_chars: int = 15000,
                               chapter_num: int = 1, total_chapters: int = 1,
-                              previous_context: Optional[Dict] = None) -> str:
+                              previous_context: Optional[Dict] = None,
+                              previous_chapters: List[str] = None) -> str:
         """
-        Gera conteúdo real usando integração com LLM - AGORA COM CHUNKING POR CAPÍTULO
+        Gera conteúdo real usando integração com LLM - OTIMIZADO CONTRA REPETIÇÕES
         
         Args:
             title: Título da história
@@ -661,60 +886,23 @@ class StorytellerService:
             chapter_num: Número do capítulo atual
             total_chapters: Total de capítulos na história
             previous_context: Contexto do capítulo anterior (se houver)
+            previous_chapters: Lista de capítulos anteriores para verificar repetições
         
         Returns:
             Conteúdo gerado pelo LLM para este capítulo específico
         """
         
-        # Mapeamento de agent_type para contexto - AGORA POR CAPÍTULO
-        agent_contexts = {
-            'millionaire_stories': {
-                'context': 'história de superação financeira e empreendedorismo',
-                'tone': 'inspirador e motivacional',
-                'elements': 'jornada do zero ao sucesso, desafios financeiros, estratégias de negócio'
-            },
-            'romance_agent': {
-                'context': 'história romântica com desenvolvimento emocional',
-                'tone': 'emocional e envolvente',
-                'elements': 'encontros românticos, conflitos emocionais, desenvolvimento de relacionamento'
-            },
-            'horror_agent': {
-                'context': 'história de terror psicológico com suspense',
-                'tone': 'sombrio e aterrorizante',
-                'elements': 'suspense crescente, elementos sobrenaturais, medo psicológico'
-            }
-        }
-        
-        context = agent_contexts.get(agent_type, agent_contexts['millionaire_stories'])
-        
-        # Prompt otimizado para geração POR CAPÍTULO - sem exigência de tamanho fixo
-        prompt = f"""
-        Crie o CAPÍTULO {chapter_num} de uma história {context['context']} com aproximadamente {target_chars} caracteres.
-        
-        TÍTULO DA HISTÓRIA: {title}
-        PREMISSA GERAL: {premise}
-        
-        ESTE É O CAPÍTULO {chapter_num} DE {total_chapters} CAPÍTULOS TOTAIS.
-        
-        CONTEXTO: {context['context']}
-        TOM: {context['tone']}
-        ELEMENTOS-CHAVE: {context['elements']}
-        
-        TAMANHO ALVO: Aproximadamente {target_chars} caracteres (flexível)
-        
-        REQUISITOS PARA ESTE CAPÍTULO:
-        - Desenvolva uma parte coerente da história
-        - Use linguagem envolvente e narrativa cativante
-        - Crie personagens profundos com diálogos significativos
-        - Inclua descrições ambientais ricas quando apropriado
-        - Avance a trama de forma natural
-        
-        {"INCLUA UM CLIMAX OU GANCHO NO FINAL" if chapter_num < total_chapters else "CONCLUA A HISTÓRIA DE FORMA SATISFATÓRIA"}
-        
-        {"CONSIDERE O CONTEXTO DO CAPÍTULO ANTERIOR: " + previous_context.get('content_preview', '') if previous_context else "COMECE A HISTÓRIA"}
-        
-        CAPÍTULO {chapter_num}:
-        """
+        # Usa prompt variado para evitar repetições
+        prompt = self.prompt_variator.generate_varied_prompt(
+            title=title,
+            premise=premise,
+            agent_type=agent_type,
+            target_chars=target_chars,
+            chapter_num=chapter_num,
+            total_chapters=total_chapters,
+            previous_context=previous_context,
+            previous_chapters=previous_chapters or []
+        )
         
         try:
             # Usa tamanho realista baseado no limite da API (Gemini free: ~1500 tokens)
@@ -725,7 +913,7 @@ class StorytellerService:
             
             # Log do tamanho real gerado
             actual_chars = len(content)
-            logger.info(f"Capítulo {chapter_num} gerado: {actual_chars} chars (alvo: {target_chars})")
+            logger.info(f"Capítulo {chapter_num} gerado: {actual_chars} chars (alvo: {target_chars}) - Prompt variado usado")
             
             # Se muito curto, solicita extensão moderada
             if actual_chars < target_chars * 0.7:
@@ -742,13 +930,16 @@ class StorytellerService:
                 additional_content = self._call_llm_api(extension_prompt, api_key, provider, 
                                                      max_tokens=int((target_chars - actual_chars) * 1.2))
                 content += "\n\n" + additional_content
+                logger.info(f"Capítulo {chapter_num} estendido: {len(content)} chars total")
             
             return content.strip()
             
         except Exception as e:
             logger.error(f"Erro na geração de conteúdo do capítulo {chapter_num}: {str(e)}")
             # Fallback para conteúdo expandido caso LLM falhe
-            return self._generate_expanded_content(title, premise, agent_type, target_chars)
+            fallback_content = self._generate_expanded_content(title, premise, agent_type, target_chars)
+            logger.warning(f"Usando fallback para capítulo {chapter_num}: {len(fallback_content)} chars")
+            return fallback_content
     
     def _get_next_gemini_key(self):
         """

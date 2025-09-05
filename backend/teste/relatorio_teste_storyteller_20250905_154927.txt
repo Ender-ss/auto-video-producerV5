@@ -1,0 +1,29 @@
+================================================================================
+RELATÓRIO DE TESTE - STORYTELLER UNLIMITED
+================================================================================
+Data/Hora: 2025-09-05T15:48:35.380126
+Status Geral: ✅ SUCESSO
+
+📋 CONFIGURAÇÃO DO TESTE
+----------------------------------------
+Título: A Faxineira e o Segredo do Milionário
+Agente: millionaire_stories
+Capítulos: 10
+Provedor: gemini
+
+🚀 RESULTADOS DA EXECUÇÃO
+----------------------------------------
+Sucesso: Sim
+Tempo de execução: 52.33s
+Capítulos gerados: 10
+Caracteres totais: 25796
+
+📝 ANÁLISE NARRATIVA
+----------------------------------------
+Score de qualidade: 60/100
+Avaliação: Bom
+Palavras totais: 4114
+Tamanho médio por capítulo: 2503 chars
+Presença de diálogos: Sim
+
+================================================================================

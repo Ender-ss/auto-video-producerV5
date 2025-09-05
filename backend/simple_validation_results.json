@@ -1,0 +1,22 @@
+{
+  "timestamp": 1757096303.8918219,
+  "execution_time": 4.297347545623779,
+  "imports": {
+    "redis_cache_service": true,
+    "token_chunker": true,
+    "smart_chapter_breaker": true,
+    "storyteller_service_advanced": true
+  },
+  "functionality": {
+    "redis_connection": true,
+    "token_counting": true,
+    "chapter_breaking": true,
+    "advanced_service": true
+  },
+  "integration": {
+    "integration_success": true,
+    "chapters_created": 3,
+    "plan_generated": false
+  },
+  "overall_success": true
+}

@@ -1,5 +1,6 @@
 from flask import Blueprint, request, jsonify
 from services.storyteller_service import storyteller_service
+from services.storyteller_service_advanced import advanced_storyteller_service
 import logging
 
 logger = logging.getLogger(__name__)
@@ -7,23 +8,32 @@ storyteller_bp = Blueprint('storyteller', __name__, url_prefix='/api/storyteller
 
 @storyteller_bp.route('/generate-plan', methods=['POST'])
 def generate_story_plan():
-    """Gera plano de divisão inteligente"""
+    """Gera plano de divisão inteligente com recursos avançados"""
     try:
         data = request.json
         total_chars = data.get('total_chars', 20000)
         agent_type = data.get('agent_type', 'millionaire_stories')
         chapter_count = data.get('chapter_count')
+        use_advanced = data.get('use_advanced', True)  # Usar recursos avançados por padrão
         
-        plan = storyteller_service.generate_story_plan(
-            total_chars=total_chars,
-            agent_type=agent_type,
-            chapter_count=chapter_count
-        )
+        if use_advanced:
+            plan = advanced_storyteller_service.generate_advanced_story_plan(
+                total_chars=total_chars,
+                agent_type=agent_type,
+                chapter_count=chapter_count
+            )
+        else:
+            plan = storyteller_service.generate_story_plan(
+                total_chars=total_chars,
+                agent_type=agent_type,
+                chapter_count=chapter_count
+            )
         
         return jsonify({
             'success': True,
             'plan': plan,
-            'message': 'Plano gerado com sucesso'
+            'advanced_features_used': use_advanced,
+            'message': 'Plano gerado com sucesso' + (' (recursos avançados)' if use_advanced else '')
         })
         
     except Exception as e:
@@ -36,13 +46,14 @@ def generate_story_plan():
 
 @storyteller_bp.route('/split-content', methods=['POST'])
 def split_content():
-    """Divide conteúdo em capítulos inteligentes"""
+    """Divide conteúdo em capítulos inteligentes com recursos avançados"""
     try:
         data = request.json
         content = data.get('content', '')
         agent_type = data.get('agent_type', 'millionaire_stories')
         chapter_count = data.get('chapter_count')
         story_id = data.get('story_id')
+        use_advanced = data.get('use_advanced', True)  # Usar recursos avançados por padrão
         
         if not content:
             return jsonify({
@@ -51,26 +62,49 @@ def split_content():
                 'message': 'Por favor, forneça o conteúdo a ser dividido'
             }), 400
         
-        # Gera plano se não fornecido
-        plan = storyteller_service.generate_story_plan(
-            total_chars=len(content),
-            agent_type=agent_type,
-            chapter_count=chapter_count
-        )
-        
-        # Divide conteúdo
-        chapters = storyteller_service.smart_split_content(
-            content=content,
-            plan=plan,
-            story_id=story_id
-        )
+        if use_advanced:
+            # Usar serviço avançado
+            plan = advanced_storyteller_service.generate_advanced_story_plan(
+                total_chars=len(content),
+                agent_type=agent_type,
+                chapter_count=chapter_count
+            )
+            
+            chapters = advanced_storyteller_service.smart_split_content_advanced(
+                content=content,
+                plan=plan,
+                story_id=story_id
+            )
+            
+            cache_hit = bool(advanced_storyteller_service.memory_bridge.get_breakpoints(story_id))
+        else:
+            # Usar serviço tradicional
+            plan = storyteller_service.generate_story_plan(
+                total_chars=len(content),
+                agent_type=agent_type,
+                chapter_count=chapter_count
+            )
+            
+            chapters = storyteller_service.smart_split_content(
+                content=content,
+                plan=plan,
+                story_id=story_id
+            )
+            
+            cache_hit = bool(storyteller_service.memory_bridge.get_breakpoints(story_id))
         
         return jsonify({
             'success': True,
             'chapters': chapters,
             'plan': plan,
-            'cache_hit': bool(storyteller_service.memory_bridge.get_breakpoints(story_id)),
-            'message': f'Conteúdo dividido em {len(chapters)} capítulos'
+            'cache_hit': cache_hit,
+            'advanced_features_used': use_advanced,
+            'features_info': {
+                'redis_cache': use_advanced,
+                'token_chunker': use_advanced,
+                'smart_chapter_breaker': use_advanced
+            } if use_advanced else None,
+            'message': f'Conteúdo dividido em {len(chapters)} capítulos' + (' (recursos avançados)' if use_advanced else '')
         })
         
     except Exception as e:
@@ -96,7 +130,15 @@ def validate_chapter():
         )
         
         from services.storyteller_service import StoryValidator
-        validator = StoryValidator(config)
+        from services.storyteller_service_advanced import StoryValidator as AdvancedStoryValidator
+        
+        use_advanced = data.get('use_advanced', True)
+        
+        if use_advanced:
+            validator = AdvancedStoryValidator(config)
+        else:
+            validator = StoryValidator(config)
+            
         validation = validator.validate_chapter(chapter_content, chapter_num)
         
         return jsonify({
@@ -257,6 +299,52 @@ def generate_storyteller_script():
             'success': False,
             'error': str(e),
             'message': 'Erro ao gerar roteiro com Storyteller Unlimited'
+        }), 500
+
+@storyteller_bp.route('/advanced-stats/<story_id>', methods=['GET'])
+def get_advanced_stats(story_id):
+    """Retorna estatísticas avançadas sobre uma história"""
+    try:
+        stats = advanced_storyteller_service.get_advanced_stats(story_id)
+        
+        return jsonify({
+            'success': True,
+            'stats': stats,
+            'story_id': story_id,
+            'message': 'Estatísticas avançadas recuperadas com sucesso'
+        })
+        
+    except Exception as e:
+        logger.error(f"Erro ao obter estatísticas avançadas: {str(e)}")
+        return jsonify({
+            'success': False,
+            'error': str(e),
+            'message': 'Erro ao obter estatísticas avançadas'
+        }), 500
+
+@storyteller_bp.route('/cache-status', methods=['GET'])
+def get_cache_status():
+    """Retorna status do cache Redis e estatísticas gerais"""
+    try:
+        cache_stats = advanced_storyteller_service.memory_bridge.cache_service.get_cache_stats()
+        
+        return jsonify({
+            'success': True,
+            'cache_stats': cache_stats,
+            'advanced_features': {
+                'redis_cache': True,
+                'token_chunker': True,
+                'smart_chapter_breaker': True
+            },
+            'message': 'Status do cache recuperado com sucesso'
+        })
+        
+    except Exception as e:
+        logger.error(f"Erro ao obter status do cache: {str(e)}")
+        return jsonify({
+            'success': False,
+            'error': str(e),
+            'message': 'Erro ao obter status do cache'
         }), 500
 
 @storyteller_bp.route('/health', methods=['GET'])
