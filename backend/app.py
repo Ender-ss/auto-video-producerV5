@@ -500,7 +500,7 @@ def register_blueprints():
         app.register_blueprint(images_bp, url_prefix='/api/images')
         app.register_blueprint(image_queue_bp, url_prefix='/api/image-queue')
         app.register_blueprint(prompts_config_bp, url_prefix='/api')
-        app.register_blueprint(storyteller_bp)
+        app.register_blueprint(storyteller_bp)  # já tem url_prefix='/api/storyteller' definido
 
         logger.info("✅ Rotas registradas com sucesso!")
     except Exception as e:

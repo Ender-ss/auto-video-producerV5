@@ -1030,7 +1030,7 @@ def execute_script_generation(title_generator, selected_title, selected_premise,
         
         if use_agent:
             # Usar gerador de roteiros longos com agente especializado
-            from routes.long_script_generator import generate_long_script_with_context
+            # Removido: sistema antigo de geração de roteiros
             
             agent_type = agent_config['specialized_type']
             if agent_type in specialized_agents:
@@ -1041,68 +1041,137 @@ def execute_script_generation(title_generator, selected_title, selected_premise,
                 
                 add_workflow_log(f"🎆 Usando agente especializado: {specialized_agents[agent_type].get('name', agent_type)}")
                 
-                # Gerar roteiro usando o agente especializado
-                result = generate_long_script_with_context(
-                    titulo=selected_title,
-                    premissa=selected_premise['premise'],
-                    numero_capitulos=number_of_chapters,
-                    title_generator=title_generator,
-                    openrouter_api_key=api_keys.get('openrouter'),
-                    openrouter_model=openrouter_model,
-                    request_config=request_config
+                # Gerar roteiro usando Storyteller Unlimited
+                from services.storyteller_service import StorytellerService
+                
+                storyteller_service = StorytellerService()
+                
+                add_workflow_log(f"🎬 [STORYTELLER_WORKFLOW] Gerando roteiro com agente especializado: {agent_type}")
+                
+                result = storyteller_service.generate_storyteller_script(
+                    title=selected_title,
+                    premise=selected_premise['premise'],
+                    agent_type=agent_type,
+                    num_chapters=number_of_chapters,
+                    provider='gemini'
                 )
                 
-                if result['success']:
-                    script_result = {
-                        'title': selected_title,
-                        'premise': selected_premise['premise'],
-                        'chapters': result['data']['chapters'],
-                        'total_chapters': result['data']['number_of_chapters'],
-                        'total_words': result['data']['word_count'],
-                        'agent_used': {
-                            'type': agent_type,
-                            'name': specialized_agents[agent_type].get('name', agent_type)
-                        }
-                    }
+                if not result:
+                    raise Exception("Falha na geração com Storyteller Unlimited")
+                
+                # Preferir capítulos estruturados retornados pelo Storyteller
+                chapters_data = result.get('chapters') or []
+                chapters = []
+                if chapters_data:
+                    for idx, ch in enumerate(chapters_data, 1):
+                        chapters.append({
+                            'chapter_number': idx,
+                            'title': ch.get('title', f'Capítulo {idx}'),
+                            'content': ch.get('content', '')
+                        })
+                    script_content = result.get('full_script', "\n\n".join(ch.get('content', '') for ch in chapters_data))
                 else:
-                    raise Exception(f"Falha na geração com agente especializado: {result.get('error', 'Erro desconhecido')}")
+                    # Fallback: tentar montar capítulos a partir do full_script
+                    script_content = result.get('full_script', '')
+                    if script_content:
+                        # Dividir o script em capítulos baseado em marcadores comuns
+                        chapter_parts = script_content.split('\n\n## Capítulo ')
+                        for i, part in enumerate(chapter_parts):
+                            if i == 0 and not part.strip().startswith('Capítulo'):
+                                continue
+                            if part.strip():
+                                chapter_num = i + 1
+                                chapter_text = part.strip()
+                                if not chapter_text.startswith('Capítulo'):
+                                    chapter_text = f"Capítulo {chapter_num}\n\n{chapter_text}"
+                                chapters.append({
+                                    'chapter_number': chapter_num,
+                                    'title': f'Capítulo {chapter_num}',
+                                    'content': chapter_text
+                                })
+                
+                script_result = {
+                    'title': selected_title,
+                    'premise': selected_premise['premise'],
+                    'chapters': chapters,
+                    'total_chapters': len(chapters),
+                    'total_words': len(script_content.split()) if chapters else 0,
+                    'agent_used': {
+                        'type': agent_type,
+                        'name': specialized_agents[agent_type].get('name', agent_type)
+                    },
+                    'system_used': 'storyteller_unlimited'
+                }
             else:
                 add_workflow_log(f"⚠️ Agente {agent_type} não encontrado, usando método padrão")
                 use_agent = False
         
         if not use_agent:
-            # Usar a lógica de 3 prompts padrão
-            from routes.scripts import execute_prompt_1, execute_prompt_2, execute_prompt_3
+            # Usar Storyteller Unlimited como método padrão
+            from services.storyteller_service import StorytellerService
             
-            # Pipeline de 3 prompts
-            add_workflow_log("📝 Executando Prompt 1: Tradução e Contexto")
-            context_result = execute_prompt_1(selected_title, selected_premise['premise'], ai_provider, openrouter_model, api_keys, title_generator)
+            storyteller_service = StorytellerService()
             
-            if not context_result:
-                raise Exception("Falha no Prompt 1: Tradução e Contexto")
+            add_workflow_log("🎬 [STORYTELLER_WORKFLOW] Usando Storyteller Unlimited como método padrão")
             
-            add_workflow_log("📖 Executando Prompt 2: Estrutura Narrativa")
-            narrative_result = execute_prompt_2(selected_title, context_result, ai_provider, openrouter_model, api_keys, title_generator)
+            result = storyteller_service.generate_storyteller_script(
+                title=selected_title,
+                premise=selected_premise['premise'],
+                agent_type='millionaire_stories',
+                num_chapters=number_of_chapters,
+                provider='gemini'
+            )
             
-            if not narrative_result:
-                raise Exception("Falha no Prompt 2: Estrutura Narrativa")
+            if not result:
+                raise Exception("Falha na geração com Storyteller Unlimited")
             
-            add_workflow_log(f"✍️ Executando Prompt 3: Geração de {number_of_chapters} Capítulos")
-            chapters = execute_prompt_3(selected_title, context_result, narrative_result, number_of_chapters, ai_provider, openrouter_model, api_keys, title_generator)
-            
-            if not chapters:
-                raise Exception("Falha no Prompt 3: Geração dos Capítulos")
-
-            # Resultado final
-            script_result = {
-                'title': selected_title,
-                'premise': selected_premise['premise'],
-                'context': context_result,
-                'narrative_structure': narrative_result,
-                'chapters': chapters,
-                'total_chapters': len(chapters),
-                'total_words': sum(len(ch['content'].split()) for ch in chapters if ch.get('content'))
-            }
+            # Preferir capítulos estruturados retornados pelo Storyteller
+            chapters_data = result.get('chapters') or []
+            if chapters_data:
+                chapters = []
+                for idx, ch in enumerate(chapters_data, 1):
+                    chapters.append({
+                        'chapter_number': ch.get('chapter_number', idx),
+                        'title': ch.get('title', f'Capítulo {idx}'),
+                        'content': ch.get('content', '')
+                    })
+                script_content = result.get('full_script', "\n\n".join(ch.get('content', '') for ch in chapters))
+            else:
+                # Fallback: dividir texto completo caso capítulos estruturados não estejam presentes
+                script_content = result.get('full_script', '')
+                chapters = []
+                if script_content:
+                    chapter_parts = script_content.split('\n\n## Capítulo ')
+                    
+                    for i, part in enumerate(chapter_parts):
+                        if i == 0 and not part.strip().startswith('Capítulo'):
+                            continue
+                        
+                        if part.strip():
+                            chapter_num = i + 1
+                            chapter_content = part.strip()
+                            if not chapter_content.startswith('Capítulo'):
+                                chapter_content = f"Capítulo {chapter_num}\n\n{chapter_content}"
+                            
+                            chapters.append({
+                                'chapter_number': chapter_num,
+                                'title': f'Capítulo {chapter_num}',
+                                'content': chapter_content
+                            })
+                
+                script_result = {
+                    'title': selected_title,
+                    'premise': selected_premise['premise'],
+                    'context': selected_premise['premise'],
+                    'narrative_structure': 'Storyteller Unlimited',
+                    'chapters': chapters,
+                    'total_chapters': len(chapters),
+                    'total_words': len(script_content.split()),
+                    'system_used': 'storyteller_unlimited'
+                }
+        
+        if not script_result:
+            raise Exception("Falha na geração com Storyteller Unlimited")
 
         add_workflow_log("📖 Roteiro gerado:")
         add_workflow_log(f"   TÍTULO: {script_result['title']}", "info")

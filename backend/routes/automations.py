@@ -1514,54 +1514,70 @@ def extract_youtube_channel_content():
 
 @automations_bp.route('/generate-script', methods=['POST'])
 def generate_script_chapters():
-    """Gerar roteiro completo com múltiplos capítulos"""
+    """Gerar roteiro completo com múltiplos capítulos usando Storyteller Unlimited"""
     try:
+        from services.storyteller_service import StorytellerService
+        
         data = request.get_json()
-        agent = data.get('agent', 'openai').lower()
-        api_key = data.get('api_key', '').strip()
         title = data.get('title', '').strip()
         context = data.get('context', '').strip()
         num_chapters = data.get('num_chapters', 10)
         
-        # Para Gemini, usar rotação de chaves se não fornecida
-        if not api_key and agent == 'gemini':
-            api_key = get_next_gemini_key()
-            if not api_key:
-                return jsonify({
-                    'success': False,
-                    'error': 'Nenhuma chave Gemini disponível. Configure pelo menos uma chave nas Configurações.'
-                }), 400
-            print(f"🔄 Usando rotação de chaves Gemini para generate-premise")
-            add_real_time_log(f"🔄 Usando rotação de chaves Gemini para generate-premise", "info", "gemini-rotation")
-        elif not api_key:
-            return jsonify({
-                'success': False,
-                'error': f'Chave da API {agent.upper()} é obrigatória'
-            }), 400
+        # Parâmetros do Storyteller
+        agent = data.get('storyteller_agent', 'millionaire_stories')
+        target_words = data.get('target_words', 2500)
         
         if not title:
             return jsonify({
                 'success': False,
                 'error': 'Título é obrigatório'
             }), 400
-        
-        # Gerar roteiro baseado no agente selecionado
-        if agent == 'chatgpt' or agent == 'openai':
-            result = generate_script_chapters_with_openai(title, context, num_chapters, api_key)
-        elif agent == 'claude':
-            result = generate_script_chapters_with_claude(title, context, num_chapters, api_key)
-        elif agent == 'gemini':
-            # Implementar retry automático para Gemini
-            result = generate_script_chapters_with_gemini_retry(title, context, num_chapters, api_key)
-        elif agent == 'openrouter':
-            result = generate_script_chapters_with_openrouter(title, context, num_chapters, api_key)
-        else:
+            
+        if not context:
             return jsonify({
                 'success': False,
-                'error': f'Agente {agent} não suportado'
+                'error': 'Contexto é obrigatório'
             }), 400
         
-        return jsonify(result)
+        # Inicializar Storyteller Service
+        storyteller_service = StorytellerService()
+        
+        print(f"🎬 [STORYTELLER_AUTOMATION] Gerando roteiro com agente {agent}...")
+        
+        # Gerar roteiro com Storyteller Unlimited
+        result = storyteller_service.generate_storyteller_script(
+            title=title,
+            premise=context,
+            agent_type=agent if agent else 'millionaire_stories',
+            num_chapters=num_chapters,
+            provider='gemini'
+        )
+        
+        if not result:
+            return jsonify({
+                'success': False,
+                'error': 'Falha ao gerar roteiro com Storyteller Unlimited'
+            }), 500
+        
+        chapters_data = result.get('chapters') or []
+        if chapters_data:
+            script_content = result.get('full_script', "\n\n".join(ch.get('content', '') for ch in chapters_data))
+        else:
+            script_content = result.get('full_script', '')
+        
+        # Formatar para compatibilidade
+        return jsonify({
+            'success': True,
+            'script': script_content,
+            'title': title,
+            'context': context,
+            'num_chapters': num_chapters,
+            'character_count': len(script_content),
+            'word_count': len(script_content.split()),
+            'estimated_duration_minutes': len(script_content) // 200,
+            'system_used': 'storyteller_unlimited',
+            'agent_used': agent
+        })
 
     except Exception as e:
         return jsonify({

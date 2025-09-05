@@ -1,0 +1,22 @@
+{
+  "title": "A Ascensão do Empreendedor Digital",
+  "premise": "Um jovem programador que perdeu tudo na crise econômica de 2023 descobre o poder do marketing digital e constrói um império online do zero.",
+  "agent_type": "millionaire_stories",
+  "num_chapters": 3,
+  "total_characters": 7939,
+  "estimated_duration": 529,
+  "success": true,
+  "chapter_lengths": [
+    2761,
+    2920,
+    2258
+  ],
+  "debug_info": {
+    "target_chars_per_chapter": 2800,
+    "total_actual_chars": 7939,
+    "avg_chars_per_chapter": 2646,
+    "story_id": "14d1e43e-5ca1-4361-b449-e15afc9d4961",
+    "validation_rate": 1.0
+  },
+  "generated_at": "2025-09-05T12:19:30.412586"
+}

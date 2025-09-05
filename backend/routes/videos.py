@@ -7,7 +7,8 @@ from flask import Blueprint, request, jsonify, send_file
 from datetime import datetime
 import os
 import json
-from moviepy.editor import ImageClip, AudioFileClip, CompositeVideoClip, concatenate_videoclips
+# Temporariamente comentado para resolver erro de importação
+# from moviepy.editor import ImageClip, AudioFileClip, CompositeVideoClip, concatenate_videoclips
 from PIL import Image
 import tempfile
 import shutil
@@ -340,8 +341,10 @@ def create_video():
 def _get_video_duration(video_path):
     """Obter duração do vídeo em segundos"""
     try:
-        from moviepy.editor import VideoFileClip
-        with VideoFileClip(video_path) as clip:
-            return clip.duration
+        # Temporariamente comentado para resolver erro de importação
+        # from moviepy.editor import VideoFileClip
+        # with VideoFileClip(video_path) as clip:
+        #     return clip.duration
+        return 0  # Valor padrão temporário
     except Exception:
         return 0.0

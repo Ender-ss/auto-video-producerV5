@@ -850,82 +850,58 @@ class PipelineService:
                 if 'results' not in self.pipeline_state:
                     self.pipeline_state['results'] = {}
                 self.pipeline_state['results']['scripts'] = partial_data
-                progress = int((len(chapters) / scripts_config.get('chapters', 5)) * 100) if len(chapters) > 0 else 0
+                progress = int((len(chapters) / max(1, num_chapters)) * 100) if len(chapters) > 0 else 0
                 self._update_progress('scripts', progress)
 
-            # Verificar qual sistema de roteiro deve ser usado
-            script_system = scripts_config.get('system', 'traditional')
+            # Usar Storyteller Unlimited para 100% dos roteiros
+            from services.storyteller_service import StorytellerService
             
-            if script_system == 'storyteller':
-                # Usar Storyteller Unlimited para geração de roteiros
-                from services.storyteller_service import StorytellerService
-                
-                # Obter configurações do Storyteller
-                storyteller_agent = scripts_config.get('storyteller_agent', 'millionaire_stories')
-                storyteller_chapters = scripts_config.get('storyteller_chapters', 10)
-                
-                # Criar instância do serviço
-                storyteller_service = StorytellerService()
-                
-                # Preparar dados para o Storyteller Unlimited
-                api_key = self.api_keys.get('gemini') or self.api_keys.get('gemini_1')
-                
-                # Gerar roteiro com Storyteller Unlimited usando rotação automática de chaves
-                result = storyteller_service.generate_storyteller_script(
-                    title=title,
-                    premise=premise,
-                    agent_type=storyteller_agent,
-                    num_chapters=storyteller_chapters
-                    # api_key não é mais necessário - usa rotação automática
-                )
-                
-                # Converter formato para compatibilidade
-                if result.get('success'):
-                    result = {
-                        'success': True,
-                        'data': {
-                            'script': result.get('full_script', ''),
-                            'chapters': result.get('chapters', []),
-                            'estimated_duration': result.get('estimated_duration', '5-7 minutes')
-                        }
-                    }
-                
-            elif scripts_config.get('contextual_chapters', False):
-                # Usar o novo endpoint de geração de roteiros longos com resumos contextuais
-                from routes.long_script_generator import generate_long_script_with_context
-                
-                # Obter provedor da configuração de scripts (padrão: gemini)
-                provider = scripts_config.get('provider', 'gemini')
-                
-                # Preparar prompts personalizados do config
-                custom_prompts = None
-                if scripts_config.get('custom_prompt', False):
-                    custom_prompts = {
-                        'custom_inicio': scripts_config.get('custom_inicio'),
-                        'custom_meio': scripts_config.get('custom_meio'), 
-                        'custom_fim': scripts_config.get('custom_fim'),
-                        'default_prompt_intro': scripts_config.get('default_prompt_intro'),
-                        'default_prompt_middle': scripts_config.get('default_prompt_middle'),
-                        'default_prompt_conclusion': scripts_config.get('default_prompt_conclusion')
-                    }
-                
-                # Gerar roteiro com resumos contextuais
-                # Passando os parâmetros corretamente para a função
-                number_of_chapters = scripts_config.get('chapters', 5)
-                result = generate_long_script_with_context(
-                    titulo=title, 
-                    premissa=premise, 
-                    numero_capitulos=number_of_chapters, 
-                    title_generator=None, 
-                    openrouter_api_key=self.api_keys.get('openrouter'), 
-                    openrouter_model=scripts_config.get('openrouter_model', 'auto'),
-                    update_callback=update_scripts_partial,
-                    long_script_prompt=scripts_config.get('custom_instructions'),  # Prompt adicional legado
-                    custom_prompts=custom_prompts
-                )
+            # Obter configurações do Storyteller com fallback para configurações legadas
+            agent_type = scripts_config.get('storyteller_agent') or scripts_config.get('agent', 'millionaire_stories')
+            num_chapters = scripts_config.get('storyteller_chapters') or scripts_config.get('chapters', 5)
+            
+            # Criar instância do serviço
+            storyteller_service = StorytellerService()
+            
+            # Preparar premissa com instruções customizadas se fornecidas
+            custom_instructions = scripts_config.get('custom_instructions')
+            if custom_instructions:
+                enhanced_premise = f"{premise}\n\nInstruções adicionais: {custom_instructions}"
             else:
-                # Usar o método padrão de geração de roteiros
-                result = generate_long_script(script_data, update_scripts_partial)
+                enhanced_premise = premise
+            
+            # Adicionar prompts personalizados da configuração como contexto adicional
+            custom_context = ""
+            if scripts_config.get('custom_prompt', False):
+                custom_inicio = scripts_config.get('custom_inicio', '')
+                custom_meio = scripts_config.get('custom_meio', '')
+                custom_fim = scripts_config.get('custom_fim', '')
+                
+                if custom_inicio or custom_meio or custom_fim:
+                    custom_context = f"\n\nContexto adicional:\nInício: {custom_inicio}\nMeio: {custom_meio}\nFim: {custom_fim}"
+                    enhanced_premise += custom_context
+            
+            # Gerar roteiro com Storyteller Unlimited usando rotação automática de chaves
+            result = storyteller_service.generate_storyteller_script(
+                title=title,
+                premise=enhanced_premise,
+                agent_type=agent_type,
+                num_chapters=num_chapters,
+                provider='gemini',
+                progress_callback=update_scripts_partial
+                # api_key não é mais necessário - usa rotação automática
+            )
+            
+            # Converter formato para compatibilidade
+            if result.get('success'):
+                result = {
+                    'success': True,
+                    'data': {
+                        'script': result.get('full_script', ''),
+                        'chapters': result.get('chapters', []),
+                        'estimated_duration': result.get('estimated_duration', '5-7 minutes')
+                    }
+                }
             
             if not result.get('success'):
                 raise Exception(f"Falha na geração de roteiro: {result.get('error', 'Erro desconhecido')}")

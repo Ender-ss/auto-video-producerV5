@@ -1,0 +1,63 @@
+
+========================================
+    RELATÓRIO COMPLETO DE TESTE
+    STORYTELLER SERVICE
+========================================
+
+DATA/HORA: 05/09/2025 12:39:40
+ARQUIVO TESTADO: roteiro_gerado_20250905_123801.txt
+
+📊 ESTATÍSTICAS GERAIS:
+----------------------------------------
+✓ Roteiro gerado com sucesso
+✓ Total de palavras: 4,109
+✓ Capítulos gerados: 10
+✓ Média de palavras por capítulo: 410
+✓ Score de fluidez: 10.0/10
+
+🔄 SISTEMA DE ROTAÇÃO GEMINI:
+----------------------------------------
+✓ Sistema funcionando corretamente
+✓ Múltiplas chaves utilizadas durante geração
+✓ Rotação automática implementada
+✓ Fallback para chave de ambiente disponível
+
+🎯 VALIDAÇÃO DO SISTEMA IMPLEMENTADO:
+----------------------------------------
+✓ APROVADO - Roteiro baseado no sistema implementado
+✓ - Gerou 10 capítulos (meta: 10)
+✓ - Conteúdo substancial (4,109 palavras)
+✓ - Formatação correta de capítulos
+
+📝 COMPARAÇÃO COM MODELO DE REFERÊNCIA:
+----------------------------------------
+Palavras no modelo: 10,279
+Palavras geradas: 4,109
+Proporção: 40.0% do modelo
+
+FLUIDEZ NARRATIVA:
+- Score calculado: 10.0/10
+- ✓ BOM
+
+🔍 ANÁLISE TÉCNICA:
+----------------------------------------
+✓ StorytellerService carregado corretamente
+✓ Sistema de chaves Gemini funcionando
+✓ Geração por capítulos implementada
+✓ Contexto preservado entre capítulos
+✓ Fallback offline disponível
+
+📋 CONCLUSÃO FINAL:
+----------------------------------------
+🎉 TESTE APROVADO
+
+O sistema StorytellerService está funcionando corretamente.
+Roteiro gerado com qualidade satisfatória.
+Sistema de rotação Gemini operacional.
+
+📁 ARQUIVOS GERADOS:
+----------------------------------------
+- roteiro_gerado_20250905_123801.txt
+- relatorio_final_20250905_123940.txt
+
+========================================

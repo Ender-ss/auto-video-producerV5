@@ -13,94 +13,117 @@ scripts_bp = Blueprint('scripts', __name__)
 
 @scripts_bp.route('/generate', methods=['POST'])
 def generate_long_script(update_callback=None):
-    """Gerar roteiros usando pipeline de 3 prompts"""
+    """Gerar roteiros usando Storyteller Unlimited (100% integração)"""
     try:
+        from services.storyteller_service import StorytellerService
+        
         data = request.get_json()
         title = data.get('title', '')
         premise = data.get('premise', '')
-        ai_provider = data.get('ai_provider', 'auto')
-        openrouter_model = data.get('openrouter_model', 'auto')
         number_of_chapters = data.get('number_of_chapters', 8)
         api_keys = data.get('api_keys', {})
         
-        # Carregar chaves de API do arquivo se não fornecidas
-        if not api_keys:
-            import os
-            config_path = os.path.join(os.path.dirname(__file__), '..', 'config', 'api_keys.json')
-            if os.path.exists(config_path):
-                with open(config_path, 'r') as f:
-                    api_keys = json.load(f)
-
+        # Parâmetros do Storyteller
+        agent = data.get('storyteller_agent', 'millionaire_stories')
+        target_words = data.get('target_words', 2500)
+        
         if not title or not premise:
             return jsonify({
                 'success': False,
                 'error': 'Título e premissa são obrigatórios'
             }), 400
 
-        # Inicializar o gerador
-        title_generator = TitleGenerator()
+        # Inicializar Storyteller Service
+        storyteller_service = StorytellerService()
         
-        # Configurar APIs baseado no provider
-        if ai_provider == 'openai' or ai_provider == 'auto':
-            if api_keys.get('openai'):
-                title_generator.configure_openai(api_keys['openai'])
+        print("🎬 Iniciando Storyteller Unlimited...")
         
-        if ai_provider == 'gemini' or ai_provider == 'auto':
-            gemini_key = api_keys.get('gemini') or api_keys.get('gemini_1')
-            if gemini_key:
-                title_generator.configure_gemini(gemini_key)
+        # Preparar premissa aprimorada para o Storyteller
+        enhanced_premise = f"""
+        Título: {title}
         
-        if ai_provider == 'openrouter' or ai_provider == 'auto':
-            if api_keys.get('openrouter'):
-                title_generator.configure_openrouter(api_keys['openrouter'])
+        Contexto: {premise}
+        
+        Objetivo: Criar um roteiro envolvente dividido em {number_of_chapters} capítulos com aproximadamente {target_words} palavras no total.
+        
+        Requisitos:
+        - Cada capítulo deve ter entre 300-500 palavras
+        - Manter continuidade narrativa entre capítulos
+        - Usar estrutura de storytelling envolvente
+        - Finalizar com gancho para próximo capítulo (exceto o último)
+        - Adaptar linguagem para público brasileiro
+        """
 
-        # Pipeline de 3 prompts
-        print("🎬 Iniciando pipeline de geração de roteiros...")
-        
-        # PROMPT 1: Tradução e Contexto
-        print("📝 Executando Prompt 1: Tradução e Contexto")
-        context_result = execute_prompt_1(title, premise, ai_provider, openrouter_model, api_keys, title_generator)
-        
-        if not context_result:
-            raise Exception("Falha no Prompt 1: Tradução e Contexto")
-        
-        # PROMPT 2: Estrutura Narrativa
-        print("📖 Executando Prompt 2: Estrutura Narrativa")
-        narrative_result = execute_prompt_2(title, context_result, ai_provider, openrouter_model, api_keys, title_generator)
-        
-        if not narrative_result:
-            raise Exception("Falha no Prompt 2: Estrutura Narrativa")
-        
-        # PROMPT 3: Geração dos Capítulos
-        print(f"✍️ Executando Prompt 3: Geração de {number_of_chapters} Capítulos")
-        chapters = execute_prompt_3(title, context_result, narrative_result, number_of_chapters, ai_provider, openrouter_model, api_keys, title_generator, None, '', '', '', data.get('detailed_prompt_text', ''))
-        
-        if not chapters:
-            raise Exception("Falha no Prompt 3: Geração dos Capítulos")
+        # Gerar roteiro com Storyteller Unlimited
+        result = storyteller_service.generate_storyteller_script(
+            title=title,
+            premise=enhanced_premise,
+            agent_type=agent if agent else 'millionaire_stories',
+            num_chapters=number_of_chapters,
+            provider='gemini'
+        )
 
-        # Resultado final
+        if not result:
+            raise Exception("Falha na geração com Storyteller Unlimited")
+
+        # Processar capítulos retornados pelo Storyteller
+        chapters_data = result.get('chapters') or []
+        chapters = []
+        if chapters_data:
+            for idx, ch in enumerate(chapters_data, 1):
+                chapters.append({
+                    'chapter_number': idx,
+                    'title': ch.get('title', f'Capítulo {idx}'),
+                    'content': ch.get('content', '')
+                })
+            script_content = result.get('full_script', "\n\n".join(ch.get('content', '') for ch in chapters_data))
+        else:
+            script_content = result.get('full_script', '')
+            if script_content:
+                # Tentar dividir por marcadores comuns de capítulos
+                chapter_parts = script_content.split('\n\n## Capítulo ')
+                for i, part in enumerate(chapter_parts):
+                    if i == 0 and not part.strip().startswith('Capítulo'):
+                        # pode ser uma introdução fora do padrão; pular
+                        continue
+                    if part.strip():
+                        chapter_num = i + 1
+                        chapter_text = part.strip()
+                        if not chapter_text.startswith('Capítulo'):
+                            chapter_text = f"Capítulo {chapter_num}\n\n{chapter_text}"
+                        chapters.append({
+                            'chapter_number': chapter_num,
+                            'title': f'Capítulo {chapter_num}',
+                            'content': chapter_text
+                        })
+
+        # Formatar resultado no padrão esperado
         script_result = {
             'title': title,
             'premise': premise,
-            'context': context_result,
-            'narrative_structure': narrative_result,
+            'context': enhanced_premise,
+            'narrative_structure': result.get('narrative_summary', ''),
             'chapters': chapters,
             'total_chapters': len(chapters),
-            'total_words': sum(len(ch['content'].split()) for ch in chapters if ch.get('content'))
+            'total_words': sum(len(ch['content'].split()) for ch in chapters if ch.get('content')),
+            'system_used': 'storyteller_unlimited',
+            'agent': agent
         }
 
         return jsonify({
             'success': True,
             'scripts': script_result,
-            'provider_used': ai_provider,
-            'chapters_generated': len(chapters)
+            'provider_used': 'storyteller_unlimited',
+            'chapters_generated': len(result['chapters']),
+            'system': 'storyteller'
         })
 
     except Exception as e:
-        print(f"❌ Erro na geração de roteiros: {e}")
+        print(f"❌ Erro na geração com Storyteller Unlimited: {e}")
         return jsonify({
             'success': False,
-            'error': str(e)
+            'error': str(e),
+            'system': 'storyteller_unlimited'
         }), 500
 
 def execute_prompt_1(title, premise, ai_provider, openrouter_model, api_keys, title_generator):

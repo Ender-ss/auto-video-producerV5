@@ -16,14 +16,18 @@
     ]
   },
   "scripts": {
-    "description": "Prompt usado para gerar roteiros completos",
-    "name": "Geração de Roteiros",
-    "prompt": "Você é um roteirista profissional especializado em conteúdo para YouTube. Crie um roteiro envolvente e bem estruturado.\n\nTítulo: {title}\nPremissa: {premise}\nNúmero de capítulos: {chapters}\nPalavras-alvo: {target_words}\n\nEstruture o roteiro seguindo este formato:\n\n**INTRODUÇÃO** (10% do conteúdo)\n- Hook inicial para capturar atenção\n- Apresentação do tema\n- Preview do que será abordado\n\n**DESENVOLVIMENTO** (80% do conteúdo)\n- Divida em {chapters} capítulos claros\n- Cada capítulo deve ter título e conteúdo detalhado\n- Use transições suaves entre capítulos\n- Inclua exemplos práticos quando relevante\n\n**CONCLUSÃO** (10% do conteúdo)\n- Resumo dos pontos principais\n- Call-to-action\n- Encerramento envolvente\n\nObjetivo de palavras: aproximadamente {target_words} palavras\n\nRoteiro:",
-    "variables": [
-      "title",
-      "premise",
-      "chapters",
-      "target_words"
+    "description": "Configuração para geração de roteiros com Storyteller Unlimited",
+    "name": "Storyteller Unlimited - Geração de Roteiros",
+    "system": "storyteller",
+    "storyteller_agent": "millionaire_stories",
+    "storyteller_chapters": 5,
+    "prompt": "Configuração do Storyteller Unlimited para geração inteligente de roteiros por capítulos com continuidade temática e MemoryBridge",
+    "available_agents": [
+      "millionaire_stories",
+      "romance_agent", 
+      "horror_agent",
+      "educational_content",
+      "entertainment_brazil"
     ]
   },
   "titles": {

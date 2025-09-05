@@ -832,11 +832,12 @@ def generate_script_part(prompt, ai_provider, openrouter_model, api_keys, title_
 @premise_bp.route('/generate-agent-script', methods=['POST'])
 def generate_agent_script():
     """
-    🎬 Endpoint específico para o Agente IA de Roteiros
-    Gera roteiros extensos baseados em título, premissa e prompt personalizado
-    Suporta geração em partes para roteiros longos
+    🎬 Endpoint específico para Storyteller Unlimited
+    Gera roteiros extensos usando agentes especializados com MemoryBridge
     """
     try:
+        from services.storyteller_service import StorytellerService
+        
         data = request.get_json()
 
         # Validar dados obrigatórios
@@ -849,27 +850,20 @@ def generate_agent_script():
         title = data.get('title', '').strip()
         premise = data.get('premise', '').strip()
         custom_prompt = data.get('custom_prompt', '').strip()
-        detailed_prompt_text = data.get('detailed_prompt_text', '').strip()  # Prompt detalhado para roteiros longos
-        ai_provider = data.get('ai_provider', 'gemini').lower()
-        openrouter_model = data.get('openrouter_model', 'auto')
+        detailed_prompt_text = data.get('detailed_prompt_text', '').strip()
         api_keys = data.get('api_keys', {})
-        # Determinar número de capítulos baseado no tamanho do roteiro
-        default_chapters = get_chapters_by_size(data.get('script_size', 'medio'))
-        num_chapters = data.get('num_chapters', default_chapters)  # Número de capítulos (1-15)
-        script_size = data.get('script_size', 'medio')  # Tamanho do roteiro
-        use_parts_generation = data.get('use_parts_generation', False)  # Usar geração em partes
-        detailed_prompt = data.get('detailed_prompt', False)  # Usar prompt detalhado
-
-        print(f"🎬 [AGENTE] Iniciando geração de roteiro...")
-        print(f"📝 [AGENTE] Título: {title[:100]}...")
-        print(f"🎯 [AGENTE] Premissa: {premise[:100]}...")
-        print(f"📄 [AGENTE] Prompt personalizado: {len(custom_prompt)} caracteres")
-        print(f"📋 [AGENTE] Prompt detalhado: {len(detailed_prompt_text)} caracteres")
-        print(f"📚 [AGENTE] Número de capítulos: {num_chapters}")
-        print(f"🤖 [AGENTE] Provider: {ai_provider}")
-        print(f"📏 [AGENTE] Tamanho: {script_size}")
-        print(f"🔄 [AGENTE] Geração em partes: {use_parts_generation}")
-        print(f"🔍 [AGENTE] Usar prompt detalhado: {detailed_prompt}")
+        
+        # Parâmetros do Storyteller
+        agent = data.get('storyteller_agent', 'millionaire_stories')
+        num_chapters = data.get('num_chapters', 5)
+        target_words = data.get('target_words', 2500)
+        script_size = data.get('script_size', 'medio')
+        
+        print(f"🎬 [STORYTELLER_AGENT] Iniciando geração com Storyteller Unlimited...")
+        print(f"📝 Título: {title[:100]}...")
+        print(f"🎯 Premissa: {premise[:100]}...")
+        print(f"🤖 Agente: {agent}")
+        print(f"📚 Capítulos: {num_chapters}")
 
         if not title:
             return jsonify({
@@ -883,195 +877,89 @@ def generate_agent_script():
                 'error': 'Premissa é obrigatória'
             }), 400
 
-        # Se estiver usando prompt detalhado, o custom_prompt não é obrigatório
-        if not custom_prompt and not detailed_prompt:
-            return jsonify({
-                'success': False,
-                'error': 'Prompt personalizado é obrigatório quando não está usando prompt detalhado'
-            }), 400
-            
-        # Se estiver usando prompt detalhado, verificar se foi fornecido
-        if detailed_prompt and not detailed_prompt_text:
-            return jsonify({
-                'success': False,
-                'error': 'Prompt detalhado é obrigatório quando a opção está ativada'
-            }), 400
+        # Preparar a premissa com contexto para Storyteller
+        full_premise = f"""Título: {title}
 
-        # Detectar se deve usar geração em partes
-        should_use_parts = use_parts_generation and script_size == 'longo'
-        
-        # Se estiver usando prompt detalhado, usar a função específica
-        if detailed_prompt and detailed_prompt_text:
-            print(f"📋 [AGENTE] Usando geração com prompt detalhado...")
+Premissa: {premise}
+
+{'Contexto Adicional: ' + custom_prompt if custom_prompt else ''}
+
+{'Detalhes Específicos: ' + detailed_prompt_text if detailed_prompt_text else ''}
+
+Crie um roteiro cinematográfico profissional com {num_chapters} capítulos, explorando nuances emocionais e arcos de personagens bem desenvolvidos."""
+
+        # Configurar parâmetros do Storyteller baseado no tamanho
+        if script_size == 'curto':
+            target_words = 1500
+        elif script_size == 'longo':
+            target_words = 4000
+        elif script_size == 'epico':
+            target_words = 6000
+        else:  # medio
+            target_words = 2500
+
+        # Inicializar Storyteller Service
+        from services.storyteller_service import StorytellerService
+        storyteller_service = StorytellerService()
+
+        # Gerar roteiro com Storyteller Unlimited
+        print(f"🎬 [STORYTELLER_AGENT] Gerando roteiro com agente especializado...")
+        script_result = storyteller_service.generate_storyteller_script(
+            title=title,
+            premise=full_premise,
+            agent_type='millionaire_stories',  # Usar agente especializado para roteiros ricos
+            num_chapters=num_chapters,
+            provider='gemini'
+        )
+
+        # Formatar resultado para compatibilidade
+        if script_result and script_result.get('full_script'):
+            script_content = script_result['full_script']
+            chapters = script_result.get('chapters', [])
             
-            # Importar a função de scripts.py
-            from .scripts import generate_script_with_detailed_prompt
-            
-            # Gerar roteiro usando prompt detalhado
-            result = generate_script_with_detailed_prompt(
-                title=title,
-                context=premise,
-                base_prompt=custom_prompt,
-                detailed_prompt_text=detailed_prompt_text,
-                number_of_chapters=num_chapters,
-                ai_provider=ai_provider,
-                api_keys=api_keys
-            )
-            
-            # Formatar o resultado para o formato esperado pelo frontend
-            if result and 'chapters' in result:
-                # Combinar capítulos em roteiro completo
-                full_script = "\n\n".join([chapter['content'] for chapter in result['chapters']])
-                
-                # Formatar partes para compatibilidade
-                script_parts = []
-                for i, chapter in enumerate(result['chapters']):
+            # Criar estrutura de partes para compatibilidade
+            script_parts = []
+            if chapters:
+                for i, chapter in enumerate(chapters):
                     script_parts.append({
                         'part': f'CAPÍTULO {i+1}',
-                        'content': chapter['content'],
-                        'characters': len(chapter['content'])
+                        'content': chapter.get('content', ''),
+                        'characters': len(chapter.get('content', ''))
                     })
-                
-                return jsonify({
-                    'success': True,
-                    'script': {
-                        'title': title,
-                        'premise': premise,
-                        'content': full_script,
-                        'character_count': len(full_script),
-                        'word_count': len(full_script.split()),
-                        'estimated_duration_minutes': len(full_script) // 200,
-                        'parts': script_parts,
-                        'num_chapters': num_chapters
-                    },
-                    'provider_used': ai_provider,
-                    'generation_method': 'detailed_prompt'
-                })
             else:
-                return jsonify({
-                    'success': False,
-                    'error': 'Falha ao gerar roteiro com prompt detalhado'
-                }), 500
-        
-        if should_use_parts:
-            print(f"🔄 [AGENTE] Usando geração em partes para roteiro longo...")
-            # Usar nova função de geração em partes
-            result = generate_script_in_parts(
-                title=title,
-                premise=premise, 
-                prompt=custom_prompt,
-                ai_provider=ai_provider,
-                openrouter_model=openrouter_model,
-                api_keys=api_keys,
-                script_size=script_size
-            )
-            
+                # Se não houver capítulos, dividir por parágrafos duplos
+                if '\n\n' in script_content:
+                    parts = script_content.split('\n\n')
+                    for i, part in enumerate(parts):
+                        if part.strip():
+                            script_parts.append({
+                                'part': f'PARTE {i+1}',
+                                'content': part.strip(),
+                                'characters': len(part.strip())
+                            })
+                else:
+                    script_parts.append({
+                        'part': 'ROTEIRO COMPLETO',
+                        'content': script_content,
+                        'characters': len(script_content)
+                    })
+
             return jsonify({
-                'success': result['success'],
+                'success': True,
                 'script': {
                     'title': title,
                     'premise': premise,
-                    'content': result['script'],
-                    'character_count': result['total_characters'],
-                    'word_count': result['total_words'],
-                    'estimated_duration_minutes': result['total_characters'] // 200,
-                    'parts': result['parts'],
-                    'generation_method': result['generation_method']
+                    'content': script_content,
+                    'character_count': script_result.get('total_characters', len(script_content)),
+                    'word_count': len(script_content.split()),
+                    'estimated_duration_minutes': script_result.get('estimated_duration', len(script_content) // 200),
+                    'parts': script_parts,
+                    'num_chapters': len(script_parts)
                 },
-                'provider_used': ai_provider,
-                'generation_method': 'parts_generation'
+                'system_used': 'storyteller_unlimited',
+                'generation_method': 'storyteller_agent',
+                'agent_used': 'millionaire_stories'
             })
-        
-        # Usar geração tradicional em capítulos
-        print(f"📚 [AGENTE] Usando geração tradicional em capítulos...")
-
-        # Gerar roteiro em partes para contornar limitações de tokens
-        print(f"🔄 [AGENTE] Iniciando geração em {2 + num_chapters} partes...")
-
-        script_parts = []
-        total_characters = 0
-
-        # Configurar TitleGenerator para usar as chaves fornecidas
-        title_generator = TitleGenerator()
-
-        # Configurar chaves de API individualmente
-        if api_keys:
-            if api_keys.get('openai'):
-                title_generator.configure_openai(api_keys['openai'])
-            if api_keys.get('openrouter'):
-                title_generator.configure_openrouter(api_keys['openrouter'])
-            # Configurar Gemini (tentar todas as chaves disponíveis)
-            gemini_keys = [key for key in api_keys.keys() if key.startswith('gemini')]
-            for gemini_key in gemini_keys:
-                if title_generator.configure_gemini(api_keys[gemini_key]):
-                    break  # Usar a primeira chave que funcionar
-
-        # PARTE 1: INÍCIO (Abertura + Introdução)
-        print(f"📝 [AGENTE] Gerando PARTE 1: INÍCIO...")
-        inicio_prompt = create_inicio_prompt(title, premise, custom_prompt, script_size)
-        inicio_content = regenerate_chapter_if_needed(inicio_prompt, ai_provider, openrouter_model, api_keys, title_generator, script_size, num_chapters)
-        script_parts.append({
-            'part': 'INÍCIO',
-            'content': inicio_content,
-            'characters': len(inicio_content)
-        })
-        total_characters += len(inicio_content)
-        print(f"✅ [AGENTE] INÍCIO gerado: {len(inicio_content)} caracteres")
-
-        # PARTES 2 a N: CAPÍTULOS
-        for i in range(1, num_chapters + 1):
-            print(f"📖 [AGENTE] Gerando CAPÍTULO {i}/{num_chapters}...")
-            capitulo_prompt = create_capitulo_prompt(title, premise, custom_prompt, i, num_chapters, script_size)
-            capitulo_content = regenerate_chapter_if_needed(capitulo_prompt, ai_provider, openrouter_model, api_keys, title_generator, script_size, num_chapters)
-            script_parts.append({
-                'part': f'CAPÍTULO {i}',
-                'content': capitulo_content,
-                'characters': len(capitulo_content)
-            })
-            total_characters += len(capitulo_content)
-            print(f"✅ [AGENTE] CAPÍTULO {i} gerado: {len(capitulo_content)} caracteres")
-
-        # PARTE FINAL: CONCLUSÃO
-        print(f"🏁 [AGENTE] Gerando PARTE FINAL: CONCLUSÃO...")
-        final_prompt = create_final_prompt(title, premise, custom_prompt, script_size)
-        final_content = regenerate_chapter_if_needed(final_prompt, ai_provider, openrouter_model, api_keys, title_generator, script_size, num_chapters)
-        script_parts.append({
-            'part': 'CONCLUSÃO',
-            'content': final_content,
-            'characters': len(final_content)
-        })
-        total_characters += len(final_content)
-        print(f"✅ [AGENTE] CONCLUSÃO gerada: {len(final_content)} caracteres")
-
-        # CONCATENAR TODAS AS PARTES
-        print(f"🔗 [AGENTE] Concatenando {len(script_parts)} partes...")
-        full_script = "\n\n".join([part['content'] for part in script_parts])
-
-        print(f"🎉 [AGENTE] ROTEIRO COMPLETO GERADO!")
-        print(f"📊 [AGENTE] Estatísticas finais:")
-        print(f"  - Total de partes: {len(script_parts)}")
-        print(f"  - Caracteres totais: {len(full_script)}")
-        print(f"  - Palavras estimadas: {len(full_script.split())}")
-        print(f"  - Duração estimada: {len(full_script) // 200} minutos")
-
-        for part in script_parts:
-            print(f"    • {part['part']}: {part['characters']} chars")
-
-        return jsonify({
-            'success': True,
-            'script': {
-                'title': title,
-                'premise': premise,
-                'content': full_script,
-                'character_count': len(full_script),
-                'word_count': len(full_script.split()),
-                'estimated_duration_minutes': len(full_script) // 200,
-                'parts': script_parts,
-                'num_chapters': num_chapters
-            },
-            'provider_used': ai_provider,
-            'generation_method': 'multi_part'
-        })
 
     except Exception as e:
         print(f"❌ [AGENTE] Erro na geração do roteiro: {e}")
@@ -1953,99 +1841,106 @@ def daily_reset_quota():
 
 @premise_bp.route('/generate-long-script', methods=['POST'])
 def generate_long_script():
-    """Gerar roteiro longo com capítulos sequenciais e resumos contextuais"""
+    """Gerar roteiro longo usando Storyteller Unlimited (100% integração)"""
     try:
-        logger.info(f"🚀 [LONG_SCRIPT] Iniciando geração de roteiro longo...")
+        from services.storyteller_service import StorytellerService
+        
+        logger.info(f"🚀 [STORYTELLER_LONG] Iniciando geração com Storyteller Unlimited...")
         data = request.get_json()
         
-        # Extrair parâmetros obrigatórios - aceitando formatos alternativos
+        # Extrair parâmetros obrigatórios
         titulo = data.get('title')
-        # Aceitar premissa ou usar título como fallback se não houver
         premissa = data.get('premise', data.get('title', 'Roteiro sem premissa'))
-        # Aceitar number_of_chapters ou chapters
         numero_capitulos = data.get('number_of_chapters', data.get('chapters', 10))
         
-        # Extrair parâmetros opcionais - aceitando formatos alternativos
-        ai_provider = data.get('ai_provider', data.get('provider', 'auto'))
-        openrouter_model = data.get('openrouter_model', 'auto')
+        # Parâmetros do Storyteller
+        agent = data.get('storyteller_agent', 'millionaire_stories')
+        target_words = data.get('target_words', 2500)
         api_keys = data.get('api_keys', {})
-        # Novo parâmetro para prompt personalizado do roteiro longo
-        long_script_prompt = data.get('long_script_prompt', '')
         
-        logger.info(f"🔍 [LONG_SCRIPT] Parâmetros recebidos: título={titulo}, capítulos={numero_capitulos}, provider={ai_provider}")
+        logger.info(f"🔍 [STORYTELLER_LONG] Parâmetros: título={titulo}, capítulos={numero_capitulos}, agent={agent}")
         
         # Validar parâmetros obrigatórios
         if not titulo:
-            logger.error(f"❌ [LONG_SCRIPT] Erro: Título não fornecido")
+            logger.error(f"❌ [STORYTELLER_LONG] Erro: Título não fornecido")
             return jsonify({
                 'success': False,
                 'error': 'Título não fornecido'
             }), 400
         
         if numero_capitulos < 1:
-            logger.error(f"❌ [LONG_SCRIPT] Erro: Número de capítulos inválido")
+            logger.error(f"❌ [STORYTELLER_LONG] Erro: Número de capítulos inválido")
             return jsonify({
                 'success': False,
                 'error': 'Número de capítulos deve ser maior que zero'
             }), 400
         
-        # Carregar chaves de API do arquivo se não foram fornecidas
-        if not api_keys:
-            api_keys = load_api_keys_from_file()
-            logger.info(f"🔑 [LONG_SCRIPT] Chaves carregadas do arquivo: {list(api_keys.keys())}")
+        # Inicializar Storyteller Service
+        storyteller_service = StorytellerService()
         
-        # Importar o gerador de roteiros longos
-        from routes.long_script_generator import generate_long_script_with_context
+        # Preparar premissa aprimorada
+        enhanced_premise = f"""
+        TÍTULO: {titulo}
         
-        # Criar instância do TitleGenerator para acesso às APIs
-        title_generator = TitleGenerator()
+        PREMISSA: {premissa}
         
-        # Função de callback para atualizações de progresso
-        def progress_callback(progress_data):
-            logger.info(f"📊 [LONG_SCRIPT] Progresso: {progress_data['progress']:.1f}% (Capítulo {progress_data['current_chapter']}/{progress_data['total_chapters']})")
+        OBJETIVO: Criar um roteiro longo e envolvente dividido em {numero_capitulos} capítulos sequenciais.
         
-        # Processar configuração de agentes especializados
-        agent_config = data.get('agent', {})
-        specialized_agents = data.get('specialized_agents', {})
+        ESTRUTURA DESEJADA:
+        - Capítulo 1: Introdução e gancho inicial
+        - Capítulos 2-{numero_capitulos-1}: Desenvolvimento e tensão crescente
+        - Capítulo {numero_capitulos}: Conclusão satisfatória
         
-        # Preparar configuração da requisição para agentes especializados
-        request_config = {}
-        if agent_config.get('type') == 'specialized' and agent_config.get('specialized_type'):
-            agent_type = agent_config['specialized_type']
-            if agent_type in specialized_agents:
-                agent_prompts = specialized_agents[agent_type].get('prompts', {}).get('scripts', {})
-                request_config['agent_prompts'] = agent_prompts
-                logger.info(f"🎆 [LONG_SCRIPT] Agente especializado ativado: {agent_type}")
+        CARACTERÍSTICAS:
+        - Cada capítulo: 400-600 palavras
+        - Continuidade narrativa entre capítulos
+        - Personagens bem desenvolvidos
+        - Clímax progressivo
+        - Final impactante
+        - Linguagem adaptada para público brasileiro
         
-        # Gerar roteiro longo
-        result = generate_long_script_with_context(
-            titulo=titulo,
-            premissa=premissa,
-            numero_capitulos=numero_capitulos,
-            title_generator=title_generator,
-            openrouter_api_key=api_keys.get('openrouter'),
-            openrouter_model=openrouter_model,
-            update_callback=progress_callback,
-            long_script_prompt=long_script_prompt,  # Passando o prompt personalizado
-            request_config=request_config  # Passando configuração do agente
+        TOM: envolvente, profissional, otimista
+        """
+        
+        # Gerar roteiro com Storyteller Unlimited
+        result = storyteller_service.generate_storyteller_script(
+            title=titulo,
+            premise=enhanced_premise,
+            agent_type=agent,
+            num_chapters=numero_capitulos,
+            provider='gemini'
         )
         
-        if result['success']:
-            logger.info(f"✅ [LONG_SCRIPT] Roteiro longo gerado com sucesso: {result['data']['number_of_chapters']} capítulos, {result['data']['word_count']} palavras")
-            return jsonify(result)
-        else:
-            logger.error(f"❌ [LONG_SCRIPT] Erro na geração: {result['error']}")
-            return jsonify({
-                'success': False,
-                'error': result['error']
-            }), 500
+        if not result or not result.get('full_script'):
+            raise Exception("Falha na geração com Storyteller Unlimited")
+        
+        # Formatar resultado no padrão esperado
+        chapters = result.get('chapters', [])
+        response_data = {
+            'success': True,
+            'data': {
+                'title': titulo,
+                'premise': premissa,
+                'number_of_chapters': len(chapters) if chapters else result.get('num_chapters', 0),
+                'chapters': chapters,
+                'word_count': len(result['full_script'].split()),
+                'system_used': 'storyteller_unlimited',
+                'agent': agent,
+                'memory_bridge_active': True
+            },
+            'system': 'storyteller_unlimited'
+        }
+        
+        logger.info(f"✅ [STORYTELLER_LONG] Sucesso: {len(result['chapters'])} capítulos gerados")
+        return jsonify(response_data)
             
     except Exception as e:
-        error_msg = f"Erro ao gerar roteiro longo: {str(e)}"
-        logger.error(f"❌ [LONG_SCRIPT] {error_msg}")
+        error_msg = f"Erro com Storyteller Unlimited: {str(e)}"
+        logger.error(f"❌ [STORYTELLER_LONG] {error_msg}")
         return jsonify({
             'success': False,
-            'error': error_msg
+            'error': error_msg,
+            'system': 'storyteller_unlimited'
         }), 500
 
 

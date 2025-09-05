@@ -245,7 +245,8 @@ def generate_storyteller_script():
             title=title,
             premise=premise,
             agent_type=agent_type,
-            num_chapters=num_chapters
+            num_chapters=num_chapters,
+            provider='gemini'
         )
         
         return jsonify(result)

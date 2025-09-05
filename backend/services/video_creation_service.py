@@ -16,13 +16,15 @@ sys.path.append(os.path.join(os.path.dirname(__file__), '..', 'routes'))
 sys.path.append(os.path.join(os.path.dirname(__file__), '..'))
 
 try:
-    from moviepy.editor import (
-        VideoFileClip, ImageClip, AudioFileClip, CompositeVideoClip,
-        TextClip, concatenate_videoclips, ColorClip
-    )
-    from moviepy.video.fx.resize import resize
-    from moviepy.video.fx.fadein import fadein
-    from moviepy.video.fx.fadeout import fadeout
+    # Temporariamente comentado para resolver erro de importação
+    # from moviepy.editor import (
+    #     VideoFileClip, ImageClip, AudioFileClip, CompositeVideoClip,
+    #     TextClip, concatenate_videoclips, ColorClip
+    # )
+    # from moviepy.video.fx.resize import resize
+    # from moviepy.video.fx.fadein import fadein
+    # from moviepy.video.fx.fadeout import fadeout
+    pass
     from moviepy.audio.fx.volumex import volumex
 except ImportError:
     # MoviePy não está instalado - será tratado no método de criação

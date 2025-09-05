@@ -4,7 +4,7 @@ import uuid
 import redis
 import hashlib
 import tiktoken
-from typing import Dict, List, Optional, Tuple
+from typing import Dict, List, Optional, Tuple, Callable
 from dataclasses import dataclass
 import logging
 from datetime import datetime, timedelta
@@ -507,7 +507,7 @@ class StorytellerService:
         return script_metadata
 
     def generate_storyteller_script(self, title: str, premise: str, agent_type: str, 
-                                  num_chapters: int, api_key: str = None, provider: str = "gemini") -> Dict:
+                                  num_chapters: int, api_key: str = None, provider: str = "gemini", progress_callback: Optional[Callable[[List[Dict]], None]] = None) -> Dict:
         """
         Método principal para gerar roteiro completo com Storyteller Unlimited - AGORA COM CHUNKING POR CAPÍTULO
         
@@ -518,6 +518,7 @@ class StorytellerService:
             num_chapters: Número de capítulos desejados
             api_key: Chave da API (opcional - usará rotação automática se não fornecida)
             provider: Provedor de IA (gemini, openrouter)
+            progress_callback: Callback opcional para reportar progresso parcial por capítulo. Recebe a lista parcial de capítulos.
         
         Returns:
             Dict com roteiro completo e metadados
@@ -580,6 +581,23 @@ class StorytellerService:
                 })
                 
                 logger.info(f"Capítulo {chapter_num}/{num_chapters} gerado: {len(chapter_content)} chars")
+                
+                # Reportar progresso parcial, se solicitado
+                if progress_callback:
+                    try:
+                        # Enviar uma cópia leve dos capítulos para não vazar estruturas internas
+                        partial_chapters = [
+                            {
+                                'number': ch.get('number'),
+                                'content': ch.get('content'),
+                                'cliffhanger': ch.get('cliffhanger'),
+                                'validation': ch.get('validation', {})
+                            }
+                            for ch in chapters
+                        ]
+                        progress_callback(partial_chapters)
+                    except Exception as cb_err:
+                        logger.warning(f"Falha ao notificar progresso parcial do Storyteller: {cb_err}")
             
             # Valida todos os capítulos em lote
             validation_result = self.validate_chapters_batch(chapters)
@@ -776,40 +794,115 @@ class StorytellerService:
             raise ValueError(f"Provider não suportado: {provider}")
     
     def _call_gemini_api(self, prompt: str, api_key: str, max_tokens: int) -> str:
-        """Chamada específica para API do Google Gemini"""
+        """Chamada específica para API do Google Gemini com fallback de modelo e rotação de chaves"""
         import requests
-        
-        url = f"https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent"
-        headers = {
-            'Content-Type': 'application/json',
-        }
-        
-        data = {
-            "contents": [{
-                "parts": [{
-                    "text": prompt
-                }]
-            }],
-            "generationConfig": {
-                "temperature": 0.7,
-                "topK": 40,
-                "topP": 0.95,
-                "maxOutputTokens": max_tokens,
-            }
-        }
-        
-        response = requests.post(
-            f"{url}?key={api_key}",
-            headers=headers,
-            json=data
-        )
-        
-        if response.status_code == 200:
-            result = response.json()
-            return result['candidates'][0]['content']['parts'][0]['text']
-        else:
-            raise Exception(f"Erro na API Gemini: {response.status_code} - {response.text}")
+        import os
+        import sys
     
+        # Tentar integrar com rotação de chaves do projeto
+        get_next_gemini_key = None
+        handle_gemini_429_error = None
+        get_gemini_keys_count = None
+        total_key_attempts = 1
+        try:
+            sys.path.append(os.path.dirname(os.path.dirname(__file__)))
+            from routes.automations import get_next_gemini_key as _get_next, handle_gemini_429_error as _handle_429, get_gemini_keys_count as _keys_count
+            get_next_gemini_key = _get_next
+            handle_gemini_429_error = _handle_429
+            get_gemini_keys_count = _keys_count
+            total_key_attempts = get_gemini_keys_count() or 1
+        except Exception as e:
+            logger.warning(f"Não foi possível carregar rotação de chaves. Usando apenas chave fornecida/ambiente. Detalhes: {e}")
+    
+        models_to_try = [
+            "gemini-1.5-flash",
+            "gemini-1.5-pro",
+        ]
+    
+        last_error = None
+        for attempt in range(total_key_attempts):
+            current_api_key = api_key
+            if not current_api_key:
+                current_api_key = get_next_gemini_key() if get_next_gemini_key else os.getenv('GEMINI_API_KEY')
+    
+            if not current_api_key:
+                raise Exception("Nenhuma chave Gemini disponível (rotação/ambiente)")
+    
+            for model_name in models_to_try:
+                url = f"https://generativelanguage.googleapis.com/v1beta/models/{model_name}:generateContent"
+                headers = { 'Content-Type': 'application/json' }
+                data = {
+                    "contents": [{
+                        "parts": [{ "text": prompt }]
+                    }],
+                    "generationConfig": {
+                        "temperature": 0.7,
+                        "topK": 40,
+                        "topP": 0.95,
+                        "maxOutputTokens": max_tokens,
+                    }
+                }
+    
+                logger.info(f"[Gemini] Enviando requisição | model={model_name} | max_tokens={max_tokens} | prompt_len={len(prompt)} | attempt_key={attempt+1}/{total_key_attempts}")
+                try:
+                    response = requests.post(
+                        f"{url}?key={current_api_key}",
+                        headers=headers,
+                        json=data,
+                        timeout=60
+                    )
+                except Exception as req_err:
+                    last_error = f"Falha de rede: {req_err}"
+                    logger.warning(f"[Gemini] Erro de rede no modelo {model_name}: {req_err}")
+                    continue
+    
+                if response.status_code == 200:
+                    result = response.json()
+                    try:
+                        text = result['candidates'][0]['content']['parts'][0]['text']
+                    except Exception:
+                        # fallback de extração defensiva
+                        try:
+                            text = result.get('text') or result.get('candidates', [{}])[0].get('content', {}).get('parts', [{}])[0].get('text', '')
+                        except Exception:
+                            text = ''
+                    if not text:
+                        raise Exception(f"Gemini retornou sucesso, mas sem texto extraível: {str(result)[:300]}")
+                    logger.info(f"[Gemini] Sucesso | model={model_name} | output_len={len(text)}")
+                    return text
+                else:
+                    body = response.text
+                    code = response.status_code
+                    lower = body.lower() if isinstance(body, str) else str(body).lower()
+                    logger.warning(f"[Gemini] Erro {code} no modelo {model_name}: {body[:500]}")
+    
+                    # Model not found/invalid -> tentar próximo modelo
+                    if code == 404 or 'model not found' in lower or 'unknown model' in lower:
+                        last_error = f"404/Model inválido no {model_name}: {body[:200]}"
+                        continue  # tenta próximo modelo
+    
+                    # Quota/rate limit -> tenta próxima chave (se houver)
+                    if code == 429 or 'quota' in lower or 'rate limit' in lower:
+                        last_error = f"429/Quota no {model_name}: {body[:200]}"
+                        if handle_gemini_429_error and get_next_gemini_key:
+                            try:
+                                handle_gemini_429_error(body, current_api_key)
+                            except Exception as he:
+                                logger.warning(f"[Gemini] Falha ao registrar erro 429: {he}")
+                        break  # interrompe laço de modelos, tenta próxima chave
+    
+                    # Outros erros 4xx/5xx: interromper imediatamente
+                    raise Exception(f"Erro na API Gemini ({model_name}): {code} - {body}")
+    
+                # Próxima chave (se aplicável) após tentar os modelos
+                continue
+    
+            # Após tentar os modelos com a chave atual, seguir para próxima chave (se houver)
+            continue
+    
+        # Se chegou aqui, falhar após todas as tentativas de chaves/modelos
+        raise Exception(f"Falha na API Gemini após rotação de modelos/chaves. Último erro: {last_error}")
+
     def _call_openai_api(self, prompt: str, api_key: str, max_tokens: int) -> str:
         """Chamada específica para API OpenAI"""
         import requests
@@ -883,9 +976,9 @@ O primeiro sinal de tempestade aparece como uma brisa suave que gradualmente se 
 
 As complicações surgem em camadas, como ondas que vêm em sucessão cada vez mais intensa. O que começa como um pequeno desconforto evolui para dilemas morais complexos que não possuem respostas simples. Os personagens são forçados a fazer escolhas impossíveis, onde cada decisão carrega peso e consequências duradouras.
 
-As relações entre os personagens se transformam sob pressão, revelando verdades ocultas e criando novas dinâmicas. Confidentes se tornam adversários, inimigos descobrem pontos em comum, e laços inesperados se formam nas circunstâncias mais improváveis. Cada interação é carregada com subtexto emocional que adiciona profundidade à narrativa.
+As relações entre os personagens se transformam durante este processo, criando novas formas de conexão baseadas em compreensão mútua profunda e compartilhamento de vulnerabilidades. Laços frágeis se tornam fortes, antigas feridas são curadas através de perdão autêntico, e novas formas de amor e amizade emergem das cinzas das antigas certezas.
 
-O ambiente externo reflete perfeitamente o caos interno, com mudanças climáticas dramáticas, transformações sociais significativas e eventos que parecem conspirar para testar os limites de cada personagem. A tensão se constrói meticulosamente, criando uma atmosfera palpável de expectativa e incerteza.
+O ambiente externo também se transforma para refletir as mudanças internas, criando um ciclo virtuoso de crescimento e renovação. O que antes parecia impossível torna-se não apenas possível, mas inevitável. A própria natureza parece conspirar para apoiar a transformação, criando coincidências significativas que reforçam o novo caminho.
 
 ## Capítulo 3: O Ponto de Virada - O Momento da Verdade
 
