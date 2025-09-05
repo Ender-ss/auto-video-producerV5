@@ -632,8 +632,17 @@ class StorytellerService:
         }
 
     def assemble_final_script(self, title: str, premise: str, chapters: List[Dict], 
-                            agent_type: str, total_duration: int = 600) -> Dict:
-        """Monta o roteiro final com metadados"""
+                            agent_type: str, total_duration: int = 600, remove_chapter_headers: bool = False) -> Dict:
+        """Monta o roteiro final com metadados
+        
+        Args:
+            title: Título da história
+            premise: Premissa da história
+            chapters: Lista de capítulos
+            agent_type: Tipo de agente usado
+            total_duration: Duração total estimada
+            remove_chapter_headers: Se True, remove os cabeçalhos de capítulos do roteiro final
+        """
         
         # Calcula estatísticas
         total_chars = sum(len(ch['content']) for ch in chapters)
@@ -669,7 +678,8 @@ class StorytellerService:
         full_script_parts.append(f"\n{premise}\n")
         
         for chapter in final_chapters:
-            full_script_parts.append(f"\n## {chapter['title']}\n")
+            if not remove_chapter_headers:
+                full_script_parts.append(f"\n## {chapter['title']}\n")
             full_script_parts.append(chapter['content'])
         
         full_script = "\n".join(full_script_parts)
@@ -829,7 +839,7 @@ class StorytellerService:
             # Monta roteiro final
             final_script = self.assemble_final_script(
                 title, premise, validation_result['valid_chapters'], 
-                agent_type
+                agent_type, remove_chapter_headers=True
             )
             
             # Calcula estatísticas totais
