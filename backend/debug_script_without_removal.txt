@@ -1,0 +1,49 @@
+ROTEIRO SEM REMOÇÃO DE CABEÇALHOS (remove_chapter_headers=False)
+============================================================
+
+# Debug Final
+
+Uma história para debug final
+
+
+## Capítulo 1
+
+# Debug Final
+
+Uma história para debug final
+
+## Capítulo 1: O Começo de Tudo - Onde Tudo Começou
+
+Debug Final começa em um cenário cuidadosamente construído onde cada detalhe ambiental contribui para a atmosfera única da narrativa. Os personagens principais são introduzidos através de descrições ricas que revelam não apenas suas aparências físicas, mas também suas complexidades internas, medos mais profundos e aspirações mais elevadas.
+
+O protagonista emerge como uma figura multifacetada, carregando consigo bagagens emocionais que moldarão cada decisão futura. Seus olhos refletem uma história não contada, e seus gestos revelam batalhas internas que vão além do que palavras poderiam expressar. O ambiente ao seu redor pulsa com vida - cada som, cada aroma, cada textura é descrito com tal riqueza de detalhes que o leitor se sente fisicamente presente naquele momento.
+
+A narrativa se desenrola como um tapete mágico sendo tecido palavra por palavra. Diálogos autênticos fluem naturalmente, revelando camadas de personalidade através de cada interação. Os personagens secundários não são meros coadjuvantes, mas indivíduos complexos com suas próprias histórias, motivações e conflitos internos que se entrelaçam organicamente com a jornada principal.
+
+O tempo se move de forma fluida, com flashbacks cuidadosamente inseridos que fornecem contexto emocional sem interromper o fluxo narrativo. Cena após cena constrói uma tapeçaria rica de experiências humanas que ressoam universalmente, criando conexões profundas entre o leitor e os personagens.
+
+## Capítulo 2: O Desafio Surge - Quando o Mundo Muda
+
+Conforme a trama se desdobra como as páginas de um livro antigo, surgem obstáculos que vão além do superficial, atingindo as profundezas do que significa ser humano. Estes desafios não são meros contratempos narrativos, mas catalisadores de transformação que forçam cada personagem a confrontar suas verdades mais profundas.
+
+O primeiro sinal de tempestade aparece como uma brisa suave que gradualmente se transforma em vendaval emocional. Cada personagem responde de forma única baseada em suas experiências passadas, criando uma sinfonia complexa de reações humanas autênticas. Alguns se retraem em seus shells protetores, outros enfrentam de frente, mas todos são profundamente marcados pelo processo.
+
+As complicações surgem em camadas, como ondas que vêm em sucessão cada vez mais intensa. O que começa como um pequeno desconforto evolui para dilemas morais complexos que não possuem respostas simples. Os personagens são forçados a fazer escolhas impossíveis, onde cada decisão carrega peso e consequências duradouras.
+
+As relações entre os personagens se transformam durante este processo, criando novas formas de conexão baseadas em compreensão mútua profunda e compartilhamento de
+
+## Capítulo 2
+
+## Capítulo 2: Linha de Código
+
+O ar daquela manhã de outono era crispado, perfumado por folhas secas.  A pequena cafeteria, com suas mesas de madeira desgastadas e o aroma intenso de café recém-moído, era o meu escritório.  A tela do meu laptop, agora um aliado fiel, refletia a luz fraca do sol que penetrava pelas janelas.  Os dedos dançavam sobre o teclado, traduzindo a ansiedade em código.  Meu aplicativo, "Organiza+", estava quase pronto.  Quase.
+
+Lembro-me daquela noite, há seis meses, quando a ideia surgiu.  Deitado na cama, endividado até o pescoço, a angústia me corroía.  Aquele aplicativo, um sistema de organização financeira, era a minha última esperança, o meu "debug final".
+
+Os primeiros meses foram um turbilhão.  Dias sem dormir, alimentado a café e macarrão instantâneo.  A descrença de amigos e familiares era um peso extra, mas a minha determinação era maior.  Lembrei-me do olhar incrédulo da minha irmã, Clara, quando eu lhe contei sobre o meu plano: "Um aplicativo?  Você nem sabe programar direito!".  Sua voz ainda ecoava em minha mente, mas agora, servia como combustível.
+
+O lançamento do "Organiza+" foi um sucesso surpreendente.  A simplicidade e a eficiência do aplicativo falaram por si.  As avaliações positivas começaram a chegar, uma verdadeira injeção de ânimo.  O dinheiro, ainda tímido, começou a entrar.  Paguei as dívidas,  reconstruí minha vida financeira, tijolo a tijolo.
+
+Um dia, Clara entrou na cafeteria, os olhos cheios de admiração.  "Você fez isso", disse ela, a voz embargada pela emoção.  "Eu não acreditei, mas você fez!".
+
+Um sorriso se abriu em meu rosto.  O sucesso não era apenas financeiro. Era a prova de que a persistência, aliada à uma boa ideia, podiam superar qualquer obstáculo.  O "debug final" estava completo, não apenas no código do aplicativo, mas na minha própria vida.  Aquele café, antes sinônimo de privação, agora representava o sabor doce do triunfo.  A jornada tinha sido árdua, mas a vista do topo era deslumbrante.  E eu sabia, naquele momento, que a linha de código que eu havia escrito era apenas o início de uma nova história.

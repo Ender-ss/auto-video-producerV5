@@ -1,0 +1,50 @@
+{
+  "timestamp": "2025-09-05T21:34:02.832303",
+  "test_type": "focused_header_removal",
+  "original_stats": {
+    "length": 1621,
+    "lines": 55,
+    "file": "focused_original_20250905_213402.txt"
+  },
+  "with_context_preservation": {
+    "analysis": {
+      "original_headers": 15,
+      "processed_headers": 0,
+      "headers_removed": 15,
+      "removal_rate": 100.0,
+      "original_markdown": 7,
+      "processed_markdown": 0,
+      "markdown_removed": 7,
+      "markdown_removal_rate": 100.0,
+      "original_length": 1621,
+      "processed_length": 1523,
+      "content_preserved": 93.95434916718075
+    },
+    "file": "focused_with_context_20250905_213402.txt"
+  },
+  "complete_removal": {
+    "analysis": {
+      "original_headers": 15,
+      "processed_headers": 0,
+      "headers_removed": 15,
+      "removal_rate": 100.0,
+      "original_markdown": 7,
+      "processed_markdown": 0,
+      "markdown_removed": 7,
+      "markdown_removal_rate": 100.0,
+      "original_length": 1621,
+      "processed_length": 1167,
+      "content_preserved": 71.99259716224553
+    },
+    "file": "focused_complete_removal_20250905_213402.txt"
+  },
+  "success_criteria": {
+    "high_removal_rate_context": true,
+    "complete_removal_rate": true,
+    "context_preservation": true,
+    "markdown_removal_context": true,
+    "markdown_removal_complete": true
+  },
+  "overall_success": true,
+  "final_status": "SUCESSO COMPLETO"
+}

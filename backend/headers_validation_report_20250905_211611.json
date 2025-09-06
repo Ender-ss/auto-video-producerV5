@@ -1,0 +1,44 @@
+{
+  "timestamp": "20250905_211611",
+  "files_analyzed": {
+    "with_headers": "simple_headers_with_20250905_211347.txt",
+    "without_headers": "simple_headers_without_20250905_211347.txt"
+  },
+  "content_analysis": {
+    "with_headers_length": 7897,
+    "without_headers_length": 7861,
+    "size_difference": 36
+  },
+  "header_analysis": {
+    "headers_with_count": 6,
+    "headers_without_count": 4,
+    "headers_with_list": [
+      "# Teste Simples Headers",
+      "## Capítulo 1: O Começo de Tudo - Onde Tudo Começou",
+      "## Capítulo 2: O Desafio Surge - Quando o Mundo Muda",
+      "# Teste Simples Headers",
+      "## Capítulo 1: O Começo de Tudo - Onde Tudo Começou",
+      "## Capítulo 2: O Desafio Surge - Quando o Mundo Muda"
+    ],
+    "headers_without_list": [
+      "# Teste Simples Headers",
+      "## Capítulo 1: O Começo de Tudo - Onde Tudo Começou",
+      "## Capítulo 2: O Desafio Surge - Quando o Mundo Muda",
+      "## Capítulo 3: A Colheita"
+    ],
+    "reduction_achieved": true
+  },
+  "quality_analysis": {
+    "content_preserved": false,
+    "similarity_ratio": 0.08783429470372313,
+    "content_coherent": true
+  },
+  "conclusion": {
+    "header_removal_functional": true,
+    "content_quality_maintained": false,
+    "overall_success": false,
+    "issues_detected": [
+      "Qualidade do conteúdo comprometida"
+    ]
+  }
+}

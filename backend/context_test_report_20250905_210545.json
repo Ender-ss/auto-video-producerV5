@@ -1,0 +1,94 @@
+{
+  "timestamp": "20250905_210545",
+  "test_config": {
+    "title": "A Jornada do Empreendedor",
+    "premise": "Um jovem programador decide largar o emprego para criar sua própria startup de tecnologia, enfrentando desafios financeiros, técnicos e pessoais ao longo do caminho.",
+    "agent_type": "millionaire_stories",
+    "num_chapters": 3
+  },
+  "results": {
+    "with_headers": {
+      "script_length": 8161,
+      "chapters_count": 3,
+      "markdown_headers": 5,
+      "potential_names": [
+        "Jornada",
+        "Cena",
+        "Fruto",
+        "Era",
+        "Seus",
+        "Tudo",
+        "Empreendedor",
+        "Casa",
+        "Trabalho",
+        "Alguns",
+        "Onde Tudo",
+        "Angel Investors",
+        "Nos",
+        "Mas",
+        "Pedro",
+        "Desafio Surge",
+        "Vale",
+        "Ele",
+        "Marketing",
+        "Mundo Muda\n\nConforme",
+        "Parece",
+        "Estes",
+        "Era Ana",
+        "Cada",
+        "Sua",
+        "Empreendedor\n\nUm",
+        "Eles",
+        "Explicou",
+        "Dias",
+        "Quando",
+        "Seu",
+        "Ana"
+      ]
+    },
+    "without_headers": {
+      "script_length": 8324,
+      "chapters_count": 3,
+      "markdown_headers": 0,
+      "potential_names": [
+        "Nas",
+        "Conforme",
+        "Jornada",
+        "Cena",
+        "Durante",
+        "Seus",
+        "Empreendedor",
+        "Alguns",
+        "Mas",
+        "Aos",
+        "Larga",
+        "Pedro",
+        "Ele",
+        "Finalmente",
+        "Estes",
+        "Cada",
+        "Empreendedor\n\nUm",
+        "Ana"
+      ]
+    },
+    "comparison": {
+      "size_difference": -163,
+      "size_difference_percent": -1.9973042519299107,
+      "common_names": [
+        "Cada",
+        "Jornada",
+        "Alguns",
+        "Cena",
+        "Mas",
+        "Ele",
+        "Seus",
+        "Empreendedor\n\nUm",
+        "Estes",
+        "Pedro",
+        "Empreendedor",
+        "Ana"
+      ],
+      "header_removal_working": true
+    }
+  }
+}

@@ -282,13 +282,17 @@ def generate_storyteller_script():
                 'message': f'Agente "{agent_type}" não é válido. Use um dos agentes disponíveis.'
             }), 400
         
+        # Extrair parâmetro de remoção de cabeçalhos (padrão False para compatibilidade)
+        remove_chapter_headers = data.get('remove_chapter_headers', False)
+        
         # Usar o serviço para gerar o roteiro completo
         result = storyteller_service.generate_storyteller_script(
             title=title,
             premise=premise,
             agent_type=agent_type,
             num_chapters=num_chapters,
-            provider='gemini'
+            provider='gemini',
+            remove_chapter_headers=remove_chapter_headers
         )
         
         return jsonify(result)

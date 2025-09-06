@@ -148,6 +148,7 @@ class Pipeline(db.Model):
     titles_results = db.Column(db.Text, nullable=True)  # JSON dos títulos gerados
     premises_results = db.Column(db.Text, nullable=True)  # JSON das premissas
     scripts_results = db.Column(db.Text, nullable=True)  # JSON dos roteiros
+    script_processing_results = db.Column(db.Text, nullable=True)  # JSON do processamento de roteiro
     tts_results = db.Column(db.Text, nullable=True)  # JSON dos resultados TTS
     images_results = db.Column(db.Text, nullable=True)  # JSON das imagens
     video_results = db.Column(db.Text, nullable=True)  # JSON do vídeo final
@@ -176,6 +177,7 @@ class Pipeline(db.Model):
             titles_results = json.loads(self.titles_results) if self.titles_results else {}
             premises_results = json.loads(self.premises_results) if self.premises_results else {}
             scripts_results = json.loads(self.scripts_results) if self.scripts_results else {}
+            script_processing_results = json.loads(self.script_processing_results) if self.script_processing_results else {}
             tts_results = json.loads(self.tts_results) if self.tts_results else {}
             images_results = json.loads(self.images_results) if self.images_results else {}
             video_results = json.loads(self.video_results) if self.video_results else {}
@@ -188,6 +190,7 @@ class Pipeline(db.Model):
             titles_results = {}
             premises_results = {}
             scripts_results = {}
+            script_processing_results = {}
             tts_results = {}
             images_results = {}
             video_results = {}
@@ -212,6 +215,7 @@ class Pipeline(db.Model):
                 'titles': titles_results,
                 'premises': premises_results,
                 'scripts': scripts_results,
+                'script_processing': script_processing_results,
                 'tts': tts_results,
                 'images': images_results,
                 'video': video_results
@@ -225,37 +229,74 @@ class Pipeline(db.Model):
         }
     
     def _get_steps_status(self):
-        """Gerar status dos steps baseado nos resultados"""
-        steps = {
-            'extraction': {
+        """Gerar status dos steps baseado nos resultados e configuração"""
+        # Parse da configuração para determinar etapas habilitadas
+        config = {}
+        if self.config_json:
+            try:
+                config = json.loads(self.config_json)
+            except:
+                config = {}
+        
+        steps = {}
+        
+        # Adicionar etapas baseadas na configuração (mesma lógica do pipeline_complete.py)
+        if config.get('extraction', {}).get('enabled', True):
+            steps['extraction'] = {
                 'status': 'completed' if self.extraction_results else 'pending',
                 'result': json.loads(self.extraction_results) if self.extraction_results else None
-            },
-            'titles': {
+            }
+        
+        if config.get('titles', {}).get('enabled', True):
+            steps['titles'] = {
                 'status': 'completed' if self.titles_results else 'pending', 
                 'result': json.loads(self.titles_results) if self.titles_results else None
-            },
-            'premises': {
+            }
+        
+        if config.get('premises', {}).get('enabled', True):
+            steps['premises'] = {
                 'status': 'completed' if self.premises_results else 'pending',
                 'result': json.loads(self.premises_results) if self.premises_results else None
-            },
-            'scripts': {
+            }
+        
+        if config.get('scripts', {}).get('enabled', True):
+            steps['scripts'] = {
                 'status': 'completed' if self.scripts_results else 'pending',
                 'result': json.loads(self.scripts_results) if self.scripts_results else None
-            },
-            'tts': {
+            }
+        
+        # Verificar script_processing especificamente
+        if config.get('script_processing', {}).get('enabled', True):
+            steps['script_processing'] = {
+                'status': 'completed' if self.script_processing_results else 'pending',
+                'result': json.loads(self.script_processing_results) if self.script_processing_results else None
+            }
+        
+        if config.get('tts', {}).get('enabled', True):
+            steps['tts'] = {
                 'status': 'completed' if self.tts_results else 'pending',
                 'result': json.loads(self.tts_results) if self.tts_results else None
-            },
-            'images': {
+            }
+        
+        if config.get('images', {}).get('enabled', True):
+            steps['images'] = {
                 'status': 'completed' if self.images_results else 'pending',
                 'result': json.loads(self.images_results) if self.images_results else None
-            },
-            'video': {
+            }
+        
+        if config.get('video', {}).get('enabled', True):
+            steps['video'] = {
                 'status': 'completed' if self.video_results else 'pending',
                 'result': json.loads(self.video_results) if self.video_results else None
             }
-        }
+        
+        # Cleanup sempre habilitado se há pelo menos uma etapa
+        if steps:
+            steps['cleanup'] = {
+                'status': 'pending',  # Cleanup não tem resultado específico no banco
+                'result': None
+            }
+        
         return steps
     
     @staticmethod

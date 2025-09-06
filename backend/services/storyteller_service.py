@@ -10,6 +10,12 @@ import logging
 from datetime import datetime, timedelta
 from difflib import SequenceMatcher
 import random
+import sys
+import os
+
+# Adicionar o diretório backend ao path para importar improved_header_removal
+sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+from improved_header_removal import ImprovedHeaderRemoval
 
 logger = logging.getLogger(__name__)
 
@@ -358,7 +364,8 @@ class PromptVariator:
     def generate_varied_prompt(self, title: str, premise: str, agent_type: str, 
                              target_chars: int, chapter_num: int, total_chapters: int,
                              previous_context: Optional[Dict] = None, 
-                             previous_chapters: List[str] = None) -> str:
+                             previous_chapters: List[str] = None,
+                             remove_chapter_headers: bool = False) -> str:
         """Gera prompt variado para evitar repetições"""
         
         # Seleciona variações aleatórias
@@ -427,7 +434,7 @@ class PromptVariator:
         
         {"CONSIDERE O CONTEXTO DO CAPÍTULO ANTERIOR: " + previous_context.get('content_preview', '') if previous_context else "COMECE A HISTÓRIA"}
         
-        CAPÍTULO {chapter_num}:
+        {f"CAPÍTULO {chapter_num}:" if not remove_chapter_headers else ""}
         """
         
         return prompt
@@ -441,6 +448,7 @@ class StorytellerService:
         self.token_chunker = TokenChunker()
         self.agent_configs = self._load_agent_configs()
         self.prompt_variator = PromptVariator()
+        self.header_remover = ImprovedHeaderRemoval()
     
     def _load_agent_configs(self) -> Dict:
         """Carrega configurações por agente"""
@@ -678,9 +686,21 @@ class StorytellerService:
         full_script_parts.append(f"\n{premise}\n")
         
         for chapter in final_chapters:
-            if not remove_chapter_headers:
+            chapter_content = chapter['content']
+            
+            # Se remove_chapter_headers=True, usar a versão melhorada de remoção
+            if remove_chapter_headers:
+                # Usar a classe ImprovedHeaderRemoval para remoção 100% efetiva
+                chapter_content = self.header_remover.remove_headers_advanced(
+                    chapter_content, 
+                    preserve_context=True  # Mantém contexto narrativo importante
+                )
+                # NÃO adiciona cabeçalho quando remove_chapter_headers=True
+            else:
+                # Adiciona cabeçalho do capítulo normalmente quando remove_chapter_headers=False
                 full_script_parts.append(f"\n## {chapter['title']}\n")
-            full_script_parts.append(chapter['content'])
+            
+            full_script_parts.append(chapter_content)
         
         full_script = "\n".join(full_script_parts)
         
@@ -757,7 +777,8 @@ class StorytellerService:
                         chapter_num=chapter_num,
                         total_chapters=num_chapters,
                         previous_context=previous_context,
-                        previous_chapters=previous_chapters_content
+                        previous_chapters=previous_chapters_content,
+                        remove_chapter_headers=remove_chapter_headers
                     )
                     
                     # Verifica repetições se há capítulos anteriores
@@ -879,11 +900,12 @@ class StorytellerService:
                 'num_chapters': 0
             }
 
-    def _generate_story_content(self, title: str, premise: str, agent_type: str, 
+    def _generate_story_content(self, title: str, premise: str, agent_type: str,
                               api_key: str, provider: str, target_chars: int = 15000,
                               chapter_num: int = 1, total_chapters: int = 1,
                               previous_context: Optional[Dict] = None,
-                              previous_chapters: List[str] = None) -> str:
+                              previous_chapters: List[str] = None,
+                              remove_chapter_headers: bool = False) -> str:
         """
         Gera conteúdo real usando integração com LLM - OTIMIZADO CONTRA REPETIÇÕES
         
@@ -912,7 +934,8 @@ class StorytellerService:
             chapter_num=chapter_num,
             total_chapters=total_chapters,
             previous_context=previous_context,
-            previous_chapters=previous_chapters or []
+            previous_chapters=previous_chapters or [],
+            remove_chapter_headers=remove_chapter_headers
         )
         
         try:

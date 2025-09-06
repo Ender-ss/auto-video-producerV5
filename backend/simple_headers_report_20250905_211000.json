@@ -1,0 +1,30 @@
+{
+  "timestamp": "20250905_211000",
+  "test_type": "simple_headers_integration",
+  "test_config": {
+    "title": "Teste Simples Headers",
+    "premise": "Uma história de teste para verificar a remoção de cabeçalhos de capítulos.",
+    "agent_type": "millionaire_stories",
+    "num_chapters": 3,
+    "total_chars": 2000,
+    "voice_id": "pt-BR-FranciscaNeural"
+  },
+  "results": {
+    "integration_status": "FAILED",
+    "with_headers": {
+      "success": false,
+      "script_length": 0,
+      "markdown_headers": 0
+    },
+    "without_headers": {
+      "success": false,
+      "script_length": 0,
+      "markdown_headers": 0
+    },
+    "comparison": {
+      "header_removal_working": false,
+      "size_difference": 0,
+      "both_successful": false
+    }
+  }
+}

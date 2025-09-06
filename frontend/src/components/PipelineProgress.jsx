@@ -253,6 +253,8 @@ const PipelineProgress = ({ pipeline, onPause, onCancel, onViewDetails, index })
       case 'premises':
       case 'scripts':
         return <FileText size={16} className="text-blue-400" />
+      case 'script_processing':
+        return <Activity size={16} className="text-orange-400" />
       case 'tts':
         return <Mic size={16} className="text-green-400" />
       case 'images':
@@ -299,6 +301,7 @@ const PipelineProgress = ({ pipeline, onPause, onCancel, onViewDetails, index })
     { id: 'titles', label: 'Títulos', description: 'Gerando novos títulos' },
     { id: 'premises', label: 'Premissas', description: 'Criando premissas' },
     { id: 'scripts', label: 'Roteiros', description: 'Escrevendo roteiros' },
+    { id: 'script_processing', label: 'Processamento', description: 'Processando e otimizando roteiro' },
     { id: 'tts', label: 'TTS', description: 'Gerando áudio' },
     { id: 'images', label: 'Imagens', description: 'Criando imagens' },
     { id: 'video', label: 'Vídeo', description: 'Montando vídeo final' }
@@ -980,6 +983,53 @@ const PipelineProgress = ({ pipeline, onPause, onCancel, onViewDetails, index })
                   }
                   downloadData={pipeline.results.scripts.script}
                   filename={`roteiro_${pipeline.display_name || pipeline.pipeline_id?.slice(-8)}.txt`}
+                />
+              )}
+              
+              {/* Roteiro Processado */}
+              {pipeline.results?.script_processing && (
+                <ContentSection
+                  title="Roteiro Processado"
+                  icon={<Activity size={16} className="text-orange-400" />}
+                  content={
+                    <div className="space-y-3">
+                      <div className="bg-gray-800 rounded p-3">
+                        <div className="grid grid-cols-2 gap-4 text-sm mb-4">
+                          <div>
+                            <span className="text-gray-400">Status:</span>
+                            <p className="text-white">{pipeline.results.script_processing.status || 'N/A'}</p>
+                          </div>
+                          <div>
+                            <span className="text-gray-400">Processado em:</span>
+                            <p className="text-white">
+                              {pipeline.results.script_processing.processed_at ? 
+                                new Date(pipeline.results.script_processing.processed_at).toLocaleString('pt-BR') : 'N/A'}
+                            </p>
+                          </div>
+                          {pipeline.results.script_processing.metrics && (
+                            <>
+                              <div>
+                                <span className="text-gray-400">Caracteres originais:</span>
+                                <p className="text-white">{pipeline.results.script_processing.metrics.original_length || 0}</p>
+                              </div>
+                              <div>
+                                <span className="text-gray-400">Caracteres processados:</span>
+                                <p className="text-white">{pipeline.results.script_processing.metrics.processed_length || 0}</p>
+                              </div>
+                            </>
+                          )}
+                        </div>
+                        
+                        {pipeline.results.script_processing.processed_script && (
+                          <div className="bg-gray-900 rounded p-3 text-sm text-gray-300 whitespace-pre-wrap max-h-60 overflow-y-auto">
+                            {pipeline.results.script_processing.processed_script}
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  }
+                  downloadData={pipeline.results.script_processing.processed_script}
+                  filename={`roteiro_processado_${pipeline.display_name || pipeline.pipeline_id?.slice(-8)}.txt`}
                 />
               )}
               

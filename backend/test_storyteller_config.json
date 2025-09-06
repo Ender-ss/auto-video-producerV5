@@ -1,0 +1,8 @@
+{
+  "title": "Teste de Remoção de Cabeçalhos de Capítulos",
+  "premise": "Uma história inspiradora sobre superação e sucesso financeiro que demonstra como pequenas mudanças de mentalidade podem transformar completamente a vida de uma pessoa.",
+  "agent_type": "millionaire_stories",
+  "num_chapters": 3,
+  "remove_chapter_headers": true,
+  "provider": "gemini"
+}

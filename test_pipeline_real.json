@@ -1,0 +1,30 @@
+{
+  "channel_url": "https://www.youtube.com/@historiasfantasticas7",
+  "video_count": 1,
+  "agent_type": "millionaire_stories",
+  "title_generation": {
+    "enabled": true,
+    "count": 1,
+    "type": "viral"
+  },
+  "premise_generation": {
+    "enabled": true,
+    "type": "narrative"
+  },
+  "script_generation": {
+    "enabled": true,
+    "type": "storyteller_unlimited",
+    "chapters": 3,
+    "agent": "millionaire_stories",
+    "remove_chapter_headers": true
+  },
+  "audio_generation": {
+    "enabled": false
+  },
+  "image_generation": {
+    "enabled": false
+  },
+  "video_generation": {
+    "enabled": false
+  }
+}

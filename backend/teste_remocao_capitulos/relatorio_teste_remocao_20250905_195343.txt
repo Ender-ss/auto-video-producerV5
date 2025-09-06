@@ -1,0 +1,23 @@
+=== RELATÓRIO DE TESTE - REMOÇÃO DE CABEÇALHOS ===
+
+Data/Hora: 2025-09-05 19:53:43
+
+CONFIGURAÇÃO DO TESTE:
+- Título: Descalça na Entrevista, Mas o Milionário Mudou Sua Vida Para Sempre!
+- Capítulos: 3
+- Agente: millionaire_stories
+
+RESULTADOS:
+✅ COM remoção (remove_chapter_headers=True):
+   - Cabeçalhos ## Capítulo: 0
+   - Cabeçalhos CAPÍTULO: 0
+   - Total caracteres: 8117
+   - Status: ✅ SUCESSO - SEM CABEÇALHOS
+
+✅ SEM remoção (remove_chapter_headers=False):
+   - Cabeçalhos ## Capítulo: 3
+   - Cabeçalhos CAPÍTULO: 3
+   - Total caracteres: 9491
+   - Status: ✅ ESPERADO - COM CABEÇALHOS
+
+🎉 CONCLUSÃO: REMOÇÃO DE CABEÇALHOS FUNCIONANDO CORRETAMENTE!

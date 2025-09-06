@@ -1,0 +1,65 @@
+{
+  "timestamp": "20250905_211457",
+  "test_type": "edge_cases_headers",
+  "cases": [
+    {
+      "case_name": "historia_muito_curta",
+      "config": {
+        "name": "historia_muito_curta",
+        "title": "História Curta",
+        "premise": "Uma história muito breve.",
+        "num_chapters": 1
+      },
+      "with_headers": null,
+      "without_headers": null,
+      "analysis": {},
+      "error": "sequence item 0: expected str instance, dict found"
+    },
+    {
+      "case_name": "historia_muitos_capitulos",
+      "config": {
+        "name": "historia_muitos_capitulos",
+        "title": "História Longa",
+        "premise": "Uma história com muitos capítulos para testar limites.",
+        "num_chapters": 10
+      },
+      "with_headers": null,
+      "without_headers": null,
+      "analysis": {},
+      "error": "sequence item 0: expected str instance, dict found"
+    },
+    {
+      "case_name": "titulo_com_caracteres_especiais",
+      "config": {
+        "name": "titulo_com_caracteres_especiais",
+        "title": "História #@$%^&*()_+ com Símbolos",
+        "premise": "Uma história com título contendo caracteres especiais.",
+        "num_chapters": 2
+      },
+      "with_headers": null,
+      "without_headers": null,
+      "analysis": {},
+      "error": "sequence item 0: expected str instance, dict found"
+    },
+    {
+      "case_name": "premise_muito_longa",
+      "config": {
+        "name": "premise_muito_longa",
+        "title": "Premise Extensa",
+        "premise": "Uma história com uma premissa extremamente longa que pode causar problemas na geração de conteúdo e na formatação dos cabeçalhos dos capítulos, testando os limites do sistema de processamento de texto e verificando se a remoção de cabeçalhos funciona adequadamente mesmo com textos muito extensos e complexos.",
+        "num_chapters": 3
+      },
+      "with_headers": null,
+      "without_headers": null,
+      "analysis": {},
+      "error": "sequence item 0: expected str instance, dict found"
+    }
+  ],
+  "summary": {
+    "total_cases": 4,
+    "successful_cases": 0,
+    "working_removal_cases": 0,
+    "success_rate": 0.0,
+    "removal_effectiveness": 0
+  }
+}

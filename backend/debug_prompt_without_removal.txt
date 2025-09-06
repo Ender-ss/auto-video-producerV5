@@ -1,0 +1,31 @@
+PROMPT SEM REMOÇÃO DE CABEÇALHOS (remove_chapter_headers=False)
+============================================================
+
+
+        Escreva o CAPÍTULO 1 de uma história história de superação financeira e empreendedorismo com aproximadamente 2500 caracteres.
+        
+        TÍTULO DA HISTÓRIA: Teste Debug
+        PREMISSA GERAL: Uma história para debug
+        
+        ESTE É O CAPÍTULO 1 DE 3 CAPÍTULOS TOTAIS.
+        
+        CONTEXTO: história de superação financeira e empreendedorismo
+        TOM: inspirador e motivacional
+        ELEMENTOS-CHAVE: jornada do zero ao sucesso, desafios financeiros, estratégias de negócio
+        
+        TAMANHO ALVO: Aproximadamente 2500 caracteres (flexível)
+        
+        
+        REQUISITOS PARA ESTE CAPÍTULO:
+        - Desenvolva uma parte coerente da história
+        - Desenvolva com estilo narrativo envolvente
+        - Desenvolva personagens ricos com conversas autênticas
+        - Insira descrições atmosféricas quando pertinente
+        - Avance a trama de forma natural
+        
+        INCLUA UM CLIMAX OU GANCHO NO FINAL
+        
+        COMECE A HISTÓRIA
+        
+        CAPÍTULO 1:
+        

@@ -163,6 +163,7 @@ class PipelineSteps:
     TITLES = 'titles'
     PREMISES = 'premises'
     SCRIPTS = 'scripts'
+    SCRIPT_PROCESSING = 'script_processing'
     TTS = 'tts'
     IMAGES = 'images'
     VIDEO = 'video'
@@ -440,6 +441,12 @@ def start_complete_automation():
                 'detailed_prompt_text': '',
                 'detailed_prompt': False
             },
+            'script_processing': {
+                'enabled': True,
+                'remove_chapter_markers': True,
+                'clean_formatting': True,
+                'preserve_structure': True
+            },
             'tts': {
                 'enabled': True,
                 'provider': 'kokoro',
@@ -464,9 +471,21 @@ def start_complete_automation():
             }
         }
         
-        # Mesclar configuração fornecida com padrão
+        # Mesclar configuração fornecida com padrão (recursivamente)
         user_config = data.get('config', {})
-        config = {**default_config, **user_config}
+        
+        def merge_configs_recursive(default, user):
+            """Mescla configurações recursivamente preservando valores padrão"""
+            result = default.copy()
+            for key, value in user.items():
+                if key in result and isinstance(result[key], dict) and isinstance(value, dict):
+                    result[key] = merge_configs_recursive(result[key], value)
+                else:
+                    result[key] = value
+            return result
+        
+        config = merge_configs_recursive(default_config, user_config)
+        logger.info(f"🔧 Configuração mesclada: script_processing habilitado = {config.get('script_processing', {}).get('enabled', False)}")
         
         # CORREÇÃO: Mapear video_count do frontend para max_titles no backend
         # O frontend envia video_count mas o backend espera max_titles na configuração de extraction
@@ -518,6 +537,31 @@ def start_complete_automation():
         # Carregar chaves de API do arquivo
         api_keys = load_api_keys_from_file()
         
+        # Determinar etapas habilitadas baseadas na configuração
+        enabled_steps = {}
+        
+        # Verificar quais etapas estão habilitadas
+        if config.get('extraction', {}).get('enabled', True):
+            enabled_steps[PipelineSteps.EXTRACTION] = {'status': 'pending', 'progress': 0, 'result': None, 'error': None}
+        if config.get('titles', {}).get('enabled', True):
+            enabled_steps[PipelineSteps.TITLES] = {'status': 'pending', 'progress': 0, 'result': None, 'error': None}
+        if config.get('premises', {}).get('enabled', True):
+            enabled_steps[PipelineSteps.PREMISES] = {'status': 'pending', 'progress': 0, 'result': None, 'error': None}
+        if config.get('scripts', {}).get('enabled', True):
+            enabled_steps[PipelineSteps.SCRIPTS] = {'status': 'pending', 'progress': 0, 'result': None, 'error': None}
+        if config.get('script_processing', {}).get('enabled', True):
+            enabled_steps[PipelineSteps.SCRIPT_PROCESSING] = {'status': 'pending', 'progress': 0, 'result': None, 'error': None}
+        if config.get('tts', {}).get('enabled', True):
+            enabled_steps[PipelineSteps.TTS] = {'status': 'pending', 'progress': 0, 'result': None, 'error': None}
+        if config.get('images', {}).get('enabled', True):
+            enabled_steps[PipelineSteps.IMAGES] = {'status': 'pending', 'progress': 0, 'result': None, 'error': None}
+        if config.get('video', {}).get('enabled', True):
+            enabled_steps[PipelineSteps.VIDEO] = {'status': 'pending', 'progress': 0, 'result': None, 'error': None}
+        
+        # Cleanup sempre habilitado se há pelo menos uma etapa
+        if enabled_steps:
+            enabled_steps[PipelineSteps.CLEANUP] = {'status': 'pending', 'progress': 0, 'result': None, 'error': None}
+
         # Inicializar estado do pipeline
         pipeline_state = {
             'pipeline_id': pipeline_id,
@@ -531,16 +575,7 @@ def start_complete_automation():
             'channel_url': data['channel_url'],
             'config': config,
             'api_keys': api_keys,
-            'steps': {
-                PipelineSteps.EXTRACTION: {'status': 'pending', 'progress': 0, 'result': None, 'error': None},
-                PipelineSteps.TITLES: {'status': 'pending', 'progress': 0, 'result': None, 'error': None},
-                PipelineSteps.PREMISES: {'status': 'pending', 'progress': 0, 'result': None, 'error': None},
-                PipelineSteps.SCRIPTS: {'status': 'pending', 'progress': 0, 'result': None, 'error': None},
-                PipelineSteps.TTS: {'status': 'pending', 'progress': 0, 'result': None, 'error': None},
-                PipelineSteps.IMAGES: {'status': 'pending', 'progress': 0, 'result': None, 'error': None},
-                PipelineSteps.VIDEO: {'status': 'pending', 'progress': 0, 'result': None, 'error': None},
-                PipelineSteps.CLEANUP: {'status': 'pending', 'progress': 0, 'result': None, 'error': None}
-            },
+            'steps': enabled_steps,
             'results': {},
             'errors': [],
             'warnings': []
@@ -978,11 +1013,14 @@ def process_complete_pipeline(pipeline_id: str):
         from services.pipeline_service import PipelineService
         
         # Inicializar serviço com configuração do pipeline
+        logger.info(f"🔧 Inicializando PipelineService para pipeline {pipeline_id}")
         service = PipelineService(pipeline_id)
         
         # Usar sistema de retomada automática com checkpoints
         try:
+            logger.info(f"🔧 PipelineService inicializado, executando run_with_resume()")
             result = service.run_with_resume()
+            logger.info(f"🔧 Pipeline executada, resultados: {list(result.keys()) if result else 'None'}")
             
             # Atualizar estado do pipeline com os resultados
             pipeline_state['results'] = result
@@ -1016,6 +1054,7 @@ def process_complete_pipeline(pipeline_id: str):
             (PipelineSteps.TITLES, service.run_titles_generation, config.get('titles', {}).get('enabled', True)),
             (PipelineSteps.PREMISES, service.run_premises_generation, config.get('premises', {}).get('enabled', True)),
             (PipelineSteps.SCRIPTS, service.run_scripts_generation, config.get('scripts', {}).get('enabled', True)),
+            (PipelineSteps.SCRIPT_PROCESSING, service.run_script_processing, config.get('script_processing', {}).get('enabled', True)),
             (PipelineSteps.TTS, service.run_tts_generation, config.get('tts', {}).get('enabled', True)),
             (PipelineSteps.IMAGES, service.run_images_generation, config.get('images', {}).get('enabled', True)),
             (PipelineSteps.VIDEO, service.run_video_creation, config.get('video', {}).get('enabled', True)),

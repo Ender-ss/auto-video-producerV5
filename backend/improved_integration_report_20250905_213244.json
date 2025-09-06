@@ -1,0 +1,43 @@
+{
+  "timestamp": "2025-09-05T21:32:59.904508",
+  "test_config": {
+    "title": "História de Teste Melhorada",
+    "premise": "Uma história para testar a remoção 100% efetiva de cabeçalhos mantendo contexto narrativo.",
+    "agent_type": "millionaire_stories",
+    "num_chapters": 3,
+    "total_duration": 180
+  },
+  "results": {
+    "with_headers": {
+      "success": true,
+      "script_length": 0,
+      "file": "improved_with_headers_20250905_213244.txt"
+    },
+    "without_headers": {
+      "success": true,
+      "script_length": 0,
+      "file": "improved_without_headers_20250905_213244.txt"
+    }
+  },
+  "analysis": {
+    "original_headers": 0,
+    "processed_headers": 0,
+    "headers_removed": 0,
+    "removal_rate": 0,
+    "original_markdown": 0,
+    "processed_markdown": 0,
+    "markdown_removed": 0,
+    "markdown_removal_rate": 0,
+    "original_length": 0,
+    "processed_length": 0,
+    "content_preserved": 0
+  },
+  "success_criteria": {
+    "both_generated": true,
+    "headers_removed_effectively": false,
+    "content_preserved": false,
+    "markdown_completely_removed": false
+  },
+  "overall_success": false,
+  "final_status": "NECESSITA AJUSTES"
+}

@@ -18,6 +18,7 @@ sys.path.append(os.path.join(os.path.dirname(__file__), '..'))
 # Importar serviços necessários
 from services.video_creation_service import VideoCreationService
 from services.checkpoint_service import CheckpointService
+from services.script_processing_service import ScriptProcessingService
 
 logger = logging.getLogger(__name__)
 logger.propagate = True
@@ -100,6 +101,17 @@ class PipelineService:
                 self.pipeline_state = active_pipelines[self.pipeline_id]
                 self.config = self.pipeline_state.get('config', {})
                 self.api_keys = self.pipeline_state.get('api_keys', {})
+                
+                # Log de debug para verificar as etapas carregadas
+                steps = self.pipeline_state.get('steps', {})
+                step_names = list(steps.keys())
+                self._log('info', f'Pipeline state carregado com etapas: {step_names}')
+                
+                # Verificar se script_processing está presente
+                if 'SCRIPT_PROCESSING' in steps:
+                    self._log('info', 'Etapa SCRIPT_PROCESSING encontrada no estado')
+                else:
+                    self._log('warning', 'Etapa SCRIPT_PROCESSING NÃO encontrada no estado')
             else:
                 raise Exception(f"Pipeline {self.pipeline_id} não encontrado")
         except Exception as e:
@@ -944,7 +956,106 @@ class PipelineService:
             raise
     
     # ================================
-    # 🎯 ETAPA 5: GERAÇÃO DE TTS
+    # 🎯 ETAPA 5: PROCESSAMENTO DE ROTEIRO
+    # ================================
+    
+    def run_script_processing(self) -> Dict[str, Any]:
+        """Executar processamento e limpeza de roteiro"""
+        try:
+            self._log('info', 'Iniciando processamento de roteiro')
+            
+            # Verificar se processamento está habilitado na configuração
+            script_processing_config = self.config.get('script_processing', {})
+            if not script_processing_config.get('enabled', True):
+                self._log('info', 'Processamento de roteiro desabilitado na configuração, pulando etapa')
+                
+                # Usar roteiro original sem processamento
+                if 'scripts' not in self.results:
+                    raise Exception('Geração de roteiros não foi executada')
+                
+                script_data = self.results['scripts']
+                processed_result = {
+                    'processed_script': script_data['script'],
+                    'original_script': script_data['script'],
+                    'processing_applied': False,
+                    'metrics': {
+                        'original_length': len(script_data['script']),
+                        'processed_length': len(script_data['script']),
+                        'preservation_ratio': 1.0,
+                        'headers_removed': 0
+                    },
+                    'processing_time': 0,
+                    'status': 'skipped',
+                    'message': 'Processamento desabilitado pelo usuário',
+                    'timestamp': datetime.utcnow().isoformat()
+                }
+                
+                self.results['script_processing'] = processed_result
+                self._update_progress('script_processing', 100)
+                return processed_result
+            
+            # Verificar se temos roteiro
+            if 'scripts' not in self.results:
+                raise Exception('Geração de roteiros não foi executada')
+            
+            script_data = self.results['scripts']
+            raw_script = script_data['script']
+            
+            self._update_progress('script_processing', 25)
+            
+            # Criar instância do serviço de processamento
+            script_processor = ScriptProcessingService()
+            
+            self._update_progress('script_processing', 50)
+            
+            # Processar roteiro
+            processing_result = script_processor.process_script(
+                pipeline_id=self.pipeline_id,
+                raw_script=raw_script,
+                config=script_processing_config
+            )
+            
+            self._update_progress('script_processing', 75)
+            
+            # Verificar se o processamento foi bem-sucedido
+            if not processing_result.get('success'):
+                raise Exception(f"Falha no processamento de roteiro: {processing_result.get('error', 'Erro desconhecido')}")
+            
+            # Atualizar resultado dos scripts com versão processada
+            self.results['scripts']['script'] = processing_result['processed_script']
+            
+            # Salvar resultado do processamento
+            script_processing_result = {
+                'processed_script': processing_result['processed_script'],
+                'original_script': raw_script,
+                'processing_applied': True,
+                'metrics': processing_result['metrics'],
+                'processing_time': processing_result['processing_time'],
+                'config_used': processing_result['config_used'],
+                'status': 'completed',
+                'timestamp': processing_result['timestamp']
+            }
+            
+            self.results['script_processing'] = script_processing_result
+            
+            self._update_progress('script_processing', 100)
+            
+            self._log('info', 'Processamento de roteiro concluído', {
+                'original_length': len(raw_script),
+                'processed_length': len(processing_result['processed_script']),
+                'preservation_ratio': processing_result['metrics']['preservation_ratio'],
+                'headers_removed': processing_result['metrics']['headers_removed'],
+                'processing_time': processing_result['processing_time']
+            })
+            
+            return script_processing_result
+            
+        except Exception as e:
+            self._log('error', f'Erro no processamento de roteiro: {str(e)}')
+            raise
+    
+    # ================================
+    # 🎯 ETAPA 6: GERAÇÃO DE TTS
     # ================================
     
     def run_tts_generation(self) -> Dict[str, Any]:
@@ -1054,7 +1165,7 @@ class PipelineService:
 
     
     # ================================
-    # 🎯 ETAPA 6: GERAÇÃO DE IMAGENS
+    # 🎯 ETAPA 7: GERAÇÃO DE IMAGENS
     # ================================
     
     def run_images_generation(self) -> Dict[str, Any]:
@@ -1365,6 +1476,31 @@ class PipelineService:
     def run_with_resume(self, steps: List[str] = None) -> Dict[str, Any]:
         """Executar pipeline com suporte a retomada automática"""
         try:
+            # Log de debug para verificar as etapas carregadas
+            pipeline_steps_state = self.pipeline_state.get('steps', {})
+            step_names = list(pipeline_steps_state.keys())
+            self._log('info', f'DEBUG: Pipeline state carregado com etapas: {step_names}')
+            
+            # Verificar se script_processing está presente
+            if 'SCRIPT_PROCESSING' in pipeline_steps_state:
+                self._log('info', 'DEBUG: Etapa SCRIPT_PROCESSING encontrada no estado')
+            else:
+                self._log('warning', 'DEBUG: Etapa SCRIPT_PROCESSING NÃO encontrada no estado')
+            
+            # Se não foram fornecidas etapas específicas, usar as etapas do estado da pipeline
+            if steps is None:
+                # Obter etapas do estado da pipeline
+                pipeline_steps = list(self.pipeline_state.get('steps', {}).keys())
+                self._log('info', f'DEBUG: Usando etapas do estado da pipeline: {pipeline_steps}')
+                
+                # Se não há etapas no estado, usar etapas padrão baseadas na configuração
+                if not pipeline_steps:
+                    self._log('warning', 'DEBUG: Nenhuma etapa encontrada no estado, usando etapas padrão')
+                    pipeline_steps = self._get_default_steps()
+                    self._log('info', f'DEBUG: Etapas padrão determinadas: {pipeline_steps}')
+                
+                steps = pipeline_steps
+            
             # Verificar se existe checkpoint para retomada
             if self.checkpoint_service.has_checkpoint():
                 self._log('info', 'Checkpoint encontrado, retomando pipeline...')
@@ -1376,10 +1512,10 @@ class PipelineService:
                     remaining_steps = self._get_remaining_steps(checkpoint_data['next_step'], steps)
                 else:
                     # Se não conseguir carregar checkpoint, começar do início
-                    remaining_steps = steps or self._get_default_steps()
+                    remaining_steps = steps
             else:
                 # Executar pipeline completa
-                remaining_steps = steps or self._get_default_steps()
+                remaining_steps = steps
             
             # Executar etapas restantes
             for step in remaining_steps:
@@ -1399,6 +1535,8 @@ class PipelineService:
                         self.run_premises_generation()
                     elif step == 'scripts':
                         self.run_scripts_generation()
+                    elif step == 'script_processing':
+                        self.run_script_processing()
                     elif step == 'tts':
                         self.run_tts_generation()
                     elif step == 'images':
@@ -1447,6 +1585,9 @@ class PipelineService:
         """Obter lista padrão de etapas da pipeline baseada na configuração"""
         enabled_steps = []
         
+        # Log da configuração para debug
+        self._log('info', f'Configuração da pipeline: {json.dumps(self.config, indent=2)}')
+        
         # Verificar quais etapas estão habilitadas
         if self.config.get('extraction', {}).get('enabled', True):
             enabled_steps.append('extraction')
@@ -1456,6 +1597,16 @@ class PipelineService:
             enabled_steps.append('premises')
         if self.config.get('scripts', {}).get('enabled', True):
             enabled_steps.append('scripts')
+        
+        # Verificar script_processing especificamente
+        script_processing_config = self.config.get('script_processing', {})
+        script_processing_enabled = script_processing_config.get('enabled', True)
+        self._log('info', f'Script processing config: {script_processing_config}')
+        self._log('info', f'Script processing enabled: {script_processing_enabled}')
+        
+        if script_processing_enabled:
+            enabled_steps.append('script_processing')
+            
         if self.config.get('tts', {}).get('enabled', True):
             enabled_steps.append('tts')
         if self.config.get('images', {}).get('enabled', True):
@@ -1466,17 +1617,23 @@ class PipelineService:
         # Cleanup sempre habilitado se há pelo menos uma etapa
         if enabled_steps:
             enabled_steps.append('cleanup')
-            
+        
+        self._log('info', f'Etapas habilitadas: {enabled_steps}')
         return enabled_steps
     
     def _get_remaining_steps(self, next_step: str, all_steps: List[str] = None) -> List[str]:
         """Obter etapas restantes a partir de uma etapa específica"""
         if not all_steps:
-            all_steps = self._get_default_steps()
+            # Usar etapas do estado da pipeline em vez de _get_default_steps
+            all_steps = list(self.pipeline_state.get('steps', {}).keys())
+            self._log('info', f'Usando etapas do estado para remaining_steps: {all_steps}')
         
         try:
             start_index = all_steps.index(next_step)
-            return all_steps[start_index:]
+            remaining = all_steps[start_index:]
+            self._log('info', f'Etapas restantes a partir de {next_step}: {remaining}')
+            return remaining
         except ValueError:
             # Se a etapa não for encontrada, executar todas
+            self._log('info', f'Etapa {next_step} não encontrada, executando todas: {all_steps}')
             return all_steps
